@@ -52,12 +52,22 @@ export function smooth(pts, closed, iters = 2) { // Chaikin corner cutting
   return p;
 }
 
+function densify(pts, closed, step) {
+  const out = [], n = pts.length;
+  for (let i = 0; i < (closed ? n : n - 1); i++) {
+    const a = pts[i], b = pts[(i + 1) % n], k = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step));
+    for (let j = 0; j < k; j++) out.push([a[0] + (b[0] - a[0]) * j / k, a[1] + (b[1] - a[1]) * j / k]);
+  }
+  if (!closed) out.push(pts[n - 1]);
+  return out;
+}
+
 // Turn a border description into a dense polyline to walk along.
 export function borderPolyline(border) {
   const { kind, pts } = border;
   if (kind === 'rect') {
     const [[x0, y0], [x1, y1]] = pts, a = Math.min(x0, x1), b = Math.min(y0, y1), c = Math.max(x0, x1), d = Math.max(y0, y1);
-    return { pts: [[a, b], [c, b], [c, d], [a, d]], closed: true };
+    return { pts: densify([[a, b], [c, b], [c, d], [a, d]], true, 6), closed: true };
   }
   if (kind === 'ellipse') {
     const [[x0, y0], [x1, y1]] = pts, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, rx = Math.abs(x1 - x0) / 2, ry = Math.abs(y1 - y0) / 2, out = [];
@@ -65,7 +75,7 @@ export function borderPolyline(border) {
     for (let i = 0; i < n; i++) { const t = i / n * 2 * Math.PI; out.push([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]); }
     return { pts: out, closed: true };
   }
-  if (kind === 'line') return { pts: pts.slice(), closed: false };
+  if (kind === 'line') return { pts: densify(pts, false, 6), closed: false };
   // freehand
   const closed = !!border.closed;
   let s = simplify(pts, 1.2);
