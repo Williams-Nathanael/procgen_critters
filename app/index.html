@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Procgen Critters</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="bar">
+  <div class="group">
+    <strong class="brand">Critters</strong>
+    <button id="open" class="primary">Open PDF…</button>
+    <input id="file" type="file" accept="application/pdf,.pdf" hidden>
+    <span id="docname" class="muted">blank page</span>
+  </div>
+  <div class="group" id="tools" role="radiogroup" aria-label="Border tool">
+    <button data-tool="free" title="Scribble a border line (F)">Scribble</button>
+    <button data-tool="line" title="Straight line; click more points for a polyline, double-click to finish (L)">Line</button>
+    <button data-tool="rect" title="Box border (R)">Box</button>
+    <button data-tool="ellipse" title="Oval border (O)">Oval</button>
+    <button data-tool="select" title="Select / move borders; click a critter to reroll it, Alt-click to remove it (V)">Select</button>
+  </div>
+  <div class="group">
+    <button id="prev" title="Previous page">‹</button>
+    <span id="pageinfo">1 / 1</span>
+    <button id="next" title="Next page">›</button>
+    <button id="zoomout" title="Zoom out">−</button>
+    <button id="zoomfit" title="Fit page">Fit</button>
+    <button id="zoomin" title="Zoom in">+</button>
+  </div>
+  <div class="group right">
+    <button id="undo" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="export" class="primary">Export PDF</button>
+  </div>
+</header>
+<main>
+  <section id="stage">
+    <div id="pagewrap">
+      <canvas id="pdf"></canvas>
+      <svg id="overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div id="hint"></div>
+  </section>
+  <aside id="side">
+    <div id="panel"></div>
+  </aside>
+</main>
+<script type="module" src="dist/main.js"></script>
+</body>
+</html>
