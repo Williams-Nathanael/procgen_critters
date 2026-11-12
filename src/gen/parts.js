@@ -10,6 +10,10 @@ import { add, sub, mul, lerp, dist, angOf, polar, angDiff, clamp, mix, MINW, fra
 
 const PI = Math.PI;
 
+// Extension registries: tag files may add new foot / tail-tip / crown / dorsal types here
+// (and new entries on `chassis` and `heads`) without touching this file.
+export const feet = {}, tips = {}, crowns = {}, dorsals = {};
+
 // =====================================================================
 // CHASSIS
 // =====================================================================
@@ -80,7 +84,7 @@ export const chassis = {
     if (rng.chance(0.5)) limbs.push({ p: add(base, [0, -r * 0.2]), dir: PI / 2 - rng.sign() * 0.5, s: r * 1.1, role: 'root', ground: 0, fwd: 0, side: 1, stanceDir: rng.sign() * 0.5 });
     return {
       view: 'side', rooted: true, r, path, rad,
-      head: { p: end.p, dir: end.ang, face: rng.range(-0.2, 0.2), s: r * g.headS, sym: false, radial: true },
+      head: { p: end.p, dir: -PI / 2 + angDiff(end.ang, -PI / 2) * (g.headTilt ?? 0.5), face: rng.range(-0.2, 0.2), s: r * g.headS, sym: false, radial: true },
       tail: { p: add(base, [-r * 0.3, -r * 0.4]), dir: PI + rng.range(0, 0.4), s: r * 0.7 },
       limbs, back: [backStrip(path, rad, 0.25, 0.85, 8, -1), backStrip(path, rad, 0.25, 0.85, 8, 1)],
       alt: true,
@@ -183,7 +187,7 @@ function foot(C, p, ang, s, g, small = 1) {
       }
       break;
     }
-    default: break; // 'point'
+    default: if (feet[g.foot]) feet[g.foot](C, p, ang, s, g, k); break; // 'point' draws nothing
   }
 }
 
@@ -265,7 +269,8 @@ export function tail(C, sock, g) {
   let h = sock.dir, p = sock.p;
   const pts = [p], ph = sock.wavePhase ?? rng.range(0, 6.28), cs = (g.curlSign ?? rng.sign());
   // in side view prefer curling up
-  const curl = side ? -Math.abs(g.curl) * (sock.dir > PI / 2 ? -1 : 1) * -1 : g.curl * cs;
+  // side view: g.up=true curls up and over the back, g.up=false trails along the ground
+  const curl = side ? Math.abs(g.curl) * ((g.up ?? rng.chance(0.4)) ? 1 : -1) : g.curl * cs;
   for (let i = 0; i < n; i++) {
     const u = i / n;
     h += (curl * (g.spiral ? 0.3 + 3.2 * u * u : 1) + g.wave * Math.cos(ph + u * (g.freq ?? 1) * 6.28)) / n;
@@ -286,7 +291,7 @@ export function tail(C, sock, g) {
     case 'leaf': ink.poly(leaf(e, ea, s * 2.2 * (g.tipS ?? 1), s * 1.3, rng.range(-0.1, 0.1), 0.45)); break;
     case 'fork': for (const sd of [-1, 1]) ink.poly(leaf(e, ea + sd * 0.5, s * 1.3, s * 0.4, sd * 0.2, 0.2)); break;
     case 'bud': ink.oval(polar(e, ea, s * 0.4), s * 0.75, s * 0.5, ea); break;
-    default: break;
+    default: if (tips[g.tip]) tips[g.tip](C, e, ea, s, g, curl); break;
   }
 }
 
@@ -332,7 +337,7 @@ export const heads = {
       ink.poly([t, F(g.snoutLen * 0.25, tip[1] * 0.3 + g.tipR * 0.45), F(tip[0] + g.tipR * 0.5, tip[1] + g.tipR * 1.4)], 'w');
     }
     if (g.whiskers) for (const sd of sides) for (let i = 0; i < 3; i++) {
-      const b = F(g.snoutLen * 0.8, sd * g.tipR * 0.3), a = sock.face + sd * (sym ? 1 : -1) * (0.5 + i * 0.4) * (sym ? 1 : -1) + (sym ? 0 : PI * 0);
+      const b = F(g.snoutLen * 0.8, sd * g.tipR * 0.3);
       ink.line([b, polar(b, sym ? sock.face + sd * (0.7 + i * 0.35) : sock.face + (i - 1) * 0.5 + 0.9, s * 1.3)], MINW);
     }
     return { eyes, mounts, spots: [], tip: F(tip[0], tip[1]) };
@@ -455,7 +460,7 @@ export function crown(C, hd, g) {
         for (let i = 0; i < 5; i++) ink.poly(leaf(top, m.dir + (i / 4 - 0.5) * 2.4, s * g.len * 0.5, s * g.len * 0.3, 0, 0.6));
         break;
       }
-      default: break;
+      default: if (crowns[g.type]) crowns[g.type](C, m, F, s, g); break;
     }
   }
 }
@@ -546,7 +551,7 @@ export function dorsal(C, plan, g) {
         }
         break;
       }
-      default: break;
+      default: if (dorsals[g.type]) dorsals[g.type](C, plan, st, sd, si, g, at); break;
     }
   });
 }

@@ -1,13 +1,12 @@
-// Tag definitions. A tag is a set of "gene" samplers, one per anatomical slot.
-// Each sampler returns a spec consumed by parts.js. To add a new entity type,
-// add another entry here; it automatically stacks with all the others.
+// First-pass tag definitions (one sampler per slot). Kept as the fallback/reference;
+// the real per-tag species libraries live in the sibling files.
 const PI = Math.PI;
 const P = (keys) => keys; // readability
 
 const none = () => ({ type: 'none' });
 const oval = t => Math.sqrt(Math.max(1 - (2 * t - 1) ** 2, 0));
 
-export const TAGS = {
+export const LEGACY = {
   salamander: {
     label: 'Salamanders',
     sig: { tail: 3, limbs: 2, crown: 2, head: 1 },
@@ -164,5 +163,10 @@ export const TAGS = {
   },
 };
 
-export const TAG_NAMES = Object.keys(TAGS);
-export const SLOTS = ['chassis', 'head', 'limbs', 'tail', 'dorsal', 'crown', 'surface'];
+
+const SLOT_NAMES = ['chassis', 'head', 'limbs', 'tail', 'dorsal', 'crown', 'surface'];
+// Wrap a first-pass definition as a tag with a single generic species.
+export function legacy(id, short) {
+  const d = LEGACY[id];
+  return { id, label: d.label, short: short || d.label, sig: d.sig, species: [{ name: 'generic ' + id, w: 1, genes: r => Object.fromEntries(SLOT_NAMES.map(s => [s, d[s](r.fork())])) }] };
+}

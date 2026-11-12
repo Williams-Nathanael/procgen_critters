@@ -1,7 +1,7 @@
 // Browser UI: open a PDF, draw borders, tune settings, export.
 import * as pdfjs from 'pdfjs-dist';
 import { PDFDocument } from 'pdf-lib';
-import { TAGS, TAG_NAMES } from '../gen/tags.js';
+import { TAGS, TAG_NAMES } from '../gen/tags/index.js';
 import { ringsToPath } from '../gen/core.js';
 import { DEFAULTS, placeBorder, bandOutline, borderPolyline } from '../place.js';
 import { exportPdf } from '../export.js';
