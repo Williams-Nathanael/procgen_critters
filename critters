@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Launch Procgen Critters in your browser.
+set -e
+cd "$(dirname "$(readlink -f "$0")")"
+[ -d node_modules ] || npm install
+node tools/build.mjs
+exec node tools/serve.mjs "$@"
