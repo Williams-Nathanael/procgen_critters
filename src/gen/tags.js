@@ -10,6 +10,7 @@ const oval = t => Math.sqrt(Math.max(1 - (2 * t - 1) ** 2, 0));
 export const TAGS = {
   salamander: {
     label: 'Salamanders',
+    sig: { tail: 3, limbs: 2, crown: 2, head: 1 },
     chassis: r => ({ type: 'crawler', len: r.range(40, 54), r: r.range(5.6, 7), wave: r.range(4, 9), belly: r.range(1, 1.15), neckW: 0.7, headS: 1 }),
     head: r => ({ type: 'snout', skull: r.range(1, 1.12), snoutLen: r.range(1, 1.4), tipR: r.range(0.68, 0.85), mid: 0.4, droop: 0.1, bulge: r.chance(0.5) ? r.range(0.2, 0.3) : 0, eyeX: 0.45, eyeY: 0.55, eyeR: 0.17, crownX: -0.35 }),
     limbs: r => ({ len: r.range(2.3, 3), w: 0.62, taper: 0.7, bend: r.range(0.6, 1.1), foot: 'toes', toes: r.int(4, 5), toeLen: r.range(0.75, 1), spread: 1.7, tipDot: true, lift: 0.9, stance: 0.5, arm: 0.8 }),
@@ -21,6 +22,7 @@ export const TAGS = {
 
   amphibian: {
     label: 'Amphibians',
+    sig: { limbs: 3, head: 2, crown: 1 },
     chassis: r => r.wpick([
       [3, { type: 'quad', len: r.range(20, 27), r: r.range(9, 11.5), pitch: r.range(0.4, 0.62), arch: 0.25, neckLen: 0.05, neckAng: 0.5, neckW: 0.85, headS: 0.95 }], // sitting frog/toad
       [2.5, { type: 'crawler', len: r.range(22, 30), r: r.range(8.5, 11), wave: r.range(0, 2), belly: 1.15, neckW: 0.85, headS: 0.95 }], // splayed frog from above
@@ -36,6 +38,7 @@ export const TAGS = {
 
   arthropod: {
     label: 'Crustaceans & arthropods',
+    sig: { crown: 3, limbs: 2, tail: 2, head: 1 },
     chassis: r => r.wpick([
       [2, { type: 'segmented', n: 3, len: r.range(30, 38), r: r.range(9, 12), env: t => [0.95, 1, 0.6][Math.min(Math.floor(t * 3), 2)] * (0.85 + 0.15 * oval(t)), overlap: 0.72, curve: 0, legs: (i, n) => i >= 1, legS: 0.9, legFan: 1, headS: 0.6 }], // beetle: abdomen, thorax, pronotum
       [2, { type: 'segmented', n: 2, len: r.range(18, 24), r: r.range(13, 17), env: () => 1, overlap: 1.0, curve: 0, legs: () => true, legS: 0.7, legFan: 0.9, headS: 0.3, crab: true }], // crab
@@ -53,6 +56,7 @@ export const TAGS = {
 
   fungus: {
     label: 'Fungi',
+    sig: { head: 3, crown: 2, dorsal: 2 },
     chassis: r => ({ type: 'rooted', h: r.range(20, 40), r: r.range(3.5, 6), bend: r.range(-0.25, 0.25), sway: r.range(-0.12, 0.12), flare: r.range(1.1, 1.7), taper: r.range(0.65, 0.9), headS: r.range(1.5, 2.2) }),
     head: r => r.wpick([
       [3, { type: 'cap', shape: 'dome', w: r.range(1.7, 2.6), h: r.range(1.1, 1.8), under: r.range(0.1, 0.3), ring: r.chance(0.3) }],
@@ -71,6 +75,7 @@ export const TAGS = {
 
   mammal: {
     label: 'Small mammals',
+    sig: { crown: 3, tail: 2, head: 2, dorsal: 1 },
     chassis: r => r.wpick([
       [3, { type: 'quad', len: r.range(22, 32), r: r.range(8.5, 11), pitch: r.range(-0.02, 0.15), arch: r.range(0.25, 0.6), neckLen: r.range(0, 0.25), neckAng: r.range(0.1, 0.5), neckW: 0.8, headS: r.range(0.72, 0.85) }],
       [1.2, { type: 'upright', h: r.range(14, 22), r: r.range(8, 10.5), lean: r.range(0.1, 0.5), shoulder: r.range(0.62, 0.75), headS: r.range(0.8, 0.9) }], // sitting up
@@ -94,6 +99,7 @@ export const TAGS = {
 
   dragon: {
     label: 'Small dragons',
+    sig: { dorsal: 3, crown: 3, tail: 2, head: 1 },
     chassis: r => r.wpick([
       [3, { type: 'quad', len: r.range(26, 36), r: r.range(6.5, 8.5), pitch: r.range(0, 0.3), arch: r.range(0.2, 0.6), neckLen: r.range(1.2, 2.6), neckAng: r.range(0.6, 1.2), neckW: r.range(0.42, 0.55), headS: r.range(0.55, 0.68) }],
       [1, { type: 'crawler', len: r.range(46, 60), r: r.range(5, 6.2), wave: r.range(6, 11), belly: 1.1, neckW: 0.6, headS: 0.95 }], // wyrm from above
@@ -112,6 +118,7 @@ export const TAGS = {
 
   plant: {
     label: 'Odd plants',
+    sig: { dorsal: 3, crown: 2, tail: 2, head: 1 },
     chassis: r => ({ type: 'rooted', h: r.range(28, 46), r: r.range(1.6, 2.8), bend: r.range(-0.35, 0.35), sway: r.range(-0.25, 0.25), flare: r.range(1, 1.5), taper: r.range(0.55, 0.8), headS: r.range(2.4, 3.6) }),
     head: r => r.wpick([
       [2, { type: 'flower', petals: r.int(5, 9), spread: r.range(2.2, 5.6), pl: r.range(1.5, 2.3), pw: r.range(0.6, 1), disc: r.range(0.5, 0.8) }],
@@ -133,6 +140,7 @@ export const TAGS = {
 
   jansson: {
     label: 'Jansson-ish marginalia folk',
+    sig: { head: 3, tail: 2, crown: 1 },
     chassis: r => r.wpick([
       [3, { type: 'upright', h: r.range(13, 24), r: r.range(9, 12), lean: r.range(-0.1, 0.35), shoulder: r.range(0.6, 0.8), headS: r.range(0.85, 1.05) }],
       [1.3, { type: 'upright', h: r.range(26, 40), r: r.range(5.5, 7), lean: r.range(-0.2, 0.2), shoulder: r.range(0.75, 0.95), headS: r.range(0.9, 1) }], // tall thin wanderer
