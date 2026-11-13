@@ -46,6 +46,8 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    wants them. Known: lent tails scale with the receiving chassis's tail-socket size, so e.g.
    jansson tassel tails get very long on jerboa-like mammal bodies; cap lent tail length
    relative to body radius in `parts.js` (salamander already caps its own lent tails at 3.2x).
+   Also: lent parts cannot tell which tag's head/chassis they sit on (mammal works around it
+   with a `C.mHead` flag); add a shared origin field to `plan` and head results.
    [critic on a 28-pair sheet]
 5. **M5 Placement polish** (engineer). No identical species adjacent; spacing by actual
    critter width; corners of boxes and tight curves handled; "both sides" staggered;
