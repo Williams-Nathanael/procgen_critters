@@ -48,6 +48,10 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    relative to body radius in `parts.js` (salamander already caps its own lent tails at 3.2x).
    Also: lent parts cannot tell which tag's head/chassis they sit on (mammal works around it
    with a `C.mHead` flag); add a shared origin field to `plan` and head results.
+   Also: `makeCritter` re-rolls an empty lent tail/dorsal/crown but not an empty lent `head`
+   or `limbs` (headless/legless mixes; amphibian works around it); add both to that list.
+   Fungus funnel caps (chanterelle etc.) put the crown mount in the hollow above the cap, so
+   lent crowns float; that mount belongs on the cap surface (fungus tag fix).
    [critic on a 28-pair sheet]
 5. **M5 Placement polish** (engineer). No identical species adjacent; spacing by actual
    critter width; corners of boxes and tight curves handled; "both sides" staggered;
