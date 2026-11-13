@@ -102,15 +102,15 @@ const FB = {
   // Chanterelle / trumpet: stalk flaring into a ruffled rim.
   funnel(K, rng, p, ax, s, g) {
     const W = g.w * s, H = g.h * s, w0 = g.w0 * s, F = frame(p, ax, 1, 1), wv = wob(rng, 2), ruf = g.ruffle ?? 0.1, dip = g.dip ?? 0.15;
-    const bow = x => (g.bow ?? 0) * W * (x / H) ** 2;
-    const side = spline([[0, w0], [H * 0.35, w0 * 1.05], [H * 0.62, mix(w0, W, 0.28)], [H * 0.86, W * 0.68], [H, W]], 7);
-    const top = []; const N = 18;
-    for (let i = 0; i <= N; i++) { const u = 1 - 2 * i / N; top.push(F(H - dip * H * (1 - u * u) + ruf * H * wv(u * 2.4) * (0.4 + 0.6 * Math.abs(u)) + bow(H), W * u)); }
-    K.poly(side.map(([x, w]) => F(x + 0, w + bow(x))).concat(top, side.slice().reverse().map(([x, w]) => F(x, -w + bow(x)))));
-    const rr = (g.rim ?? 0.12) * s;
-    for (const sd of [-1, 1]) dot(K, add(top[sd > 0 ? 0 : N], [0, 0]), rr);
-    if (ruf > 0.05) for (let i = 0; i < 3; i++) { const u = rng.range(-0.75, 0.75); oval(K, F(H - dip * H * (1 - u * u) + bow(H), W * u), W * rng.range(0.2, 0.3), H * ruf * rng.range(0.5, 0.9), ax + PI / 2 + rng.range(-0.3, 0.3)); }
-    return { top: F(H * (1 - dip) + bow(H), 0), w: W };
+    const bow = x => (g.bow ?? 0) * W * (x / H) ** 2, th = Math.max((g.rim ?? 0.12) * s * 1.7, 1.6);
+    // the upper surface: dished, with a ruffled margin; the margin stays thick (no feathered edge)
+    const topX = u => H - dip * H * Math.exp(-((u / 0.55) ** 2)) + ruf * H * 0.6 * wv(u * 2.4) * (0.5 + 0.5 * Math.abs(u)) - 0.04 * H * Math.abs(u) ** 6;
+    const sideOf = sd => { const xr = topX(sd); return spline([[0, w0], [H * 0.35, w0 * 1.05], [Math.min(H * 0.62, xr - th * 4), mix(w0, W, 0.28)], [Math.min(H * 0.84, xr - th * 2.2), W * 0.74], [xr - th * 0.9, W * 0.98]], 7).map(([x, w]) => [Math.min(x, topX(sd * Math.min(w / W, 1)) - th), w]); };
+    const R = sideOf(1), L = sideOf(-1), top = [], N = 18;
+    for (let i = 0; i <= N; i++) { const u = 1 - 2 * i / N; top.push(F(topX(u), W * u + bow(H))); }
+    K.poly(R.map(([x, w]) => F(x, w + bow(x))).concat(top, L.reverse().map(([x, w]) => F(x, -w + bow(x)))));
+    for (const sd of [-1, 1]) dot(K, F(topX(sd) - th * 0.6, sd * (W - th * 0.45) + bow(H)), th * 0.62);
+    return { top: F(H * (1 - dip), bow(H)), w: W };
   },
 
   // Morel: pitted cone / egg. The outline is scalloped by the ridges.
@@ -139,21 +139,23 @@ const FB = {
     return { top, w: W };
   },
 
-  // Elfin saddle: two or three upswept lobes with a dip between.
+  // Elfin saddle (Helvella): a thick, crumpled sheet draped over the stalk top, its 2-3 lobes
+  // arching up and its flaps hanging free on both sides, so daylight shows between flap and stalk.
   saddle(K, rng, p, ax, s, g) {
-    const W = g.w * s, H = g.h * s, F = frame(p, ax, 1, 1), n = g.lobes ?? 2;
-    for (let i = 0; i < n; i++) {
-      const u = n > 1 ? i / (n - 1) * 2 - 1 : 0, a = ax + u * (g.spread ?? 0.75) + rng.range(-0.1, 0.1);
-      tb(K, [F(-H * 0.1, u * W * 0.2), polar(F(0, u * W * 0.3), a, H * 0.55), polar(F(0, u * W * 0.5), a + u * 0.35, H * rng.range(0.95, 1.15))], profile([[0, W * 0.34], [0.5, W * 0.42], [0.85, W * 0.26], [1, W * 0.1]]));
-    }
-    for (const sd of [-1, 1]) tb(K, [F(H * 0.25, sd * W * 0.25), F(H * 0.15, sd * W * 0.8), F(-H * rng.range(0.15, 0.4), sd * W * rng.range(0.85, 1.05))], profile([[0, W * 0.3], [0.6, W * 0.3], [1, W * 0.12]]));
-    return { top: F(H * 0.45, 0), w: W };
+    const W = g.w * s, H = g.h * s, F = frame(p, ax, 1, 1), n = g.lobes ?? 2, th = W * (g.th ?? 0.28);
+    const pts = [[-H * rng.range(0.2, 0.5), -W * rng.range(0.85, 1.0)], [H * 0.5, -W * 0.92]];
+    if (n === 2) pts.push([H * rng.range(0.9, 1.05), -W * 0.45], [H * rng.range(0.55, 0.7), W * rng.range(-0.05, 0.05)], [H * rng.range(0.9, 1.05), W * 0.45]);
+    else pts.push([H * rng.range(0.85, 0.98), -W * 0.58], [H * 0.68, -W * 0.28], [H * rng.range(0.95, 1.08), 0], [H * 0.68, W * 0.28], [H * rng.range(0.85, 0.98), W * 0.58]);
+    pts.push([H * 0.5, W * 0.92], [-H * rng.range(0.2, 0.5), W * rng.range(0.85, 1.0)]);
+    K.poly(tube(spline(pts.map(([x, y]) => F(x, y)), 7), profile([[0, th * 0.45], [0.15, th * 0.85], [0.5, th], [0.85, th * 0.85], [1, th * 0.45]])));
+    K.poly(lathe(F, [[-0.2 * s, W * 0.16], [H * 0.4, W * 0.24], [H * 0.62, W * 0.3]]));
+    return { top: F(H * 0.75, 0), w: W };
   },
 
   // Stinkhorn head: a thimble with a little ring at the tip; `skirt` adds the veiled lady's net.
   thimble(K, rng, p, ax, s, g) {
     const W = g.w * s, H = g.h * s, F = frame(polar(p, ax, -H * 0.3), ax, 1, 1), pt = g.point ?? 0;
-    K.poly(lathe(F, [[0, W * 0.98], [H * 0.08, W * 1.06], [H * 0.45, W * mix(0.9, 0.75, pt)], [H * 0.8, W * mix(0.55, 0.35, pt)], [H * 0.93, W * mix(0.36, 0.14, pt)], [H * 0.98, W * mix(0.42, 0.1, pt)], [H, W * mix(0.4, 0.05, pt)]]));
+    K.poly(lathe(F, [[0, W * 0.94], [H * 0.06, W * 1.0], [H * 0.45, W * mix(0.97, 0.8, pt)], [H * 0.75, W * mix(0.86, 0.55, pt)], [H * 0.9, W * mix(0.62, 0.3, pt)], [H * 0.97, W * mix(0.42, 0.14, pt)], [H, W * mix(0.36, 0.06, pt)]]));
     if (g.skirt) {
       const SL = g.skirt * s, SW = (g.skirtW ?? 2.3) * W;
       const keys = [[H * 0.22, W * 0.6], [-SL * 0.08, W * 1.25], [-SL * 0.55, mix(W * 1.25, SW, 0.72)], [-SL, SW]];
@@ -188,14 +190,30 @@ const FB = {
       const q = F(pear + ry + Math.cos(a) * ry * 0.92, Math.sin(a) * W * 0.92);
       K.poly(leaf(q, ax + a, s * (g.wartL ?? 0.3) * rng.range(0.8, 1.3), s * (g.wartW ?? 0.3), 0, 0.3));
     }
-    if (dent) for (const sd of [-1, 1]) for (let i = 0; i < 2; i++) { // torn lip of the crater
+    if (dent && !g.smooth) for (const sd of [-1, 1]) for (let i = 0; i < 2; i++) { // torn lip of the crater
       const a = sd * (0.34 + i * 0.22);
       K.poly(leaf(F(pear + ry + Math.cos(a) * ry * 0.88, Math.sin(a) * W * 0.88), ax + a * 0.5, s * rng.range(0.3, 0.5), s * 0.3, 0, 0.3));
     }
     if (g.beak) K.poly(lathe(frame(F(H * (1 - dent) - s * 0.08, 0), ax, 1, 1), [[0, s * 0.3], [g.beak * s * 0.6, s * 0.15], [g.beak * s, s * 0.09]], 4));
+    if (g.roots) for (let i = 0; i < g.roots; i++) { // mycelial cords splaying from a pinched base
+      const u = g.roots > 1 ? i / (g.roots - 1) * 2 - 1 : 0, b = F(pear * 0.5 + s * 0.1, u * W * 0.25), e = F(-s * 0.12, u * W * rng.range(0.75, 1.05));
+      K.poly(tube(spline([b, lerp(b, e, 0.5), e], 4), profile([[0, s * 0.22], [1, s * 0.09]])));
+    }
     const spots = [];
     for (let i = 0; i < 7; i++) { const a = rng.range(-1.6, 1.6), d = rng.range(0.2, 0.7); spots.push({ p: F(pear + ry + Math.cos(a) * ry * d, Math.sin(a) * W * d), r: s * rng.range(0.08, 0.16) }); }
     return { top: F(H * (1 - dent * 0.8), 0), w: W, c, spots };
+  },
+
+  // Truffle tuber: an irregular knobbly lump whose outline is crenellated by pyramidal warts.
+  tuber(K, rng, p, ax, s, g) {
+    const W = g.w * s, H = g.h * s, F = frame(p, ax, 1, 1), c = F(H * 0.5, 0), w = wob(rng, 2), n = g.warts ?? 26, wh = (g.wh ?? 0.07), out = [];
+    const ph = rng.range(0, 1);
+    for (let i = 0; i < n * 2; i++) {
+      const a = (i + ph) / (n * 2) * TAU, k = (1 + (g.lumpy ?? 0.12) * w(a)) * (i % 2 ? 1 - wh : 1 + wh * rng.range(0.6, 1.3));
+      out.push(F(H * 0.5 + Math.cos(a) * H * 0.5 * k, Math.sin(a) * W * k));
+    }
+    K.poly(out);
+    return { top: F(H, 0), w: W, c };
   },
 
   // Earthstar: spore sac with a beak, sitting on pointed rays.
@@ -293,7 +311,7 @@ const FB = {
         pts.push(q);
         const hh = (q[0] - p[0]) * Math.cos(ax) + (q[1] - p[1]) * Math.sin(ax); if (hh > bh) { bh = hh; best = q; }
       }
-      K.poly(tube(pts, profile([[0, g.wid * s], [0.5, g.wid * s * 0.8], [1, Math.max(g.wid * s * 0.22, 0.45)]])));
+      K.poly(tube(pts, profile([[0, g.wid * s], [0.5, g.wid * s * 0.85], [1, Math.max(g.wid * s * (g.tipW ?? 0.22), 0.45)]])));
     }
     dot(K, p, g.wid * s * 1.3);
     return { top: best, w: g.span * s };
@@ -331,15 +349,37 @@ const FB = {
     return { top: F(st + H - (g.lid ? -g.lid * H : d), 0), w: W };
   },
 
-  // Cauliflower fungus: a cloud of small curled lobes.
+  // Vase / trumpet / bowl seen in section: a hollow body whose cavity shows as a notch, so it reads
+  // as a cup from the outline alone. flare < 1 gives a round bowl, > 1 a trumpet. Eggs = bird's nest.
+  vase(K, rng, p, ax0, s, g) {
+    const ax = ax0 + (g.tilt ?? 0), W = g.w * s, H = g.h * s, w0 = Math.max(g.w0 * s, 1), th = Math.max((g.thick ?? 0.3) * W, 1.4);
+    const d = (g.lid ? 0.04 : g.depth ?? 0.6) * H, fl = H - d, st = (g.stalk ?? 0) * s, F = frame(polar(p, ax, st), ax, 1, 1), wv = g.wavy ? wob(rng, 2) : null, fe = g.flare ?? 1, inc = g.incurve ?? 0, lip = (g.lip ?? 0) * s;
+    const outer = x => { const t = clamp(x / H, 0, 1); return mix(w0, W, t ** fe) * (1 - inc * t ** 10) + lip * t ** 12; };
+    const rimOff = sd => (wv ? g.wavy * H * wv(sd * 1.3) : 0) + (g.asym ?? 0) * H * sd;
+    const dx = (sd, x) => rimOff(sd) * clamp(x / H, 0, 1) ** 3;
+    const wi = x => Math.max(outer(x) - th * (1 - 0.25 * ((x - fl) / Math.max(d, 1e-6))), 0.4) * Math.min(1, Math.sqrt(Math.max(x - fl, 0) / Math.max(d * 0.3, 1e-6)));
+    const N = 14, R = [], Ri = [], Li = [], L = [];
+    for (let i = 0; i <= N; i++) { const x = H * i / N; R.push(F(x + dx(1, x), outer(x))); L.push(F(x + dx(-1, x), -outer(x))); }
+    for (let i = 0; i <= N; i++) { const x = mix(H, fl, i / N); Ri.push(F(x + dx(1, x), wi(x))); Li.push(F(x + dx(-1, x), -wi(x))); }
+    K.poly(R.concat(Ri, Li.reverse(), L.reverse()));
+    for (const sd of [-1, 1]) { const rw = (outer(H) - wi(H)) / 2; dot(K, F(H + rimOff(sd) - rw * 0.55, sd * (outer(H) - rw)), rw * 0.85); }
+    if (st > 0) { const sw = (g.stalkW ?? 0.3) * s; K.poly(lathe(F, [[-st - 0.1 * s, sw * 1.3], [-st * 0.5, sw], [0, sw * 1.15], [H * 0.2, outer(H * 0.2) * 0.9]])); }
+    if (g.eggs && !g.lid) {
+      const n = g.eggs, er = (g.egg ?? 0.28) * s, room = Math.max(wi(fl + er * 1.6) - er * 0.9, 0);
+      for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) * 2 - 1 : 0, x = fl + er * (0.75 + 0.5 * (1 - u * u)) + (i % 2 ? er * 0.5 : 0); oval(K, F(x, u * room), er * 0.9, er, ax); }
+    }
+    return { top: F(fl, 0), w: W, c: F(H * 0.5, 0) };
+  },
+
+  // Cauliflower fungus: a mass of flat, curled ribbon lobes; the ribbons make the outline frilly.
   ruffle(K, rng, p, ax, s, g) {
-    const W = g.w * s, H = g.h * s, c = polar(p, ax, H * 0.5), F = frame(c, ax, 1, 1), n = g.n ?? 16;
-    K.poly(blob(c, H * 0.44, W * 0.84, rng, 0.05, 3, ax));
+    const W = g.w * s, H = g.h * s, c = polar(p, ax, H * 0.48), F = frame(c, ax, 1, 1), n = g.n ?? 16;
+    K.poly(blob(c, H * 0.36, W * 0.66, rng, 0.06, 3, ax));
     for (let i = 0; i < n; i++) {
-      const a = mix(-2.5, 2.5, (i + rng.range(0.15, 0.85)) / n), rl = s * rng.range(0.3, 0.5) * (g.lobe ?? 1);
-      const q = F(Math.cos(a) * H * 0.44, Math.sin(a) * W * 0.86);
-      oval(K, q, rl, rl * rng.range(0.5, 0.75), ax + a + rng.range(-0.9, 0.9));
-      if (rng.chance(0.5)) oval(K, polar(q, ax + a, rl * 0.5), rl * 0.6, rl * 0.32, ax + a + PI / 2 + rng.range(-0.5, 0.5));
+      const a = mix(-2.35, 2.35, (i + rng.range(0.15, 0.85)) / n), q = F(Math.cos(a) * H * 0.3, Math.sin(a) * W * 0.58);
+      const len = s * rng.range(0.75, 1.15) * (g.lobe ?? 1), out = ax + a * rng.range(0.75, 1.0) + rng.range(-0.25, 0.25);
+      const wd = s * rng.range(0.2, 0.28), bd = rng.sign() * rng.range(0.25, 0.5), m = polar(polar(q, out, len * 0.5), out + PI / 2, bd * len * 0.4);
+      K.poly(tube(spline([q, m, polar(q, out + bd * 0.9, len)], 5), profile([[0, wd * 0.8], [0.5, wd * 1.15], [1, wd * 0.95]])));
     }
     return { top: polar(p, ax, H), w: W, c };
   },
@@ -360,18 +400,21 @@ const FB = {
   },
 };
 
-// A shelf (bracket) projecting sideways from p. sd = +1 right, -1 left.
+// A shelf (bracket) projecting sideways from p. sd = +1 right, -1 left. The margin keeps a
+// rounded thickness (rim * th, at least 1 unit) so a thin shelf never ends in a hairline.
 function shelf(K, rng, p, sd, len, th, o = {}) {
-  const N = 14, top = [], bot = [], wv = o.wavy ? wob(rng, 2) : null, k = o.k ?? 1.6, dr = (o.droop ?? 0) * len;
+  const N = 18, top = [], bot = [], wv = o.wavy ? wob(rng, 2) : null, k = o.k ?? 1.6, dr = (o.droop ?? 0) * len;
+  const tm = Math.max((o.rim ?? 0.16) * th, 1.0), up = th * (o.up ?? 0.6), dn = th * (o.down ?? 0.4);
   for (let i = 0; i <= N; i++) {
-    const u = mix(-0.2, 1, i / N), uu = Math.max(u, 0), x = p[0] + sd * len * u;
-    const rip = (wv ? o.wavy * th * wv(uu * 3.2) * uu : 0) + (o.steps ? 0.09 * th * Math.sin(o.steps * PI * uu) : 0);
-    top.push([x, p[1] - th * (o.up ?? 0.6) * (1 - uu ** k) + dr * uu * uu + rip]);
-    bot.push([x, p[1] + th * (o.down ?? 0.4) * (1 - uu) ** (o.kb ?? 1.2) + dr * uu * uu + rip * 0.5]);
+    const u = mix(-0.25, 1, i / N), uu = Math.max(u, 0), x = p[0] + sd * len * u;
+    const rip = (wv ? o.wavy * th * wv(uu * 3.2) * uu : 0) + (o.steps ? 0.07 * th * Math.sin(o.steps * PI * uu) * (1 - uu * 0.5) : 0);
+    const y = p[1] + dr * uu * uu;
+    top.push([x, y - tm - Math.max(up - tm, 0) * (1 - uu ** k) + rip]);
+    bot.push([x, y + tm * 0.8 + Math.max(dn - tm * 0.8, 0) * (1 - uu) ** (o.kb ?? 1.2) + rip * 0.4]);
   }
+  const tN = top[N], bN = bot[N], rr = (bN[1] - tN[1]) / 2;
   K.poly(top.concat(bot.reverse()));
-  const rr = Math.max((o.rim ?? 0.16) * th, 0.6);
-  dot(K, [p[0] + sd * (len - rr * 0.7), p[1] + dr], rr);
+  dot(K, [tN[0] - sd * rr * 0.55, (tN[1] + bN[1]) / 2], rr);
 }
 
 // =====================================================================
@@ -398,7 +441,13 @@ const FORMS = {
       for (let i = 0; i <= 20; i++) { const a = PI + i / 20 * PI; pts.push([sub.x + Math.cos(a) * sub.w, Math.sin(a) * sub.h * (1 + 0.18 * w(a * 2))]); }
       K.poly(pts); y0 = -sub.h * 0.55;
     }
-    if (sub.grass) for (const [x, n, h] of sub.grass) grass(K, rng, x, n, h);
+    // grass tufts snap against the nearest stalk base, so they never float as separate scraps
+    if (sub.grass) for (const [x, n, h] of sub.grass) {
+      let q = g.stems[0];
+      for (const t of g.stems) if (Math.abs(t.x - x) < Math.abs(q.x - x)) q = t;
+      const sd = x >= q.x ? 1 : -1, rw = q.h > 1 ? q.r * (q.flare ?? 1) * plump : q.head?.form === 'ball' ? q.head.w * q.s * 0.8 : (q.volva?.w ?? q.r * 2);
+      grass(K, rng, q.x + sd * (rw + 0.6), n, h);
+    }
     let main = null;
     g.stems.forEach((st, i) => {
       const yb = st.y ?? (y0 * (st.onSub ?? 1)), base = [st.x, yb], h = st.h, r = st.r * plump;
@@ -410,6 +459,7 @@ const FORMS = {
         K.poly(tube(path, rad));
         e = pathAt(path, 1);
         if (st.bulb) oval(K, [st.x, yb - st.bulb.h * 0.75], st.bulb.w, st.bulb.h);
+        if (st.ribs) for (let k = 0; k < 6; k++) for (const sd of [-1, 1]) { const t = mix(0.08, 0.8, (k + rng.range(0.1, 0.9)) / 6), q = pathAt(path, t); oval(K, polar(q.p, q.ang + sd * PI / 2, rad(t) * 0.9), rad(t) * 0.5, rad(t) * 0.16, q.ang + rng.range(-0.2, 0.2)); }
         if (st.volva) {
           const v = st.volva, Fv = frame(base, UP, 1, 1);
           K.poly(lathe(Fv, [[0, v.w * 0.62], [v.h * 0.3, v.w], [v.h * 0.8, v.w * 0.94], [v.h, v.w * 1.04]]));
@@ -423,6 +473,7 @@ const FORMS = {
       } else {
         e = { p: base, ang: UP + st.lean };
         if (st.volva) { const v = st.volva; oval(K, [st.x, yb - v.h * 0.55], v.w, v.h * 0.7); for (const sd of [-1, 1]) K.poly(leaf([st.x + sd * v.w * 0.7, yb - v.h * 0.8], UP + sd * 0.5, v.h * 0.7, v.w * 0.6, 0, 0.3)); }
+        if (st.egg) { const v = st.egg; oval(K, [st.x, -v.h * 0.5], v.w, v.h * 0.5); for (const sd of [-1, 1]) K.poly(leaf([st.x + sd * v.w * 0.6, -v.h * 0.8], UP + sd * rng.range(0.4, 0.8), v.h * rng.range(0.35, 0.5), v.w * 0.55, 0, 0.3)); }
       }
       const ax = (h > 1 ? toward(UP, e.ang, st.tilt ?? 0.6) : e.ang) + (st.tiltA ?? 0);
       if (i > 0 || g.selfHead) FB[st.head.form](K, rng, e.p, ax, st.s, st.head);
@@ -670,7 +721,7 @@ function troop(r, n, o) {
   for (const s of out) s.x -= x / 2;
   return out.sort((a, b) => b.h - a.h);
 }
-const stub = (r, o = {}) => ({ form: 'wood', kind: 'stub', w: r.range(5, 7), h: r.range(34, 46), lean: r.range(-0.22, 0.22), flare: r.range(0.3, 0.6), jag: r.range(0.9, 1.7), teeth: r.int(3, 5), roots: r.chance(0.5), snag: r.chance(0.35) ? r.range(0.5, 0.8) : 0, sd: r.sign(), R: 6, ...o });
+const stub = (r, o = {}) => ({ form: 'wood', kind: 'stub', w: r.range(4.6, 6), h: r.range(30, 40), lean: r.range(-0.15, 0.15), flare: r.range(0.5, 0.9), jag: r.range(0.6, 1.3), teeth: r.int(2, 4), roots: r.chance(0.5), snag: r.chance(0.25) ? r.range(0.5, 0.8) : 0, sd: r.sign(), R: 6, ...o });
 
 // ---- cap genes ----
 const CAP = {
@@ -679,14 +730,14 @@ const CAP = {
   button: r => ({ form: 'cap', span: 1.2, w: r.range(1.05, 1.3), h: r.range(1.3, 1.6), a: 2.2, b: 0.45, under: 0.02, rim: 0.3, sink: 0.25 }),
   parasol: r => ({ form: 'cap', span: 3.2, w: r.range(2.9, 3.6), h: r.range(0.5, 0.75), a: 2.4, b: 0.62, umbo: r.range(0.3, 0.45), umboW: 0.15, under: 0.06, rim: 0.08, curl: r.range(-0.12, 0.1) }),
   drumstick: r => ({ form: 'cap', span: 1.1, w: r.range(1.0, 1.2), h: r.range(1.5, 1.9), a: 2.2, b: 0.42, under: 0.02, rim: 0.25, sink: 0.4 }),
-  bun: r => ({ form: 'cap', span: 2.2, w: r.range(1.9, 2.5), h: r.range(1.15, 1.5), a: 2.3, b: 0.5, under: -0.14, rim: 0.3, thick: 0.3 }),
-  wavy: r => ({ form: 'cap', span: 2.7, w: r.range(2.4, 3.0), h: r.range(0.75, 1.0), a: 3, b: 0.5, under: 0.22, rim: 0.14, wavy: r.range(0.3, 0.5), curl: r.range(0.15, 0.4), skew: r.range(-0.12, 0.12), tiltRim: r.range(-0.12, 0.12) }),
-  witch: r => ({ form: 'cap', span: 1.5, w: r.range(1.25, 1.75), h: r.range(1.9, 2.6), a: 1, b: r.range(1.05, 1.3), under: 0.04, rim: 0.07, thick: 0.1, skew: r.range(-0.1, 0.1) }),
+  bun: r => ({ form: 'cap', span: 2.2, w: r.range(1.9, 2.5), h: r.range(1.15, 1.5), a: 2.3, b: 0.5, under: -0.14, rim: 0.2, thick: 0.3 }),
+  wavy: r => ({ form: 'cap', span: 2.5, w: r.range(2.2, 2.7), h: r.range(1.0, 1.3), a: 2.6, b: 0.55, under: 0.1, rim: 0.2, thick: 0.34, wavy: r.range(0.15, 0.3), curl: r.range(0.05, 0.25), skew: r.range(-0.12, 0.12), tiltRim: r.range(-0.1, 0.1) }),
+  witch: r => ({ form: 'cap', span: 1.5, w: r.range(1.35, 1.7), h: r.range(1.9, 2.4), a: 1.15, b: r.range(0.72, 0.85), under: r.range(0.12, 0.2), rim: 0.12, thick: 0.3, skew: r.range(-0.12, 0.12), wavy: r.range(0.08, 0.16) }),
   bell: r => ({ form: 'cap', span: 1.05, w: r.range(0.9, 1.2), h: r.range(1.1, 1.5), a: 2, b: 0.34, umbo: 0.14, umboW: 0.25, under: 0.04, rim: 0.07, thick: 0.1 }),
   liberty: r => ({ form: 'cap', span: 0.95, w: r.range(0.8, 1.05), h: r.range(1.2, 1.6), a: 1.5, b: 0.62, umbo: r.range(0.22, 0.34), umboW: 0.11, under: 0.03, rim: 0.06, thick: 0.1 }),
   honey: r => ({ form: 'cap', span: 1.5, w: r.range(1.3, 1.75), h: r.range(0.7, 0.95), a: 2.3, b: 0.5, umbo: r.range(0.1, 0.25), umboW: 0.2, under: 0.12, rim: 0.1 }),
   penny: r => ({ form: 'cap', span: 1.6, w: r.range(1.4, 1.9), h: r.range(0.6, 0.9), a: 2.4, b: 0.5, under: 0.14, rim: 0.1, curl: r.range(-0.05, 0.3) }),
-  dished: r => ({ form: 'cap', span: 2.3, w: r.range(2.0, 2.6), h: r.range(0.55, 0.7), a: 3, b: 0.5, dip: r.range(0.5, 0.8), curl: r.range(0.45, 0.8), under: 0, rim: 0.14, thick: 0.34, wavy: r.range(0, 0.2) }),
+  dished: r => ({ form: 'cap', span: 2.3, w: r.range(2.0, 2.5), h: r.range(0.6, 0.8), a: 3, b: 0.5, dip: r.range(0.45, 0.7), curl: r.range(0.15, 0.35), under: -r.range(0.9, 1.3), rim: 0.14, thick: 0.4, wavy: r.range(0, 0.15) }),
   hedgehog: r => ({ form: 'cap', span: 2.4, w: r.range(2.1, 2.7), h: r.range(0.8, 1.05), a: 2.6, b: 0.5, under: 0.1, rim: 0.2, wavy: r.range(0.2, 0.4), skew: r.range(-0.2, 0.2), teeth: r.int(9, 12), thick: 0.3 }),
   hoof: r => ({ form: 'cap', span: 1.8, w: r.range(1.6, 2.1), h: r.range(1.3, 1.8), a: 1.7, b: 0.6, under: -0.03, rim: 0.16, steps: r.int(3, 5), thick: 0.4 }),
   fan: r => ({ form: 'cap', span: 1.8, w: r.range(1.6, 2.1), h: r.range(0.45, 0.65), a: 2.6, b: 0.5, under: 0.1, rim: 0.12, wavy: r.range(0.2, 0.45), curl: r.range(0.1, 0.4), thick: 0.2 }),
@@ -698,8 +749,8 @@ const CAP = {
 const species = [
   // ---------------- agarics (stem and cap) ----------------
   { name: 'fly agaric', w: 3, genes: r => {
-    const open = r.chance(0.45), s = r.range(8, 9.5), rr = r.range(4, 5);
-    const stems = [st(0, r.range(26, 36), rr, { lean: r.range(-0.12, 0.12), flare: 1.55, rings: r.int(2, 3), bulb: { w: rr * 1.9, h: rr * 1.5 }, ring: { t: r.range(0.68, 0.78), w: rr * r.range(1.8, 2.3), len: rr * r.range(1.1, 1.6) }, s, head: open ? CAP.flyOpen(r) : CAP.dome(r) })];
+    const open = r.chance(0.3), s = r.range(8, 9.5), rr = r.range(3.8, 4.6);
+    const stems = [st(0, r.range(30, 40), rr, { lean: r.range(-0.12, 0.12), flare: 1.45, rings: r.int(1, 2), bulb: { w: rr * 1.75, h: rr * 1.4 }, ring: { t: r.range(0.72, 0.8), w: rr * r.range(1.35, 1.6), len: rr * r.range(1.5, 2.1) }, s, head: open ? CAP.flyOpen(r) : CAP.dome(r) })];
     const nk = r.wpick([[2, 1], [2, 0], [1, 2]]);
     for (let i = 0; i < nk; i++) { const sd = i ? -1 : r.sign(); stems.push(st(sd * r.range(15, 21), r.range(7, 13), 3.4, { flare: 1.5, bulb: { w: 5.4, h: 4 }, lean: sd * 0.1, s: r.range(5.2, 6.4), head: CAP.button(r) })); }
     return stemsSp(r, stems, { spots: true, sub: { grass: r.chance(0.4) ? [[r.range(-26, -20), 3, 9]] : null } });
@@ -724,9 +775,9 @@ const species = [
     return stemsSp(r, stems, { R: 5, stem: r.range(1.2, 2), stemW: 0.1, sub: { kind: 'mound', x: 0, w: r.range(7, 10), h: 3 } });
   } },
   { name: 'honey fungus tuft', w: 2.2, genes: r => {
-    const n = r.int(5, 8);
-    const stems = tuft(r, n, { h: r.range(28, 36), drop: 0.5, gap: 2.4, splay: r.range(0.42, 0.6), r: r.range(1.9, 2.4), s: r.range(6.2, 7.4), head: CAP.honey, arc: 0.25, each: rr => ({ ring: { t: 0.78, w: 3.6, len: 2.4 } }) });
-    return stemsSp(r, stems, { R: 6, sub: { kind: 'mound', x: 0, w: r.range(10, 13), h: 4 } });
+    const n = r.int(4, 7);
+    const stems = tuft(r, n, { h: r.range(28, 36), drop: 0.5, gap: 2.2, splay: r.range(0.45, 0.62), r: r.range(1.4, 1.75), s: r.range(6.2, 7.4), head: CAP.honey, arc: 0.25, each: rr => ({ ring: { t: 0.8, w: 2.8, len: 2.2 } }) });
+    return stemsSp(r, stems, { R: 6, sub: { kind: 'mound', x: 0, w: r.range(7, 9), h: 3 } });
   } },
   { name: 'penny bun', w: 2.5, genes: r => {
     const s = r.range(9, 10.5), rr = r.range(6.2, 7.6);
@@ -736,12 +787,12 @@ const species = [
   } },
   { name: 'wood blewit', w: 1.5, genes: r => {
     const s = r.range(9, 10.5), rr = r.range(4.8, 5.8);
-    const stems = [st(0, r.range(14, 20), rr, { lean: r.range(-0.2, 0.2), flare: 1.6, taper: 0.9, s, head: CAP.wavy(r), tiltA: r.range(-0.15, 0.15) })];
+    const stems = [st(0, r.range(17, 24), rr, { lean: r.range(-0.15, 0.15), flare: 1.6, taper: 0.85, s, head: CAP.wavy(r), tiltA: r.range(-0.12, 0.12) })];
     if (r.chance(0.45)) { const sd = r.sign(); stems.push(st(sd * r.range(20, 25), r.range(7, 11), 3.6, { flare: 1.5, lean: sd * 0.2, s: r.range(5.5, 6.5), head: CAP.wavy(r), tiltA: sd * 0.25 })); }
     return stemsSp(r, stems, { stemW: 0.3, stem: 0.55 });
   } },
   { name: 'witch\'s hat', w: 1.6, genes: r => {
-    const stems = troop(r, r.int(1, 3), { h: r.range(26, 34), gap: 15, r: r.range(2, 2.6), lean: 0.14, sway: 0.08, s: r.range(7.6, 8.8), head: CAP.witch });
+    const stems = troop(r, r.int(1, 3), { h: r.range(24, 32), gap: 15, r: r.range(2.5, 3.1), lean: 0.14, sway: 0.1, s: r.range(7.6, 8.8), head: CAP.witch, flare: 1.05 });
     return stemsSp(r, stems, { sub: { grass: [[r.range(-14, 14), r.int(2, 4), 10]] } });
   } },
   { name: 'liberty caps', w: 1.8, genes: r => {
@@ -773,9 +824,9 @@ const species = [
     return stemsSp(r, stems, { body: { x: 0, cy: s * 1.7, rx: s * 1.5, ry: s * 1.6, hy: 0.75 }, R: 6, stem: 0.05 });
   } },
   { name: 'horn of plenty', w: 1.6, genes: r => {
-    const fn = () => ({ form: 'funnel', span: 1.9, w: r.range(1.7, 2.2), h: r.range(3.8, 4.8), w0: r.range(0.32, 0.42), ruffle: r.range(0.05, 0.09), dip: r.range(0.16, 0.24), rim: 0.24, bow: r.range(-0.2, 0.2), bulb: 0.6, seat: 0.5, lend: 0.6 });
+    const fn = () => ({ form: 'vase', span: 1.7, w: r.range(1.35, 1.8), h: r.range(3.9, 4.9), w0: r.range(0.3, 0.38), flare: r.range(1.8, 2.3), thick: r.range(0.5, 0.6), depth: r.range(0.1, 0.16), wavy: r.range(0.04, 0.08), lip: r.range(0.2, 0.4), asym: r.range(-0.05, 0.05), bulb: 0.6, seat: 0.5, lend: 0.6 });
     const s = r.range(7.5, 8.8), n = r.int(2, 4), stems = [];
-    for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) * 2 - 1 : 0; stems.push(st(u * 5 + r.range(-1, 1), 0, 3, { lean: u * r.range(0.3, 0.5) + r.range(-0.08, 0.08), s: s * (i === 0 ? 1 : r.range(0.6, 0.95)), head: fn() })); }
+    for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) * 2 - 1 : 0; stems.push(st(u * 6 + r.range(-1, 1), 0, 3, { lean: u * r.range(0.14, 0.3) + r.range(-0.06, 0.06), s: s * (i === 0 ? 1 : r.range(0.6, 0.9)), head: fn() })); }
     stems.sort((a, b) => b.s - a.s);
     return stemsSp(r, stems, { body: { x: 0, cy: s * 2.2, rx: s * 1.5, ry: s * 2, hy: 0.6 }, R: 5.5, stem: 0.05 });
   } },
@@ -794,15 +845,15 @@ const species = [
     return stemsSp(r, stems, { stem: 0.4, stemW: 0.3 });
   } },
   { name: 'elfin saddle', w: 1.4, genes: r => {
-    const sa = () => ({ form: 'saddle', span: 1.4, w: r.range(1.3, 1.7), h: r.range(1.5, 2.0), lobes: r.wpick([[3, 2], [1, 3]]), spread: r.range(0.6, 0.9) });
-    const stems = troop(r, r.int(1, 2), { h: r.range(26, 34), gap: 20, r: r.range(2.6, 3.2), lean: 0.12, sway: 0.08, s: r.range(7.5, 8.6), head: sa, flare: 1.5 });
+    const sa = () => ({ form: 'saddle', span: 1.8, w: r.range(1.7, 2.1), h: r.range(1.2, 1.6), lobes: r.wpick([[3, 2], [1, 3]]), th: r.range(0.2, 0.26) });
+    const stems = troop(r, r.wpick([[3, 1], [1, 2]]), { h: r.range(15, 22), gap: 26, r: r.range(3.2, 3.8), lean: 0.1, sway: 0.06, s: r.range(7.5, 8.6), head: sa, flare: 1.3, each: () => ({ ribs: true, taper: 0.8 }) });
     return stemsSp(r, stems, {});
   } },
 
   // ---------------- stinkhorns ----------------
   { name: 'stinkhorn', w: 2.2, genes: r => {
     const dog = r.chance(0.3), s = dog ? r.range(5.6, 6.4) : r.range(7.5, 8.6), rr = dog ? r.range(2.2, 2.6) : r.range(3.6, 4.3), lean = r.range(-0.3, 0.3);
-    const stems = [st(0, dog ? r.range(36, 44) : r.range(38, 48), rr, { lean, arc: r.range(-0.1, 0.25), flare: 1.0, taper: 0.82, volva: { w: rr * r.range(1.8, 2.2), h: rr * r.range(2, 2.6) }, s, head: { form: 'thimble', span: 0.95, w: r.range(0.85, 1.0), h: dog ? r.range(2.2, 2.8) : r.range(1.9, 2.4), point: dog ? 0.9 : 0, seat: 1.6, lend: 0.9 }, tilt: 1 })];
+    const stems = [st(0, dog ? r.range(36, 44) : r.range(38, 48), rr, { lean, arc: r.range(-0.1, 0.25), flare: 1.0, taper: 0.82, volva: { w: rr * r.range(1.8, 2.2), h: rr * r.range(2, 2.6) }, s, head: { form: 'thimble', span: 0.75, w: dog ? rr * r.range(1.05, 1.2) / s : rr * r.range(1.25, 1.45) / s, h: dog ? r.range(1.9, 2.4) : r.range(1.7, 2.1), point: dog ? 0.8 : 0, seat: 1.6, lend: 0.9 }, tilt: 1 })];
     if (r.chance(0.4)) { const sd = lean > 0 ? -1 : 1; stems.push(st(sd * r.range(13, 17), 0, 3, { s: 1, head: { form: 'ball', span: 1, w: r.range(5, 6.5), h: r.range(8, 10), lumpy: 0.04 } })); } // an unhatched egg
     return stemsSp(r, stems, { stem: 1.2, stemW: 0.22 });
   } },
@@ -812,9 +863,10 @@ const species = [
     return stemsSp(r, stems, { stem: 1.1, stemW: 0.22 });
   } },
   { name: 'devil\'s fingers', w: 1.8, genes: r => {
-    const s = r.range(8, 9.5), ar = { form: 'arms', span: 2.2, n: r.int(4, 6), len: r.range(4.2, 5.4), wid: r.range(0.34, 0.44), fan: r.range(0.85, 1.25), curl: r.range(1.3, 2.1), bulb: 0.85, seat: 0.9, lend: 0.6 };
-    const stems = [st(0, 0, 4, { lean: r.range(-0.1, 0.1), y: -s * 0.75, volva: { w: s * 0.85, h: s * 1.0 }, s, head: ar })];
-    return stemsSp(r, stems, { body: { x: 0, cy: s * 1.1, rx: s * 1.0, ry: s * 1.0 }, R: 6, small: { ...ar, n: 3, len: 2.6, span: 1.5 }, stem: 0.1 });
+    const s = r.range(8, 9.5), ar = { form: 'arms', span: 2.2, n: r.int(4, 6), len: r.range(3.0, 3.9), wid: r.range(0.36, 0.44), tipW: 0.5, fan: r.range(1.3, 1.7), curl: r.range(1.6, 2.4), bulb: 0.85, seat: 0.9, lend: 0.6 };
+    const eh = s * r.range(1.3, 1.6);
+    const stems = [st(0, 0, 4, { y: -eh * 0.82, egg: { w: s * r.range(0.75, 0.9), h: eh }, s, head: ar })];
+    return stemsSp(r, stems, { body: { x: 0, cy: s * 1.4, rx: s * 1.0, ry: s * 1.0 }, R: 6, small: { ...ar, n: 3, len: 2.4, span: 1.5 }, stem: 0.1 });
   } },
   { name: 'lattice cage', w: 1.6, genes: r => {
     const s = r.range(9, 10.5), cg = { form: 'cage', span: 1.9, w: r.range(1.8, 2.2), h: r.range(3.6, 4.4), cells: r.int(6, 7), bulb: 0, lend: 0.62 };
@@ -830,7 +882,7 @@ const species = [
     for (let i = 0; i < nk; i++) { const sd = i % 2 ? -1 : 1; stems.push(st(sd * (s * 1.6 + i * 3 + r.range(0, 4)), 0, 3, { lean: sd * r.range(0.05, 0.3), s: s * r.range(0.45, 0.78), head: pb() })); }
     return stemsSp(r, stems, { body: { x: 0, cy: s * 2, rx: s * 1.5, ry: s * 1.5 }, R: 7, spots: true, stem: r.range(0.1, 0.5), tipS: 1.1 });
   } },
-  { name: 'giant puffball', w: 1.3, genes: r => {
+  { name: 'giant puffball', w: 1, genes: r => {
     const s = 10, w = r.range(2.6, 3.3), h = r.range(3.9, 4.8);
     const stems = [st(0, 0, 4, { lean: r.range(-0.08, 0.08), s, head: { form: 'ball', span: 2.9, w, h, lumpy: r.range(0.05, 0.09), lf: 2, bulb: 0, lend: 0.5 } })];
     if (r.chance(0.6)) { const sd = r.sign(); stems.push(st(sd * (w * s + r.range(4, 8)), 0, 3, { s: 10, head: { form: 'ball', span: 1, w: r.range(0.9, 1.3), h: r.range(1.5, 2.1), lumpy: 0.05 } })); }
@@ -842,33 +894,35 @@ const species = [
     const stems = [st(0, 0, 4, { y: -s * (0.5 + arch * 1.5), s, head: es })];
     return stemsSp(r, stems, { body: { x: 0, cy: s * (1.5 + arch * 1.5), rx: s * 1.3, ry: s * 1.1 }, R: 6, stem: 0.15, hw: 0.8 });
   } },
-  { name: 'earthball', w: 1.2, genes: r => {
-    const s = r.range(9, 10.5), eb = { form: 'ball', span: 2.1, w: r.range(1.9, 2.4), h: r.range(2.6, 3.2), lumpy: r.range(0.05, 0.08), dent: r.range(0.26, 0.4), warts: r.int(10, 14), wartL: 0.2, wartW: 0.4, bulb: 0, lend: 0.62 };
-    const stems = [st(0, 0, 4, { lean: r.range(-0.15, 0.15), s, head: eb })];
-    if (r.chance(0.5)) { const sd = r.sign(); stems.push(st(sd * s * r.range(2.6, 3.1), 0, 3, { lean: sd * 0.2, s: s * r.range(0.45, 0.6), head: { ...eb, dent: 0 } })); }
+  { name: 'earthball', w: 1.1, genes: r => {
+    const s = r.range(9, 10.5), old = r.chance(0.4), eb = { form: 'ball', span: 2, w: r.range(1.8, 2.2), h: r.range(2.4, 2.9), pear: r.range(0.35, 0.55), foot: 0.32, lumpy: r.range(0.05, 0.08), lf: 4, dent: old ? r.range(0.25, 0.35) : 0, warts: r.int(7, 10), wartL: 0.16, wartW: 0.36, roots: r.int(3, 5), bulb: 0, lend: 0.62 };
+    const stems = [st(0, 0, 4, { lean: r.range(-0.12, 0.12), s, head: eb })];
+    if (r.chance(0.5)) { const sd = r.sign(); stems.push(st(sd * s * r.range(2.4, 2.8), 0, 3, { lean: sd * 0.15, s: s * r.range(0.45, 0.6), head: { ...eb, dent: 0, roots: 3 } })); }
     return stemsSp(r, stems, { body: { x: 0, cy: s * 1.4, rx: s * 2, ry: s * 1.4 }, R: 7, stem: 0.1 });
   } },
-  { name: 'bird\'s nest fungus', w: 1.8, genes: r => {
-    const cup = (lid) => ({ form: 'cup', span: 1.3, w: r.range(1.15, 1.45), h: r.range(1.7, 2.2), depth: 0.55, thick: 0.22, sq: 0.55, eggs: lid ? 0 : r.int(2, 4), lid: lid ? r.range(0.12, 0.22) : 0, tilt: r.range(-0.2, 0.2), bulb: 0.75, seat: 1.0 });
-    const n = r.int(3, 5), s = r.range(7, 8.4), stems = []; let x = 0;
-    for (let i = 0; i < n; i++) { const k = i === 0 ? 1 : r.range(0.6, 0.95); stems.push(st(x, 0, 3, { s: s * k, head: cup(i > 0 && r.chance(0.22)) })); x += s * r.range(2.3, 2.9); }
-    const xm = x / 2 - s * 1.3; for (const q of stems) q.x -= xm;
-    const m = stems[r.int(0, n - 1)]; stems.splice(stems.indexOf(m), 1); stems.unshift(m); m.head.lid = 0; m.head.eggs = m.head.eggs || 3;
-    return stemsSp(r, stems, { body: { x: m.x, cy: s * 1.6, rx: s * 1.3, ry: s * 1.1 }, R: 5, stem: 0.25, sub: { kind: 'twig', r: r.range(1.7, 2.3), x0: -xm - s * 2.2, x1: x - xm - s * 0.6, bow: r.range(-0.2, 0.3), fork: r.chance(0.5) ? r.range(0.05, 0.15) : 0, fd: -1 } });
+  { name: 'bird\'s nest fungus', w: 1.6, genes: r => {
+    const cup = (lid, k) => ({ form: 'vase', span: 1.3, w: r.range(1.1, 1.3), h: r.range(1.5, 1.85), w0: r.range(0.32, 0.42), flare: r.range(0.9, 1.15), thick: r.range(0.32, 0.38), depth: r.range(0.6, 0.68), lip: 0.04, incurve: 0.04, eggs: lid ? 0 : r.int(2, 3), egg: r.range(0.27, 0.32), lid: lid ? 1 : 0, tilt: k * r.range(0.05, 0.3), bulb: 0.75, seat: 1.0 });
+    const n = r.wpick([[1.5, 1], [2.5, 2], [1.5, 3]]), s = r.range(9.5, 11), stems = [], mi = Math.floor(n / 2);
+    let x = 0;
+    for (let i = 0; i < n; i++) { const k = i === mi ? 1 : r.range(0.62, 0.85), sd = Math.sign(i - mi); stems.push(st(x, 0, 3, { s: s * k, head: cup(i !== mi && r.chance(0.25), sd) })); x += s * r.range(2.05, 2.35) * (i === mi || i + 1 === mi ? 1 : 0.85); }
+    const xm = x / 2 - s * 1.1; for (const q of stems) q.x -= xm;
+    const m = stems[mi]; stems.splice(mi, 1); stems.unshift(m);
+    const onTwig = r.chance(0.6), x0 = -xm - s * 1.4, x1 = x - xm - s * 0.6;
+    return stemsSp(r, stems, { body: { x: m.x, cy: s * 1.6, rx: s * 1.3, ry: s * 1.1 }, R: 5, stem: 0.25, sub: onTwig ? { kind: 'twig', r: r.range(1.6, 2.1), x0, x1, bow: r.range(-0.15, 0.2), fork: r.chance(0.4) ? r.range(0.05, 0.15) : 0, fd: -1 } : { kind: 'mound', x: (x0 + x1) / 2, w: (x1 - x0) * 0.5, h: 3.2 } });
   } },
   { name: 'scarlet elf cup', w: 1.8, genes: r => {
-    const cup = () => ({ form: 'cup', span: 1.9, w: r.range(1.6, 2.2), h: r.range(1.2, 1.6), depth: r.range(0.6, 0.75), thick: 0.2, sq: 0.9, stalk: r.range(0.4, 1.1), stalkW: 0.3, tilt: r.range(-0.4, 0.4), asym: r.range(-0.12, 0.12), bulb: 0.75, seat: 0.9 });
-    const n = r.int(2, 3), s = r.range(8, 9.5), stems = []; let x = 0;
-    for (let i = 0; i < n; i++) { const k = i === 0 ? 1 : r.range(0.5, 0.85); stems.push(st(x, 0, 3, { s: s * k, head: cup() })); x += s * r.range(3.2, 4); }
-    const xm = x / 2 - s * 1.8; for (const q of stems) q.x -= xm;
-    return stemsSp(r, stems, { body: { x: stems[0].x, cy: s * 1.5, rx: s * 1.8, ry: s * 1 }, R: 5, stem: 0.3, sub: { kind: 'twig', r: r.range(1.8, 2.4), x0: -xm - s * 3, x1: x - xm - s * 1.2, bow: r.range(-0.3, 0.3), fork: r.chance(0.6) ? r.range(0.7, 0.9) : 0, fd: 1 } });
+    const cup = k => ({ form: 'vase', span: 1.8, w: r.range(1.45, 1.8), h: r.range(1.7, 2.1), w0: 0.3, flare: r.range(0.45, 0.65), thick: r.range(0.3, 0.36), depth: r.range(0.5, 0.6), incurve: r.range(0, 0.1), stalk: r.range(0.35, 0.9), stalkW: 0.24, tilt: k * r.range(0.05, 0.4), asym: r.range(-0.08, 0.08), bulb: 0.75, seat: 0.9 });
+    const n = r.wpick([[2, 1], [3, 2], [2, 3]]), s = r.range(8.5, 10), stems = []; let x = 0;
+    for (let i = 0; i < n; i++) { const k = i === 0 ? 1 : r.range(0.55, 0.8); stems.push(st(x, 0, 3, { s: s * k, head: cup(i === 0 ? r.range(-0.6, 0.6) : 1) })); x += s * r.range(2.9, 3.4) * (i === 0 ? 1 : 0.75); }
+    const xm = x / 2 - s * 1.5; for (const q of stems) q.x -= xm;
+    return stemsSp(r, stems, { body: { x: stems[0].x, cy: s * 1.5, rx: s * 1.8, ry: s * 1 }, R: 5, stem: 0.3, sub: { kind: 'twig', r: r.range(1.8, 2.3), x0: -xm - s * 2.2, x1: x - xm - s * 1.6, bow: r.range(-0.25, 0.25), fork: r.chance(0.6) ? r.range(0.7, 0.9) : 0, fd: 1 } });
   } },
   { name: 'orange peel fungus', w: 1.2, genes: r => {
-    const cup = () => ({ form: 'cup', span: 2.2, w: r.range(1.9, 2.5), h: r.range(1.2, 1.7), depth: r.range(0.72, 0.85), thick: 0.2, sq: 0.7, tilt: r.range(-0.5, 0.5), asym: r.range(-0.35, 0.35), wavy: r.range(0.06, 0.14), bulb: 0.75, seat: 0.9 });
-    const n = r.int(2, 4), s = r.range(8, 9.5), stems = []; let x = 0;
-    for (let i = 0; i < n; i++) { const k = i === 0 ? 1 : r.range(0.5, 0.9); stems.push(st(x, 0, 3, { s: s * k, head: cup() })); x += s * r.range(2.4, 3.3); }
-    for (const q of stems) q.x -= x / 2 - s * 1.4;
-    return stemsSp(r, stems, { body: { x: stems[0].x, cy: s * 1, rx: s * 2, ry: s * 0.9 }, R: 5, stem: 0.2 });
+    const cup = k => ({ form: 'vase', span: 2, w: r.range(1.5, 1.9), h: r.range(1.8, 2.3), w0: r.range(0.5, 0.7), flare: r.range(0.35, 0.5), thick: r.range(0.4, 0.46), depth: r.range(0.45, 0.55), wavy: r.range(0.1, 0.18), asym: r.range(-0.25, 0.25), tilt: k * r.range(0.1, 0.45), bulb: 0.75, seat: 0.9 });
+    const n = r.wpick([[2, 2], [2, 3], [1, 4]]), s = r.range(8.5, 10), stems = []; let x = 0;
+    for (let i = 0; i < n; i++) { const k = i === 0 ? 1 : r.range(0.55, 0.85); stems.push(st(x, 0, 3, { s: s * k, head: cup(i === 0 ? r.range(-0.5, 0.5) : r.sign()) })); x += s * r.range(2.4, 2.9) * (i === 0 ? 1 : 0.8); }
+    for (const q of stems) q.x -= x / 2 - s * 1.2;
+    return stemsSp(r, stems, { body: { x: stems[0].x, cy: s * 1, rx: s * 2, ry: s * 0.9 }, R: 5, stem: 0.2, sub: { grass: r.chance(0.5) ? [[r.range(-12, 12), 3, 7]] : null } });
   } },
   { name: 'pixie cup lichen', w: 1.8, genes: r => {
     const cup = () => ({ form: 'cup', span: 1.1, w: r.range(0.95, 1.3), h: r.range(0.8, 1.1), depth: 0.6, thick: 0.2, sq: 0.9, stalk: r.range(0.3, 0.6), stalkW: 0.26, tilt: r.range(-0.15, 0.15), bulb: 0.75, seat: 1.0 });
@@ -917,7 +971,7 @@ const species = [
 
   // ---------------- massed forms ----------------
   { name: 'cauliflower fungus', w: 1.4, genes: r => {
-    const s = r.range(9, 10.5), ru = { form: 'ruffle', span: 2.6, w: r.range(2.5, 3.1), h: r.range(3.2, 4.0), n: r.int(16, 22), bulb: 0, lend: 0.5 };
+    const s = r.range(9, 10.5), ru = { form: 'ruffle', span: 2.1, w: r.range(1.8, 2.25), h: r.range(3.4, 4.0), n: r.int(18, 24), bulb: 0, lend: 0.5 };
     const stems = [st(0, 0, 5, { s, head: ru })];
     return stemsSp(r, stems, { body: { x: 0, cy: s * 1.8, rx: s * 2.7, ry: s * 1.8 }, R: 8, stem: 0.05 });
   } },
@@ -926,38 +980,43 @@ const species = [
     const stems = [st(0, 0, 5, { s, head: fr })];
     return stemsSp(r, stems, { body: { x: 0, cy: s * 1.6, rx: s * 2.4, ry: s * 1.7, hy: 0.5 }, R: 7, stem: 0.05, dorsal: { type: 'fungusFrill', h: r.range(0.9, 1.3), wid: 0.2, tiers: 2 } });
   } },
-  { name: 'truffle', w: 0.5, genes: r => {
-    const s = r.range(9, 10), tr = { form: 'ball', span: 2.1, w: r.range(1.9, 2.4), h: r.range(2.6, 3.3), lumpy: r.range(0.1, 0.14), lf: 2, warts: r.int(16, 20), wartL: 0.16, wartW: 0.45, bulb: 0, lend: 0.6 };
-    const stems = [st(0, 0, 4, { lean: r.range(-0.3, 0.3), s, head: tr })];
-    return stemsSp(r, stems, { body: { x: 0, cy: s * 1.4, rx: s * 2, ry: s * 1.4 }, R: 7, stem: 0.1 });
+  { name: 'truffle', w: 0.7, genes: r => {
+    const s = r.range(8.5, 9.5), tb = (k) => ({ form: 'tuber', span: 1.6, w: r.range(1.4, 1.8) * k, h: r.range(2.4, 3.0) * k, warts: r.int(30, 40), wh: r.range(0.04, 0.06), lumpy: r.range(0.1, 0.16), bulb: 0, lend: 0.7 });
+    const n = r.wpick([[1, 1], [2, 2], [1.5, 3]]), stems = [st(0, 0, 4, { lean: r.range(-0.4, 0.4), s, head: tb(1) })];
+    for (let i = 1; i < n; i++) { const sd = i % 2 ? r.sign() : -stems[1].x / Math.abs(stems[1].x || 1); stems.push(st(sd * s * r.range(1.7, 2.2) * (i === 2 ? 1.2 : 1), 0, 3, { lean: r.range(-0.8, 0.8), s, head: tb(r.range(0.5, 0.75)) })); }
+    return stemsSp(r, stems, { body: { x: 0, cy: s * 1.4, rx: s * 1.7, ry: s * 1.4 }, R: 7, stem: 0.1 });
   } },
 
   // ---------------- on wood ----------------
-  { name: 'hoof fungus', w: 2.2, genes: r => {
-    const ch = stub(r, { w: r.range(5.5, 7.5) }), n = r.wpick([[2, 1], [2, 2], [1, 3]]), sd0 = r.sign();
+  { name: 'hoof fungus', w: 2, genes: r => {
+    const ch = stub(r, { w: r.range(5.5, 7), h: r.range(30, 40), snag: 0 }), n = r.wpick([[2, 1], [2, 2], [1, 3]]), sd0 = r.sign();
     ch.shelves = [];
-    for (let i = 0; i < n; i++) { const big = i === 0 ? 1 : r.range(0.55, 0.8); ch.shelves.push({ t: i === 0 ? r.range(0.5, 0.68) : (i === 1 ? r.range(0.2, 0.34) : r.range(0.72, 0.85)), sd: i === 1 ? -sd0 : sd0, len: r.range(15, 20) * big, th: r.range(15, 20) * big, up: 0.82, down: 0.18, k: r.range(1.5, 2.1), steps: r.int(3, 5), rim: 0.12, droop: 0.05 }); }
+    for (let i = 0; i < n; i++) { const big = i === 0 ? 1 : r.range(0.5, 0.75); ch.shelves.push({ t: i === 0 ? r.range(0.48, 0.66) : (i === 1 ? r.range(0.18, 0.3) : r.range(0.74, 0.84)), sd: i === 1 ? -sd0 : sd0, len: r.range(15, 19) * big, th: r.range(15, 19) * big, up: 0.8, down: 0.2, k: r.range(1.3, 1.8), kb: 2, steps: r.int(3, 5), rim: 0.2, droop: 0.04 }); }
     return build(r, ch, { ...CAP.hoof(r), seat: 1.1 }, { stem: 0.02, rake: 0.5 });
   } },
   { name: 'turkey tail', w: 2.4, genes: r => {
-    const ch = stub(r, { w: r.range(5, 6.5), h: r.range(36, 48) }), n = r.int(7, 11);
+    const ch = stub(r), groups = r.int(2, 4); let sd = r.sign();
     ch.shelves = [];
-    for (let i = 0; i < n; i++) { const t = mix(0.14, 0.9, (i + r.range(0.1, 0.9)) / n); ch.shelves.push({ t, sd: i % 2 ? 1 : -1, len: r.range(7, 13), th: r.range(4, 5.5), up: 0.35, down: 0.3, k: 2.2, wavy: r.range(0.25, 0.5), droop: r.range(-0.2, 0.05), rim: 0.3 }); }
+    for (let g = 0; g < groups; g++) {
+      const t0 = mix(0.12, 0.7, (g + r.range(0.15, 0.85)) / groups), m = r.int(2, 4), L = r.range(12, 17);
+      for (let j = 0; j < m; j++) ch.shelves.push({ t: t0 + j * r.range(0.09, 0.12), sd, len: L * (1 - j * 0.16) * r.range(0.9, 1.1), th: r.range(3.6, 4.4), up: 0.45, down: 0.4, k: 1.8, wavy: r.range(0.3, 0.55), droop: r.range(0.04, 0.14), rim: 0.3 });
+      sd = r.chance(0.7) ? -sd : sd;
+    }
     return build(r, ch, { ...CAP.fan(r), seat: 1.1 }, { stem: 0.02, rake: 0.6, dorsal: r.chance(0.5) ? { type: 'fungusFrill', h: r.range(0.8, 1.2), wid: 0.16, tiers: r.int(1, 2) } : null });
   } },
   { name: 'chicken of the woods', w: 1.8, genes: r => {
-    const ch = stub(r, { w: r.range(5.5, 7), h: r.range(32, 42), snag: 0 }), n = r.int(3, 5), sd0 = r.sign();
+    const ch = stub(r, { snag: 0, h: r.range(34, 42) }), n = r.int(3, 4), sd0 = r.sign(), t0 = r.range(0.18, 0.3);
     ch.shelves = [];
-    for (let i = 0; i < n; i++) { const t = mix(0.22, 0.82, i / (n - 1)); ch.shelves.push({ t, sd: (i === n - 1 && r.chance(0.5)) ? -sd0 : sd0, len: r.range(17, 25) * (1 - 0.3 * Math.abs(t - 0.45)), th: r.range(6, 8), up: 0.5, down: 0.5, k: 2.4, kb: 0.8, wavy: r.range(0.35, 0.6), droop: r.range(-0.12, 0.08), rim: 0.42 }); }
-    if (r.chance(0.6)) ch.shelves.push({ t: r.range(0.3, 0.6), sd: -sd0, len: r.range(9, 14), th: 6, up: 0.5, down: 0.5, k: 2.4, wavy: 0.4, rim: 0.42 });
+    for (let i = 0; i < n; i++) ch.shelves.push({ t: t0 + i * r.range(8, 9.5) / ch.h, sd: (i === n - 1 && r.chance(0.4)) ? -sd0 : sd0, len: r.range(18, 24) * (1 - 0.1 * i), th: r.range(6, 7), up: 0.5, down: 0.5, k: 2.4, kb: 0.8, wavy: r.range(0.35, 0.6), droop: r.range(-0.12, 0.04), rim: 0.38 });
+    if (r.chance(0.6)) ch.shelves.push({ t: r.range(0.3, 0.6), sd: -sd0, len: r.range(10, 14), th: 7, up: 0.5, down: 0.5, k: 2.4, wavy: 0.4, rim: 0.38 });
     return build(r, ch, { ...CAP.fan(r), thick: 0.34, rim: 0.2, seat: 1.1 }, { stem: 0.02, rake: 0.6, dorsal: { type: 'fungusFrill', h: r.range(1, 1.5), wid: 0.24, tiers: 2 } });
   } },
   { name: 'oyster mushroom', w: 2, genes: r => {
-    const ch = stub(r, { w: r.range(5, 6.5), h: r.range(36, 46) }), n = r.int(3, 6), sd0 = r.sign();
-    const oy = () => ({ form: 'cap', span: 2, w: r.range(1.7, 2.2), h: r.range(0.5, 0.7), a: 2.6, b: 0.5, under: 0.3, rim: 0.12, curl: r.range(-0.25, 0.1), skew: 0, thick: 0.2, wavy: r.range(0, 0.2) });
-    ch.items = [];
-    for (let i = 0; i < n; i++) { const sd = i < n - 1 || n < 4 ? sd0 : -sd0; ch.items.push({ t: mix(0.35, 0.85, n > 1 ? i / (n - 1) : 0.5) + r.range(-0.04, 0.04), sd, ax: -r.range(0.25, 0.6), stem: r.range(4, 8), stemW: 1.8, turn: -r.range(0.35, 0.7), s: r.range(5, 7.5), fb: oy() }); }
-    return build(r, ch, { ...oy(), seat: 1.1 }, { stem: 0.3, rake: 0.4 });
+    const ch = stub(r, { h: r.range(34, 42) }), sd0 = r.sign(), t0 = r.range(0.25, 0.45), n = r.int(3, 4);
+    ch.shelves = [];
+    for (let i = 0; i < n; i++) ch.shelves.push({ t: t0 + i * r.range(7, 8.5) / ch.h, sd: (n > 3 && i === 0) ? -sd0 : sd0, len: r.range(14, 19) * (1 - 0.1 * i), th: r.range(5, 6), up: 0.55, down: 0.75, k: 2.6, kb: 0.55, wavy: r.range(0.1, 0.3), droop: r.range(0.12, 0.22), rim: 0.24 });
+    const oy = { form: 'cap', span: 2, w: r.range(1.7, 2.2), h: r.range(0.5, 0.7), a: 2.6, b: 0.5, under: 0.3, rim: 0.12, curl: r.range(-0.25, 0.1), skew: 0, thick: 0.2, wavy: r.range(0, 0.2) };
+    return build(r, ch, { ...oy, seat: 1.1 }, { stem: 0.3, rake: 0.4 });
   } },
   { name: 'lion\'s mane', w: 1.8, genes: r => {
     const ch = stub(r, { w: r.range(5.5, 7), h: r.range(38, 48), lean: r.range(-0.1, 0.1) }), sd = r.sign(), s = r.range(8, 9.5);
@@ -965,13 +1024,6 @@ const species = [
     ch.items = [{ t: r.range(0.6, 0.78), sd, ax: -0.1, stem: 0, turn: 0, s, fb: { ...mn, h: mn.w * 1.5, w: mn.h * 1.25 } }];
     if (r.chance(0.35)) ch.items.push({ t: r.range(0.25, 0.4), sd: -sd, ax: -0.1, stem: 0, s: s * 0.55, fb: { ...mn, h: mn.w * 1.5, w: mn.h * 1.25, teeth: 11 } });
     return build(r, ch, mn, { stem: 0.02, hw: 0.7 });
-  } },
-  { name: 'wood ear', w: 1.5, genes: r => {
-    const ch = stub(r, { w: r.range(4, 5.2), h: r.range(40, 50), lean: r.range(-0.3, 0.3), flare: 0.3 }), n = r.int(3, 5);
-    const ear = () => ({ form: 'cup', span: 1.7, w: r.range(1.4, 1.9), h: r.range(1.5, 2.1), depth: r.range(0.72, 0.84), thick: 0.24, sq: 0.75, asym: r.range(-0.3, 0.3), wavy: r.range(0.08, 0.16), tilt: 0, bulb: 0.75, seat: 0.9 });
-    ch.items = [];
-    for (let i = 0; i < n; i++) ch.items.push({ t: mix(0.3, 0.88, n > 1 ? i / (n - 1) : 0.5) + r.range(-0.05, 0.05), sd: i % 2 ? 1 : -1, ax: r.range(0.1, 0.7), stem: 0, s: r.range(4.8, 7), turn: r.range(-0.3, 0.3), fb: ear() });
-    return build(r, ch, ear(), { stem: 0.15, pair: true, cn: 1 });
   } },
   { name: 'witch\'s butter', w: 1.5, genes: r => {
     const L = r.range(54, 68), rr = r.range(5, 6.5), n = r.int(3, 5);
