@@ -59,5 +59,6 @@ slider (under More options) lets more slots wander between tags.
 - `src/app/`, `app/` the browser UI
 - `tools/sheet.mjs` contact sheets for reviewing output; `tools/test-export.mjs` and
   `tools/ui-smoke.mjs` end-to-end checks
+- `docs/` the brief, status/work queue, orchestration playbook, per-tag notes
 - `out/roads/` saved sheets from each stage of development, including abandoned
   directions; matching git tags are named `road-NN-...`

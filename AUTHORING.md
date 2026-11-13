@@ -101,6 +101,10 @@ chassis that draws most of itself and still returns sensible sockets; pair it wi
 `mounts` is where crown ornaments attach: one mount in side view, a mirrored pair when
 `sock.sym` (top view).
 
+## Per-tag notes
+
+What each tag should cover, and its current state, lives in `docs/tags/<tag>.md`.
+
 ## Reviewing output
 
 ```sh
