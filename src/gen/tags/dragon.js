@@ -1,2 +1,602 @@
-import { legacy } from './legacy.js';
-export default legacy('dragon', 'Dragons');
+// Small dragons: a species library drawn from the medieval visual record (bestiary
+// 'draco', wyverns, lindworms, cockatrices, marginal dragonets, interlace beasts,
+// heraldic dragons, ouroboroi, sea-serpents...) rather than from modern fantasy art.
+// Everything dragon-specific is registered here with a `dragon` prefix.
+import { add, lerp, dist, angOf, polar, angDiff, clamp, mix, MINW, frame, spline, polyline, profile, pathAt, tube, leaf } from '../core.js';
+import { chassis, heads, feet, tips, crowns, dorsals } from '../parts.js';
+
+const PI = Math.PI, TAU = 2 * PI;
+const sm = u => { u = clamp(u, 0, 1); return u * u * (3 - 2 * u); };
+const none = () => ({ type: 'none' });
+
+// ---------------------------------------------------------------- helpers
+function resample(pts, n) {
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + dist(pts[i - 1], pts[i]));
+  const tot = cum[cum.length - 1], out = [];
+  let j = 0;
+  for (let i = 0; i < n; i++) {
+    const d = tot * i / (n - 1);
+    while (j < pts.length - 2 && cum[j + 1] < d) j++;
+    out.push(lerp(pts[j], pts[j + 1], clamp((d - cum[j]) / ((cum[j + 1] - cum[j]) || 1), 0, 1)));
+  }
+  return out;
+}
+function strip(path, rad, t0, t1, n, side) {
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const t = mix(t0, t1, i / (n - 1)), { p, ang } = pathAt(path, t), na = ang + side * PI / 2;
+    out.push({ p: polar(p, na, rad(t) * 0.85), dir: na, t });
+  }
+  return out;
+}
+// quadratic curve samples (exclusive of both ends)
+function qcurve(a, c, b, n = 5) {
+  const out = [];
+  for (let i = 1; i < n; i++) { const t = i / n; out.push(lerp(lerp(a, c, t), lerp(c, b, t), t)); }
+  return out;
+}
+// a path grown by turning: heading h0, total length L, turn(u) = heading offset at u
+function grow(p, h0, L, turn, n = 16) {
+  const pts = [p];
+  let h = h0;
+  for (let i = 1; i <= n; i++) { h = h0 + turn((i - 0.5) / n); p = polar(p, h, L / n); pts.push(p); }
+  pts.endAng = h0 + turn(1);
+  return pts;
+}
+
+// A tiny generic dragon head (hydra's extra heads, the amphisbaena's tail head).
+function miniHead(ink, p, ang, s, o = {}) {
+  const flip = Math.cos(ang) < 0 ? -1 : 1, c = polar(p, ang, s * 0.35), F = frame(c, ang, s, flip);
+  ink.poly(tube(polyline([p, c], 2), s * 0.6));
+  ink.oval(F(0.05, 0), s * 0.82, s * 0.72, ang);
+  ink.poly(tube(spline([F(0.2, -0.12), F(0.9, -0.14), F(1.55, -0.02)], 5), profile([[0, s * 0.56], [1, s * 0.3]])));
+  ink.dot(F(1.6, -0.22), s * 0.2);
+  const gape = o.gape ?? 0.45;
+  ink.poly(tube(polyline([F(0.1, 0.34), polar(F(0.1, 0.34), F.dir(gape), s * 1.25)], 3), profile([[0, s * 0.36], [1, s * 0.17]])));
+  if (o.ears !== false) ink.poly(leaf(F(-0.35, -0.5), F.dir(-PI / 2 - 0.9), s * 1.25, s * 0.55, 0, 0.4));
+  return { eye: F(0.3, -0.25) };
+}
+
+// ---------------------------------------------------------------- chassis
+// Legged side-view beast: passant quadruped, two-legged wyvern, rampant, sejant, lying.
+// The long neck is NOT here: it lives in the head gene, so it travels when lent.
+chassis.dragonBeast = (C, g) => {
+  const { ink, rng } = C, r = g.r * C.plump, L = g.len, p = g.pitch ?? 0, legs = g.legs ?? 'quad';
+  const lift = g.lie ? 0 : Math.max(C.lift, 0.12) * r * (g.liftK ?? 1);
+  const H = [-L * Math.cos(p) / 2, -(lift + r * 0.9)];
+  const S = add(H, [L * Math.cos(p), -L * Math.sin(p)]);
+  const M = polar(lerp(H, S, 0.5), -p - PI / 2, (g.arch ?? 0.3) * r);
+  let T = polar(H, PI - p * 0.8 + (g.tailLift ?? 0.3), r * 1.25);
+  if (T[1] > -r * 0.62) T = [T[0], -r * 0.62];
+  const na = g.neckA ?? clamp(-(p + 0.75), -1.5, 0.3), nl = g.neckL ?? 0.9;
+  const N = polar(S, na, nl * r);
+  const ctrl = [T, H, M, S, N], rs = [0.52, 0.9, g.belly ?? 1, g.chest ?? 0.9, g.neckW ?? 0.55];
+  const cum = [0]; for (let i = 1; i < ctrl.length; i++) cum.push(cum[i - 1] + dist(ctrl[i - 1], ctrl[i]));
+  const tk = cum.map(c => c / cum[cum.length - 1]);
+  const path = resample(spline(ctrl, 10), 48), rad = profile(tk.map((t, i) => [t, rs[i] * r]));
+  ink.poly(tube(path, rad));
+  if (g.haunch ?? !g.lie) ink.oval(add(H, [r * 0.1, r * 0.22]), r * 0.82, r * 0.74, -p);
+  const limbs = [], ls = r * (g.legS ?? 1);
+  const mk = (base, dx, role, far, dy = 0.3) => limbs.push({ p: add(base, [dx * r, r * dy]), dir: PI / 2, s: ls, role, far, ground: 0, fwd: 0, side: 1 });
+  const arm = (dir, far) => limbs.push({ p: add(S, [r * (far ? 0.55 : 0.3), r * (far ? -0.1 : 0.3)]), dir, s: ls * (far ? 0.9 : 1), role: 'arm', fwd: -PI / 2, side: 1 });
+  if (legs === 'quad') {
+    if (g.pawUp) arm(rng.range(0.25, 0.6), true); else mk(S, 0.3, 'fore', true);
+    mk(H, -0.25, 'hind', true); mk(S, -0.2, 'fore', false); mk(H, 0.3, 'hind', false);
+  } else if (legs === 'six') {
+    mk(S, 0.3, 'fore', true); mk(H, -0.25, 'hind', true); mk(M, 0.25, 'fore', true, 0.9);
+    mk(S, -0.2, 'fore', false); mk(H, 0.3, 'hind', false); mk(M, -0.3, 'hind', false, 0.9);
+  } else if (legs === 'biped') {
+    const B = lerp(H, S, g.legAt ?? 0.12);
+    mk(B, 0.45, 'hind', true); mk(B, -0.15, 'hind', false);
+  } else if (legs === 'rampant') {
+    mk(H, 0.35, 'hind', true); mk(H, -0.25, 'hind', false);
+    arm(rng.range(-0.7, -0.25), true); arm(rng.range(0.1, 0.5), false);
+  } else if (legs === 'sejant') {
+    mk(H, 0.75, 'fore', false, 0.1); mk(S, 0.35, 'fore', true); mk(S, -0.1, 'fore', false);
+  } else if (legs === 'lie') {
+    ink.oval([S[0] + r * 1.15, -r * 0.24], r * 0.62, r * 0.24, 0); // tucked forepaw
+  }
+  const plan = {
+    view: 'side', r, path, rad,
+    head: { p: N, dir: na, face: g.face ?? clamp(na * 0.25 + 0.1, -0.5, 0.25), s: r * g.headS, sym: false },
+    tail: { p: T, dir: angOf(H, T) + (g.tailAng ?? 0), s: r * 0.6 },
+    limbs, back: [strip(path, rad, tk[1] - 0.03, tk[3] + (tk[4] - tk[3]) * 0.3, 14, -1)],
+  };
+  if (g.shell) { // tarasque: domed carapace; ornaments ride on the dome
+    const c = add(lerp(H, S, 0.5), [0, r * 0.1]), A = L / 2 + r * 1.05, B = r * (g.shell + 1), dome = [], st = [];
+    for (let i = 0; i <= 24; i++) { const a = PI * i / 24; dome.push([c[0] + A * Math.cos(a), c[1] - B * Math.sin(a)]); }
+    ink.poly(dome);
+    for (let i = 0; i < 14; i++) { const a = mix(0.86, 0.14, i / 13) * PI; st.push({ p: [c[0] + A * Math.cos(a) * 0.97, c[1] - B * Math.sin(a) * 0.97], dir: Math.atan2(-A * Math.sin(a), B * Math.cos(a)), t: i / 13 }); }
+    plan.back = [st];
+  }
+  for (let i = 0; i < (g.extraNecks ?? 0); i++) { // hydra
+    const n = g.extraNecks, a0 = na - 0.35 - 0.55 * i + rng.range(-0.12, 0.12), len = r * rng.range(2.6, 3.6) * (1 + 0.12 * i);
+    const fa = mix(0.25, -0.5, (i + 1) / (n + 0.5)) + rng.range(-0.15, 0.15);
+    const b = add(S, [-r * 0.3 * i, -r * 0.15]);
+    const pts = grow(b, a0, len, u => angDiff(fa, a0) * sm(u) - 0.7 * Math.sin(PI * u));
+    ink.poly(tube(pts, profile([[0, r * 0.5], [0.4, r * 0.36], [1, r * 0.3]])));
+    miniHead(ink, pts[pts.length - 1], fa, r * g.headS * 0.7, { gape: rng.range(0.3, 0.6) });
+  }
+  return plan;
+};
+
+// Legless (or nearly) serpent bodies built from a height profile above the ground:
+// humped sea-serpents, looped and knotted wyrms, flat spirals, the ouroboros ring.
+chassis.dragonSerpent = (C, g) => {
+  const { ink } = C, r = g.r * C.plump, raw = [[0, 0]];
+  let x = 0, hb = 0, h = 0;
+  const run = (len, f) => { const n = Math.max(4, Math.round(len / 1.5)); for (let i = 1; i <= n; i++) raw.push([x + len * i / n, f ? f(i / n) : 0]); x += len; hb = f ? f(1) : 0; };
+  const hump = (A, n) => u => A * (1 - Math.cos(TAU * n * u)) / 2;
+  const mode = g.mode ?? 'wave';
+  if (mode === 'wave') run(g.len, hump((g.amp ?? 0) * r, g.humps ?? 1));
+  else if (mode === 'loop') {
+    const R = r * 1.9 + 2.2 + (g.loopR ?? 0) * r;
+    run(g.len * (g.loopAt ?? 0.4), hump((g.amp ?? 0) * r, 1));
+    for (let i = 1; i <= 30; i++) { const f = TAU * i / 30; raw.push([x + R * Math.sin(f), R * (1 - Math.cos(f))]); }
+    run(g.len * (1 - (g.loopAt ?? 0.4)), hump((g.amp ?? 0) * r, 1));
+  } else if (mode === 'ring') {
+    const R = g.R * r, th = g.headAt ?? -1.05, gap = g.gap ?? 0.5; raw.length = 0;
+    for (let i = 0; i <= 60; i++) { const a = mix(th + gap, th + TAU, i / 60); raw.push([R * Math.cos(a), R * (1 - Math.sin(a))]); }
+    h = th + PI / 2; x = raw[60][0]; hb = raw[60][1];
+  } else if (mode === 'spiral') {
+    const turns = g.turns ?? 1.8, b = (2 * r + (g.gapW ?? 2)) / TAU, r0 = r * 0.5 + 1, a1 = -PI / 2 + TAU * 2, a0 = a1 - TAU * turns;
+    const rho = a => r0 + b * (a - a0), hc = rho(a1 - PI); raw.length = 0;
+    const n = Math.round(turns * 36);
+    for (let i = 0; i <= n; i++) { const a = mix(a0, a1, i / n); raw.push([rho(a) * Math.cos(a), hc - rho(a) * Math.sin(a)]); }
+    x = raw[n][0]; hb = raw[n][1];
+  }
+  if (g.rise) { // the forebody lifts off the ground
+    const Lr = g.rise * r, n = 14, A = g.riseA ?? 1.2, h0 = h;
+    for (let i = 1; i <= n; i++) { h = h0 - A * sm((i - 0.5) / n); x += Math.cos(h) * Lr / n; hb -= Math.sin(h) * Lr / n; raw.push([x, hb]); }
+    h = h0 - A;
+  }
+  const N = 110, pts = resample(raw, N);
+  const keys = g.radKeys ?? [[0, 0.36], [0.2, 0.8], [0.55, 1], [0.85, 0.86], [1, 0.62]];
+  const rad = profile(keys.map(([t, k]) => [t, k * r]));
+  const [c0, c1] = g.clearT ?? [0.1, 0.3], clear = (g.clear ?? 0) * r;
+  const path = pts.map(([px, ph], i) => { const t = i / (N - 1); return [px, -(ph + rad(t) + clear * sm((t - c0) / (c1 - c0)))]; });
+  ink.poly(tube(path, rad));
+  const limbs = [];
+  for (const lg of g.legsAt ?? []) {
+    const q = pathAt(path, lg.t).p, ls = r * (g.legS ?? 1.2);
+    limbs.push({ p: add(q, [r * 0.3, rad(lg.t) * 0.3]), dir: PI / 2, s: ls, role: lg.role, far: true, ground: 0, fwd: 0, side: 1 });
+    limbs.push({ p: add(q, [-r * 0.3, rad(lg.t) * 0.3]), dir: PI / 2, s: ls, role: lg.role, far: false, ground: 0, fwd: 0, side: 1 });
+  }
+  const e = path[N - 1], t0 = path[0], bt = g.backT ?? [0.42, 0.9];
+  const ha = g.rise || mode === 'ring' ? h : angOf(path[N - 4], e);
+  return {
+    view: 'side', r, path, rad,
+    head: { p: e, dir: ha, face: g.face ?? (mode === 'ring' ? ha : clamp(ha * 0.3 + 0.1, -0.5, 0.3)), s: r * g.headS, sym: false },
+    tail: { p: t0, dir: angOf(path[3], t0), s: Math.max(rad(0) / 0.9, 1) },
+    limbs, back: [strip(path, rad, bt[0], bt[1], 14, -1)],
+  };
+};
+
+// ---------------------------------------------------------------- head
+// Dog-, pug-, long-jawed or beaked dragon head with a real (outline) open mouth and an
+// optional neck of its own: swan-S, or turned right round to look back over the shoulder.
+heads.dragonHead = (C, sock, g) => {
+  const { ink } = C, s = sock.s, sym = sock.sym, sk = g.skull ?? 0.95, mz = g.mz ?? 1.8, tr = g.tipR ?? 0.4;
+  let p = sock.p, h = sock.dir, fa = sock.face, flip = 1;
+  const nk = g.neck;
+  if (sym) {
+    if (nk) { const q = polar(p, h, nk.len * s * 0.45); ink.poly(tube(polyline([p, q], 4), profile([[0, s * (nk.w0 ?? 0.7)], [1, s * (nk.w1 ?? 0.55)]]))); p = q; }
+  } else {
+    const target = g.regard ? -PI - (g.lookDown ?? 0.1) : sock.face + (g.tilt ?? 0);
+    if (nk) {
+      const d = g.regard ? target - h : angDiff(target, h), sway = g.regard ? -0.25 : (nk.sway ?? 0.8);
+      const pts = grow(p, h, nk.len * s, u => d * (g.regard ? sm(u) * sm(u) * 0.5 + u * 0.5 : sm(u)) - sway * Math.sin(PI * u));
+      ink.poly(tube(pts, profile([[0, s * (nk.w0 ?? 0.7)], [0.6, s * (nk.w1 ?? 0.52)], [1, s * (nk.w1 ?? 0.52)]])));
+      p = pts[pts.length - 1]; h = target;
+    }
+    fa = target; flip = Math.cos(fa) < 0 ? -1 : 1;
+  }
+  const c = polar(p, h, s * sk * 0.45), F = frame(c, fa, s, flip);
+  ink.poly(tube(polyline([p, c], 2), sk * s * 0.78));
+  const eyes = [], mounts = [];
+  if (sym) { // from above
+    ink.oval(c, sk * s, sk * 0.88 * s, fa);
+    ink.poly(tube(spline([F(0.2, 0), F(mz * 0.5, 0), F(mz * 0.92, 0)], 5), profile([[0, sk * 0.8 * s], [0.6, mix(sk * 0.8, tr, 0.75) * s], [1, tr * s]])));
+    for (const sd of [-1, 1]) {
+      if (!g.beak) ink.dot(F(mz * 0.95, sd * tr * 0.55), tr * 0.42 * s);
+      ink.dot(F(0.3, sd * sk * 0.74), 0.28 * s);
+      eyes.push({ p: F(0.3, sd * sk * 0.62), r: s * 0.17 });
+      mounts.push({ p: F(-0.3, sd * sk * 0.7), dir: fa + sd * 1.25, flip: sd, s });
+    }
+    return { eyes, mounts, spots: [], tip: F(mz, 0) };
+  }
+  const up = g.up ?? 0, gape = g.gape ?? 0;
+  ink.oval(F(0.05, 0), sk * 1.04 * s, sk * 0.94 * s, fa);
+  if (g.brow) ink.dot(F(0.32, -sk * 0.72), g.brow * s);
+  if (g.beak) {
+    ink.poly(tube(spline([F(0.2, -0.1), F(mz * 0.55, -0.16), F(mz * 0.9, 0.02), F(mz, 0.34)], 6), profile([[0, sk * 0.66 * s], [0.55, 0.33 * s], [1, 0.1 * s]])));
+    const J = F(0.2, 0.36 * sk);
+    ink.poly(tube(polyline([J, polar(J, F.dir(gape + 0.12), mz * 0.72 * s)], 4), profile([[0, sk * 0.4 * s], [1, 0.09 * s]])));
+    if (g.wattle) for (const [dx, k] of [[0.42, 1], [0.12, 0.72]]) ink.poly(leaf(F(dx, sk * 0.55), PI / 2 + flip * 0.12, g.wattle * k * s, g.wattle * 0.62 * k * s, 0, 0.66));
+  } else {
+    const yo = gape ? -0.12 * sk : 0.06;
+    ink.poly(tube(spline([F(0.2, yo), F(mz * 0.55, yo + up * 0.45), F(mz, yo + up)], 6), profile([[0, sk * 0.7 * s], [0.55, mix(sk * 0.7, tr, 0.7) * s], [1, tr * s]])));
+    if (g.nose) ink.dot(F(mz + tr * 0.15, yo + up - tr * 0.6), tr * g.nose * s);
+    if (gape) {
+      const J = F(0.15, 0.42 * sk), jl = mz * (g.jawK ?? 0.86) * s, ja = F.dir(gape + 0.08);
+      const jt = polar(J, ja, jl);
+      ink.poly(tube(spline([J, polar(lerp(J, jt, 0.55), ja + flip * PI / 2, s * 0.1), jt], 5), profile([[0, sk * 0.42 * s], [0.6, tr * 0.72 * s], [1, tr * 0.6 * s]])));
+      ink.dot(F(-0.05, 0.36 * sk), sk * 0.52 * s);
+      if (g.beard) ink.poly(leaf(lerp(J, jt, 0.45), ja + flip * 1.9, g.beard * s, g.beard * 0.5 * s, 0, 0.4));
+      if (g.tongue) {
+        const ta = F.dir(gape * 0.5 + 0.02), b = F(0.5, 0.2 * sk), e = polar(b, ta, (mz + (g.tongueL ?? 0.5)) * s), w = Math.max(s * 0.15, 0.95);
+        ink.poly(tube(spline([b, polar(lerp(b, e, 0.5), ta + flip * PI / 2, s * 0.12), e], 5), w / 2));
+        if (g.tongue === 'barb') ink.poly([polar(e, ta, s * 0.55), polar(e, ta + 2.3, s * 0.36), polar(e, ta + PI, s * 0.05), polar(e, ta - 2.3, s * 0.36)]);
+        else if (g.tongue === 'fork') for (const sd of [-1, 1]) ink.poly(tube(polyline([e, polar(e, ta + sd * 0.5, s * 0.5)], 3), w / 2));
+        else if (g.tongue === 'flame') for (const [da, k] of [[-0.45, 0.8], [0, 1.25], [0.5, 0.75]]) ink.poly(leaf(polar(e, ta, -s * 0.2), ta + da, s * 1.1 * k, s * 0.5, da * 0.5, 0.4));
+      }
+    } else if (g.beard) ink.poly(leaf(F(mz * 0.5, 0.3), F.dir(1.9), g.beard * s, g.beard * 0.5 * s, 0, 0.4));
+    if (g.whisker) for (const [a, k] of [[2.2, 1], [2.75, 0.75]]) {
+      const b = F(mz * 0.9, yo + up + tr * 0.3);
+      ink.line([b, polar(b, F.dir(a - 0.7), g.whisker * k * s * 0.5), polar(polar(b, F.dir(a - 0.7), g.whisker * k * s * 0.5), F.dir(a), g.whisker * k * s * 0.6)], Math.max(s * 0.13, 0.95));
+    }
+  }
+  eyes.push({ p: F(0.3, -0.26 * sk), r: s * 0.19 });
+  mounts.push({ p: F(-0.3, -0.72 * sk), dir: fa - flip * (PI / 2 + 0.3), flip: -flip, s });
+  return { eyes, mounts, spots: [], tip: F(mz, 0) };
+};
+
+// ---------------------------------------------------------------- wings
+// Local frame: x runs out along the arm, +y is the trailing side (towards the tail).
+function batWing(ink, F, S, g) {
+  const n = g.fingers ?? 3, W = [0.5, -0.06], f0 = g.f0 ?? 0.15, f1 = g.f1 ?? 2.1, sc = g.scallop ?? 0.36;
+  const tp = [];
+  for (let i = 0; i < n; i++) { const u = i / (n - 1), a = mix(f0, f1, u), l = mix(0.66, 0.5, u) * (g.fl ?? 1); tp.push([W[0] + l * Math.cos(a), W[1] + l * Math.sin(a)]); }
+  const A = [-0.14, 0.26], mem = [F(-0.05, -0.02), F(0.26, -0.11), F(W[0], W[1])];
+  for (let i = 0; i < n; i++) {
+    mem.push(F(...tp[i]));
+    const b = i < n - 1 ? tp[i + 1] : A, m = lerp(tp[i], b, 0.5), ctl = lerp(m, i < n - 1 ? W : [0.2, 0.1], i < n - 1 ? sc * 1.6 : 0.3);
+    mem.push(...qcurve(tp[i], ctl, b, 6).map(q => F(...q)));
+  }
+  mem.push(F(...A));
+  ink.poly(mem);
+  const tipR = Math.max(S * 0.024, 0.5);
+  for (const t of tp) ink.poly(tube(polyline([F(W[0], W[1]), F(...t)], 3), profile([[0, S * 0.05], [1, tipR]])));
+  ink.poly(tube(spline([F(-0.05, 0), F(0.26, -0.09), F(W[0], W[1])], 5), profile([[0, S * 0.1], [1, S * 0.062]])));
+  ink.poly(leaf(F(W[0] - 0.02, W[1]), F.dir(-0.75), S * 0.2, S * 0.11, F.flip * 0.2, 0.35)); // thumb claw
+}
+function birdWing(ink, F, S, g) {
+  const n = g.feathers ?? 6, f0 = g.f0 ?? 0.2, f1 = g.f1 ?? 1.5;
+  for (let i = 0; i < n; i++) {
+    const u = i / (n - 1), root = [mix(0.08, 0.6, u), 0], a = mix(f1, f0, u ** 0.8), l = mix(0.4, 0.56, u) * (g.fl ?? 1);
+    const tipP = [root[0] + l * Math.cos(a), root[1] + l * Math.sin(a)];
+    ink.poly(tube(polyline([F(...root), F(...tipP)], 4), profile([[0, S * 0.1], [0.75, S * 0.085], [1, S * 0.045]])));
+  }
+  ink.poly(tube(spline([F(-0.05, 0), F(0.3, -0.1), F(0.64, -0.03)], 5), profile([[0, S * 0.15], [0.7, S * 0.12], [1, S * 0.08]])));
+}
+dorsals.dragonWings = (C, plan, st, sd, si, g, at) => {
+  const side = plan.view === 'side' && !plan.rooted, r = plan.r, k = at(g.at ?? 0.8);
+  const S = r * g.size * (plan.view === 'top' ? 0.85 : 1), fn = g.kind === 'bird' ? birdWing : batWing;
+  const tilt = plan.rooted ? -0.3 : (g.tilt ?? 0.45), base = polar(k.p, k.dir, -r * 0.25);
+  if (side && g.far !== false) fn(C.ink, frame(polar(base, k.dir - sd * PI / 2, r * 0.45), k.dir + sd * (tilt - (g.farA ?? 0.42)), S * 0.9, sd), S * 0.9, g);
+  fn(C.ink, frame(base, k.dir + sd * tilt, S, sd), S, g);
+};
+
+// Ridges along the back: saw teeth, soft scallops, flames, a rayed fin, a mane.
+dorsals.dragonRidge = (C, plan, st, sd, si, g, at) => {
+  const { ink, rng } = C, r = plan.r, n = g.n, lean = sd * (plan.rooted ? -1 : 1) * (g.lean ?? 0.3);
+  if (g.shape === 'fin') {
+    const top = [], bot = [];
+    for (let i = 0; i < st.length; i++) {
+      const u = i / (st.length - 1), k = st[i], env = Math.sin(PI * mix(0.06, 0.94, u)) ** 0.55;
+      bot.push(polar(k.p, k.dir, -r * 0.3));
+      top.push(polar(k.p, k.dir + lean, r * g.h * env * (0.74 + 0.26 * Math.abs(Math.cos(PI * u * n)))));
+    }
+    ink.poly(bot.concat(top.reverse()));
+    return;
+  }
+  for (let i = 0; i < n; i++) {
+    const u = (i + 0.5) / n, k = at(u), env = Math.sin(PI * mix(0.16, 0.84, u)) ** 0.6, h = r * g.h * env * rng.range(0.9, 1.1), bw = r * (g.wid ?? 0.3);
+    const b = polar(k.p, k.dir, -r * 0.25);
+    if (g.shape === 'scallop') ink.oval(polar(k.p, k.dir, h * 0.25), h * 0.62, bw, k.dir);
+    else if (g.shape === 'flame') ink.poly(leaf(b, k.dir + lean + rng.range(-0.2, 0.2), h * 1.7 + r * 0.25, bw * 2.2, rng.range(0.1, 0.3) * rng.sign(), 0.38));
+    else if (g.shape === 'mane') ink.poly(leaf(b, k.dir + lean + 0.5 * sd, h * 1.5 + r * 0.25, bw * 1.8, sd * 0.25, 0.35));
+    else ink.poly([polar(b, k.dir + PI / 2, bw), polar(k.p, k.dir + lean, h), polar(b, k.dir - PI / 2, bw)]);
+  }
+};
+
+// ---------------------------------------------------------------- tail tips
+const barb = (ink, e, a, q) => ink.poly([polar(e, a, q * 1.75), polar(e, a + 2.25, q * 1.05), polar(e, a + PI, -q * 0.15), polar(e, a - 2.25, q * 1.05)]);
+const trefoil = (ink, e, a, q) => {
+  ink.poly(leaf(polar(e, a, -q * 0.2), a, q * 2, q * 1.15, 0, 0.55));
+  for (const sd of [-1, 1]) ink.poly(leaf(polar(e, a, -q * 0.1), a + sd * 1.05, q * 1.45, q * 0.95, sd * 0.12, 0.55));
+};
+function tipEnd(C, kind, e, a, s, g) {
+  const q = s * (g.tipS ?? 1) * 0.85, ink = C.ink;
+  if (kind === 'barb') barb(ink, e, a, q);
+  else if (kind === 'trefoil') trefoil(ink, e, a, q);
+  else if (kind === 'head') miniHead(ink, e, a, s * (g.tipS ?? 1) * 0.95, { gape: g.gape2 ?? 0.4 });
+  else if (kind === 'fluke') for (const sd of [-1, 1]) ink.poly(leaf(polar(e, a, -q * 0.3), a + sd * 0.72, q * 2.3, q * 1.1, sd * 0.18, 0.55));
+  else if (kind === 'flame') for (const [da, k] of [[-0.6, 0.8], [0, 1.3], [0.55, 0.9]]) ink.poly(leaf(polar(e, a, -q * 0.3), a + da, q * 2 * k, q * 0.95, da * 0.5 + 0.12, 0.42));
+}
+tips.dragonBarb = (C, e, a, s, g) => tipEnd(C, 'barb', e, a, s, g);
+tips.dragonTrefoil = (C, e, a, s, g) => tipEnd(C, 'trefoil', e, a, s, g);
+tips.dragonHead2 = (C, e, a, s, g) => tipEnd(C, 'head', e, a, s, g);
+tips.dragonFluke = (C, e, a, s, g) => tipEnd(C, 'fluke', e, a, s, g);
+tips.dragonFlame = (C, e, a, s, g) => tipEnd(C, 'flame', e, a, s, g);
+// The tail ties a loop (the medieval overhand knot), runs on, and ends in g.tip2.
+tips.dragonKnot = (C, e, a, s, g, curl) => {
+  const { ink } = C, side = C.plan.view === 'side', w = Math.max(g.w1 * s, 1.15), R = Math.max(s * (g.knotR ?? 1.05), w * 1.6 + 1.6);
+  let sg = curl >= 0 ? 1 : -1;
+  if (side) sg = polar(e, a + PI / 2, R)[1] < polar(e, a - PI / 2, R)[1] ? 1 : -1; // loop upwards
+  const n = 30, turn = TAU + (g.knotOver ?? -0.5), L = R * turn, pts = [e];
+  let p = e, h = a;
+  for (let i = 1; i <= n; i++) { h = a + sg * turn * (i - 0.5) / n; p = polar(p, h, L / n); pts.push(p); }
+  const L2 = s * (g.knotOut ?? 2.2), a2 = a + sg * turn;
+  for (let i = 1; i <= 8; i++) { h = a2 - sg * 0.9 * (i / 8); p = polar(p, h, L2 / 8); pts.push(p); }
+  if (side) { const lim = -w - 0.4; for (const q of pts) if (q[1] > lim) q[1] = lim; }
+  ink.poly(tube(pts, profile([[0, w], [0.7, w * 0.9], [1, Math.max(w * 0.6, 0.6)]])));
+  tipEnd(C, g.tip2 ?? 'barb', p, angOf(pts[pts.length - 3], p), s, g);
+};
+// Romanesque scroll: the tail winds into a spiral and throws off leaves as it goes.
+tips.dragonScroll = (C, e, a, s, g, curl) => {
+  const { ink } = C, side = C.plan.view === 'side', w = Math.max(g.w1 * s, 1.1), q = s * (g.tipS ?? 1);
+  let sg = curl >= 0 ? 1 : -1;
+  if (side) sg = polar(e, a + PI / 2, 5)[1] < polar(e, a - PI / 2, 5)[1] ? 1 : -1;
+  const n = 26, pts = [e], L = q * 7.5; let p = e, h = a;
+  for (let i = 1; i <= n; i++) {
+    const u = i / n; h += sg * (0.7 + 5.2 * u * u) * 1.25 / n * 1.6; p = polar(p, h, L / n * (1.25 - 0.85 * u));
+    if (side && p[1] > -w - 0.4) p = [p[0], -w - 0.4];
+    pts.push(p);
+    if (i % 6 === 3 && i < n - 4) ink.poly(leaf(p, h - sg * 1.25, q * 1.7 * (1.15 - u * 0.5), q * 0.95, -sg * 0.15, 0.5));
+  }
+  ink.poly(tube(pts, profile([[0, w], [1, w * 0.8]])));
+  ink.dot(p, w * 1.25);
+};
+
+// ---------------------------------------------------------------- feet
+// Three splayed talons and a hind spur.
+feet.dragonTalon = (C, p, ang, s, g, k) => {
+  const { ink } = C, tl = (g.toeLen ?? 0.75) * s * k, side = C.plan.view === 'side';
+  const toes = side ? [[-0.66, 0.85], [-0.24, 1], [0.1, 0.95], [PI + 0.2, 0.55]] : [[-0.6, 0.9], [0, 1], [0.6, 0.9]];
+  for (const [da, l] of toes) {
+    const a = ang + da, t = polar(p, a, tl * l);
+    ink.poly(tube(spline([p, polar(lerp(p, t, 0.55), a - PI / 2, tl * 0.1 * (da > 1 ? -1 : 1)), t], 4), profile([[0, Math.max(s * 0.15 * k, 0.7)], [0.6, Math.max(s * 0.12 * k, 0.6)], [1, Math.max(s * 0.05 * k, 0.4)]])));
+  }
+  ink.dot(p, s * 0.2 * k);
+};
+
+// ---------------------------------------------------------------- crowns
+// Cock's comb: a row of rounded lobes along the top of the skull.
+crowns.dragonComb = (C, m, F, s, g) => {
+  const n = g.n ?? 4;
+  for (let i = 0; i < n; i++) {
+    const u = i / (n - 1), h = g.len * (0.7 + 0.5 * Math.sin(PI * mix(0.2, 0.9, u)));
+    C.ink.oval(F(h * 0.35, mix(-0.95, 0.3, u)), h * 0.62 * s, 0.27 * s, m.dir + m.flip * mix(0.5, -0.25, u));
+  }
+};
+// The basilisk's little crown: a band and three points.
+crowns.dragonCrown = (C, m, F, s, g) => {
+  const { ink } = C, h = g.len, y0 = -0.95, y1 = 0.15;
+  ink.poly([F(-0.2, y0), F(h * 0.3, y0 - 0.06), F(h * 0.3, y1 + 0.06), F(-0.2, y1)]);
+  for (let i = 0; i < 3; i++) {
+    const y = mix(y0 + 0.08, y1 - 0.08, i / 2), top = F(h * (i === 1 ? 1.05 : 0.85), y + (i - 1) * 0.1);
+    ink.poly([F(h * 0.2, y - 0.2), top, F(h * 0.2, y + 0.2)]);
+    ink.dot(top, 0.17 * s);
+  }
+};
+// Branching antler (the long).
+crowns.dragonAntler = (C, m, F, s, g) => {
+  const { ink } = C, L = g.len, w = Math.max(s * 0.2, 1);
+  const beam = spline([F(-0.1, 0), F(L * 0.5, L * 0.12), F(L, L * 0.42)], 6);
+  ink.poly(tube(beam, profile([[0, w * 0.6], [1, Math.max(w * 0.3, 0.42)]])));
+  for (const [t, a, l] of [[0.4, -0.75, 0.45], [0.72, -0.7, 0.32]]) { const b = pathAt(beam, t); ink.poly(tube(polyline([b.p, polar(b.p, b.ang + m.flip * a, L * l * s)], 3), profile([[0, w * 0.45], [1, Math.max(w * 0.28, 0.42)]]))); }
+};
+// Lappet: a ribbon from the back of the head ending in a curl (Urnes / Ringerike).
+crowns.dragonLappet = (C, m, F, s, g) => {
+  const pts = grow(F(-0.1, 0), m.dir + m.flip * 0.35, g.len * s, u => m.flip * (0.5 * u + (g.curl ?? 4.2) * u * u * u), 18);
+  const w = Math.max(s * 0.17, 0.95);
+  C.ink.poly(tube(pts, profile([[0, w], [0.8, w * 0.75], [1, w * 0.7]])));
+  C.ink.dot(pts[pts.length - 1], w * 1.25);
+};
+
+// ---------------------------------------------------------------- gene helpers
+const eye = () => ({ eyes: 'dot', eyeS: 1.1 });
+const dog = (r, o = {}) => ({ type: 'dragonHead', skull: r.range(0.88, 1), mz: r.range(1.5, 2.05), tipR: r.range(0.36, 0.46), up: r.range(-0.14, 0.04), gape: r.chance(0.72) ? r.range(0.3, 0.55) : 0, jawK: r.range(0.8, 0.95), tongue: r.wpick([[2, 'barb'], [1, 'fork'], [3, null]]), nose: r.chance(0.7) ? r.range(0.45, 0.6) : 0, brow: r.chance(0.6) ? r.range(0.26, 0.34) : 0, beard: r.chance(0.2) ? r.range(0.7, 1) : 0, ...o });
+const pug = (r, o = {}) => ({ type: 'dragonHead', skull: r.range(0.98, 1.1), mz: r.range(0.8, 1.15), tipR: r.range(0.52, 0.64), up: r.range(-0.3, -0.12), gape: r.chance(0.75) ? r.range(0.35, 0.6) : 0, jawK: r.range(0.95, 1.12), tongue: r.wpick([[1, 'barb'], [3, null]]), nose: r.range(0.45, 0.6), brow: r.range(0.3, 0.4), ...o });
+const longjaw = (r, o = {}) => ({ type: 'dragonHead', skull: r.range(0.82, 0.92), mz: r.range(2.3, 2.9), tipR: r.range(0.28, 0.36), up: r.range(-0.1, 0.05), gape: r.range(0.28, 0.5), jawK: r.range(0.88, 0.97), tongue: r.wpick([[2, 'barb'], [2, 'fork'], [2, null]]), nose: r.range(0.5, 0.7), brow: r.range(0.26, 0.32), ...o });
+const beak = (r, o = {}) => ({ type: 'dragonHead', beak: true, skull: r.range(0.88, 1), mz: r.range(1.25, 1.7), gape: r.chance(0.6) ? r.range(0.25, 0.5) : 0.02, ...o });
+const sneck = (r, a = 2.2, b = 3.4) => ({ len: r.range(a, b), sway: r.range(0.6, 1.15), w0: 0.72, w1: r.range(0.48, 0.56) });
+const legs = (r, o = {}) => ({ len: r.range(2, 2.5), w: 0.5, taper: 0.55, bend: 1, foot: 'dragonTalon', toeLen: r.range(0.62, 0.8), lift: r.range(0.7, 1), stance: 0.35, hindW: 1.4, arm: 0.8, ...o });
+const tl = (r, o = {}) => ({ len: r.range(8, 11.5), w0: 0.9, mid: 0.5, w1: 0.16, curl: r.range(0.8, 1.8), wave: r.range(0.6, 1.6), freq: 1, up: true, tip: 'dragonBarb', tipS: 1, ...o });
+const knot = (r, o = {}) => tl(r, { len: r.range(6.5, 9), w1: 0.2, curl: r.range(0.5, 1.4), tip: 'dragonKnot', tip2: r.wpick([[3, 'barb'], [1, 'trefoil']]), knotOut: r.range(1.8, 3), knotOver: r.range(-0.8, -0.2), ...o });
+const coil = (r, o = {}) => tl(r, { len: r.range(10, 14), curl: r.range(4.6, 6.6), wave: 0, spiral: true, tip: r.wpick([[2, 'dragonBarb'], [1, 'point']]), tipS: 0.8, ...o });
+const bat = (r, o = {}) => r.wpick([
+  [3, { type: 'dragonWings', kind: 'bat', size: r.range(3.3, 4.6), fingers: r.int(3, 4), tilt: r.range(0.2, 0.6), f0: r.range(0, 0.3), f1: r.range(1.9, 2.4), at: r.range(0.72, 0.86), ...o }], // raised
+  [1.5, { type: 'dragonWings', kind: 'bat', size: r.range(3.6, 4.8), fingers: 3, tilt: r.range(0.95, 1.25), f0: 0.1, f1: r.range(1.0, 1.4), fl: 1.15, farA: 0.2, at: r.range(0.74, 0.86), ...o }], // half-folded
+  [1.2, { type: 'dragonWings', kind: 'bat', size: r.range(4.2, 5.4), fingers: 4, tilt: r.range(0.5, 0.8), f0: -0.1, f1: r.range(2.2, 2.6), farA: 0.75, at: r.range(0.72, 0.84), ...o }], // spread
+]);
+const bird = (r, o = {}) => ({ type: 'dragonWings', kind: 'bird', size: r.range(3.2, 4.6), feathers: r.int(5, 7), tilt: r.range(0.25, 0.9), f0: r.range(0.1, 0.35), f1: r.range(1.3, 1.7), farA: r.range(0.3, 0.6), at: r.range(0.72, 0.86), ...o });
+const stub = (r, o = {}) => ({ type: 'dragonWings', kind: 'bat', size: r.range(1.7, 2.4), fingers: 3, tilt: r.range(0.3, 0.8), f0: 0.2, f1: 2, at: r.range(0.7, 0.85), far: r.chance(0.5), ...o });
+const ridge = (r, shape, o = {}) => ({ type: 'dragonRidge', shape, n: r.int(6, 10), h: r.range(0.5, 0.8), wid: 0.3, lean: 0.35, ...o });
+const horns = (r, o = {}) => ({ type: 'horns', len: r.range(1.3, 2.3), curve: r.range(-0.5, 0.5), wid: 0.55, pair: true, ...o });
+const ears = (r, o = {}) => ({ type: 'ears', len: r.range(1.3, 2), wid: r.range(0.6, 0.8), lean: r.range(-0.5, -0.1), bend: 0.08, fat: 0.4, pair: true, ...o });
+const longEars = (r, o = {}) => ({ type: 'ears', len: r.range(2.4, 3.4), wid: r.range(0.65, 0.85), lean: r.range(-0.6, -0.15), bend: r.range(0.05, 0.14), fat: 0.45, pair: true, ...o });
+const beast = (r, o = {}) => ({ type: 'dragonBeast', r: r.range(6.4, 8), len: r.range(17, 23), pitch: 0, arch: r.range(0.2, 0.45), headS: r.range(0.66, 0.78), ...o });
+const serpent = (r, o = {}) => ({ type: 'dragonSerpent', r: r.range(4.4, 5.6), headS: r.range(0.95, 1.1), ...o });
+
+// ---------------------------------------------------------------- species
+const species = [
+  { name: 'bestiary draco', w: 3, genes: r => ({ // Aberdeen/Harley: winged, two-legged, small eared head, long looping tail
+    chassis: beast(r, { legs: 'biped', pitch: r.range(0.3, 0.6), r: r.range(6, 7.4), len: r.range(17, 22), headS: r.range(0.6, 0.7) }),
+    head: dog(r, { neck: sneck(r, 2.4, 3.6), mz: r.range(1.35, 1.75) }),
+    limbs: legs(r), tail: r.wpick([[3, knot(r, { len: r.range(8, 11) })], [1, coil(r)]]),
+    dorsal: r.wpick([[2, bird(r)], [2, bat(r)]]), crown: ears(r), surface: eye(),
+  }) },
+  { name: 'wyvern', w: 3, genes: r => ({
+    chassis: beast(r, { legs: 'biped', pitch: r.range(0.45, 0.8), len: r.range(16, 21) }),
+    head: r.wpick([[2, dog(r, { neck: sneck(r, 1.6, 2.6), gape: r.range(0.35, 0.55), tongue: 'barb' })], [1, longjaw(r, { neck: sneck(r, 1.4, 2.2) })]]),
+    limbs: legs(r, { lift: r.range(0.9, 1.2) }), tail: r.wpick([[2, knot(r, { up: r.chance(0.5) })], [2, tl(r, { curl: r.range(1.4, 2.4) })]]),
+    dorsal: bat(r), crown: r.wpick([[2, horns(r)], [2, ears(r)]]), surface: eye(),
+  }) },
+  { name: 'heraldic dragon passant', w: 3, genes: r => ({
+    chassis: beast(r, { legs: 'quad', pawUp: r.chance(0.75), pitch: r.range(0.02, 0.16), len: r.range(20, 25) }),
+    head: dog(r, { neck: sneck(r, 1.5, 2.4), gape: r.range(0.35, 0.5), tongue: 'barb', beard: r.chance(0.4) ? 0.8 : 0 }),
+    limbs: legs(r), tail: tl(r, { curl: r.range(1.6, 2.6), wave: r.range(0.4, 1) }),
+    dorsal: bat(r), crown: horns(r), surface: eye(),
+  }) },
+  { name: 'dragon rampant', w: 2, genes: r => ({
+    chassis: beast(r, { legs: 'rampant', pitch: r.range(1.0, 1.22), len: r.range(17, 21), neckA: r.range(-1.35, -1.1), tailLift: -0.3 }),
+    head: dog(r, { neck: sneck(r, 1.4, 2.2), gape: r.range(0.35, 0.55), tongue: r.pick(['barb', 'flame']) }),
+    limbs: legs(r, { lift: r.range(0.75, 1), arm: 0.9 }), tail: tl(r, { up: true, curl: r.range(1.8, 2.6), wave: 0.5, len: r.range(8, 10) }),
+    dorsal: bat(r, { at: r.range(0.6, 0.74) }), crown: r.wpick([[2, horns(r)], [1, ears(r)]]), surface: eye(),
+  }) },
+  { name: 'dragon sejant', w: 1.6, genes: r => ({ // sits like a dog, forelegs straight
+    chassis: beast(r, { legs: 'sejant', pitch: r.range(0.8, 1.0), len: r.range(14, 17), r: r.range(6.6, 8), neckA: r.range(-1.3, -1), tailLift: -0.2, belly: 1.08 }),
+    head: r.wpick([[2, dog(r, { neck: sneck(r, 1, 1.8) })], [1, pug(r, { neck: sneck(r, 0.8, 1.2) })]]),
+    limbs: legs(r, { lift: 0.14, w: 0.44, stance: 0.5 }), tail: r.wpick([[2, tl(r, { up: false, curl: 0.3, wave: 1.4, len: r.range(7, 9) })], [1, coil(r, { len: r.range(8, 10) })]]),
+    dorsal: bat(r, { at: r.range(0.62, 0.76) }), crown: r.wpick([[2, ears(r)], [1, horns(r)]]), surface: eye(),
+  }) },
+  { name: 'saint george dragon', w: 2.6, genes: r => ({ // small, squat, pug-faced, glaring up
+    chassis: beast(r, { legs: 'quad', len: r.range(14, 18), r: r.range(7, 8.6), pitch: r.range(0.05, 0.25), headS: r.range(0.8, 0.92), neckA: r.range(-1.1, -0.7), face: r.range(-0.5, -0.15), belly: 1.08 }),
+    head: pug(r, { neck: r.chance(0.5) ? sneck(r, 0.8, 1.4) : null }),
+    limbs: legs(r, { lift: r.range(0.4, 0.6), len: r.range(1.6, 2) }), tail: r.wpick([[3, coil(r, { len: r.range(8, 11) })], [1.5, knot(r, { len: r.range(5, 7) })]]),
+    dorsal: r.wpick([[3, bat(r, { size: r.range(2.6, 3.4) })], [1, stub(r)]]), crown: r.wpick([[2, ears(r, { len: r.range(1, 1.5) })], [1, horns(r, { len: r.range(0.9, 1.4) })], [1, none()]]), surface: eye(),
+  }) },
+  { name: 'saint margaret dragon', w: 1.6, genes: r => ({ // all belly and gaping mouth
+    chassis: beast(r, { legs: 'quad', len: r.range(15, 19), r: r.range(8.2, 9.6), pitch: r.range(0, 0.12), arch: r.range(0.4, 0.7), headS: r.range(0.95, 1.1), neckA: r.range(-0.6, -0.3), neckL: 1.1, neckW: 0.7, face: r.range(-0.25, 0) }),
+    head: dog(r, { gape: r.range(0.7, 0.95), jawK: r.range(0.9, 1), mz: r.range(1.5, 1.9), tipR: r.range(0.42, 0.5), tongue: r.pick(['barb', null]) }),
+    limbs: legs(r, { lift: r.range(0.3, 0.5), len: r.range(1.5, 1.9) }), tail: r.wpick([[2, knot(r, { len: r.range(4.5, 6.5) })], [1, tl(r, { len: r.range(6, 8), curl: 2.2 })]]),
+    dorsal: r.wpick([[2, stub(r)], [1.5, ridge(r, 'saw')], [1, none()]]), crown: ears(r, { len: r.range(0.9, 1.3) }), surface: eye(),
+  }) },
+  { name: 'luttrell dragonet', w: 2.6, genes: r => ({ // Gothic margin two-legger: long ears, foliate tail
+    chassis: beast(r, { legs: 'biped', pitch: r.range(0.15, 0.45), len: r.range(13, 17), r: r.range(6, 7.4), headS: r.range(0.72, 0.85), legAt: 0.3 }),
+    head: r.wpick([[2, dog(r, { neck: sneck(r, 1.6, 2.8), mz: r.range(1.2, 1.6) })], [1.2, beak(r, { neck: sneck(r, 1.6, 2.8) })]]),
+    limbs: legs(r, { lift: r.range(0.8, 1.1) }),
+    tail: r.wpick([[2, tl(r, { tip: 'dragonTrefoil', curl: r.range(1.2, 2.4), w1: 0.2 })], [1.5, knot(r, { tip2: 'trefoil' })], [1.5, tl(r, { len: r.range(4, 6), w1: 0.22, tip: 'dragonScroll', curl: 0.8 })]]),
+    dorsal: r.wpick([[2, none()], [1.2, stub(r)], [1, ridge(r, 'scallop')]]), crown: longEars(r), surface: eye(),
+  }) },
+  { name: 'regardant dragonet', w: 2.2, genes: r => ({ // looking back over its shoulder
+    chassis: beast(r, { legs: r.pick(['biped', 'quad']), pitch: r.range(0.1, 0.35), len: r.range(15, 20), neckA: r.range(-1.25, -0.95), legAt: 0.25 }),
+    head: r.wpick([[2, dog(r, { regard: true, neck: sneck(r, 2.6, 3.4), lookDown: r.range(-0.1, 0.35) })], [1, beak(r, { regard: true, neck: sneck(r, 2.6, 3.4), lookDown: r.range(-0.1, 0.3) })]]),
+    limbs: legs(r), tail: r.wpick([[2, tl(r, { curl: r.range(1.2, 2), tip: r.pick(['dragonBarb', 'dragonTrefoil']) })], [1, knot(r)]]),
+    dorsal: r.wpick([[2, stub(r, { at: r.range(0.35, 0.5) })], [1, ridge(r, 'saw', { n: r.int(4, 6) })], [1.5, none()]]), crown: r.wpick([[2, ears(r)], [1, longEars(r)]]), surface: eye(),
+  }) },
+  { name: 'cockatrice', w: 2.6, genes: r => ({
+    chassis: beast(r, { legs: 'biped', pitch: r.range(0.5, 0.85), len: r.range(13, 16), r: r.range(6.4, 7.8), headS: r.range(0.68, 0.8), legAt: 0.2, chest: 1 }),
+    head: beak(r, { neck: sneck(r, 1.2, 2), wattle: r.range(0.9, 1.25) }),
+    limbs: legs(r, { lift: r.range(0.9, 1.2), w: 0.4, hindW: 1.3, toeLen: r.range(0.75, 0.9) }),
+    tail: r.wpick([[2, coil(r)], [2, knot(r)], [1, tl(r, { curl: r.range(1.4, 2.2) })]]),
+    dorsal: bird(r), crown: { type: 'dragonComb', len: r.range(0.75, 1.05), n: r.int(3, 5) }, surface: eye(),
+  }) },
+  { name: 'basilisk', w: 1.6, genes: r => ({ // the crowned king of serpents, reared up
+    chassis: serpent(r, { mode: 'wave', len: r.range(26, 36), amp: r.range(0.6, 1.4), humps: r.int(1, 2), rise: r.range(4.5, 6.5), riseA: r.range(1.15, 1.45), backT: [0.55, 0.92] }),
+    head: r.wpick([[1, beak(r, { neck: sneck(r, 0.8, 1.4) })], [1, dog(r, { neck: sneck(r, 0.8, 1.4), mz: r.range(1.2, 1.5), tongue: 'fork', gape: r.range(0.3, 0.5) })]]),
+    limbs: none(), tail: tl(r, { len: r.range(5, 8), up: false, curl: 0.3, tip: 'point' }),
+    dorsal: r.wpick([[2, none()], [1, stub(r, { at: 0.85, size: r.range(2.4, 3.2) })]]), crown: { type: 'dragonCrown', len: r.range(0.8, 1.05) }, surface: eye(),
+  }) },
+  { name: 'lindworm', w: 2.2, genes: r => ({ // wingless, two forelegs, the rest serpent
+    chassis: serpent(r, { mode: r.pick(['wave', 'loop']), r: r.range(5, 6.2), len: r.range(34, 44), amp: r.range(0.4, 1.2), humps: r.int(1, 2), rise: r.range(2.6, 3.6), riseA: r.range(0.9, 1.2), clear: r.range(0.9, 1.2), clearT: [0.6, 0.78], legsAt: [{ t: 0.84, role: 'fore' }], headS: r.range(0.85, 1), loopAt: 0.3 }),
+    head: r.wpick([[2, dog(r, { neck: sneck(r, 1.2, 2) })], [1, longjaw(r, { neck: sneck(r, 1, 1.6) })]]),
+    limbs: legs(r, { lift: 1 }), tail: r.wpick([[2, tl(r, { len: r.range(5, 8), up: false, curl: 0.4, tip: r.pick(['dragonBarb', 'point']) })], [1, knot(r, { len: r.range(4, 6) })]]),
+    dorsal: r.wpick([[2, none()], [1.2, ridge(r, 'mane', { n: r.int(5, 8) })], [1, ridge(r, 'saw')]]), crown: r.wpick([[2, ears(r)], [1, horns(r)]]), surface: eye(),
+  }) },
+  { name: 'amphisbaena', w: 2, genes: r => ({ // a second head on the tail
+    chassis: beast(r, { legs: 'biped', pitch: r.range(0.2, 0.45), len: r.range(15, 19), legAt: 0.4, tailLift: 0.6 }),
+    head: dog(r, { neck: sneck(r, 1.8, 2.8), regard: r.chance(0.45), lookDown: -0.1 }),
+    limbs: legs(r), tail: tl(r, { len: r.range(7, 9.5), w1: 0.34, mid: 0.4, up: true, curl: r.range(2.2, 3), wave: 0.3, tip: 'dragonHead2', tipS: r.range(0.95, 1.15) }),
+    dorsal: r.wpick([[2, bat(r, { size: r.range(2.8, 3.6) })], [1, bird(r, { size: r.range(2.8, 3.6) })], [1, none()]]), crown: ears(r), surface: eye(),
+  }) },
+  { name: 'fire salamander', w: 1.5, genes: r => ({ // the bestiary's, which lives in flame
+    chassis: beast(r, { legs: 'quad', len: r.range(22, 28), r: r.range(5.6, 6.8), arch: r.range(0.1, 0.3), headS: r.range(0.72, 0.82), neckA: r.range(-0.6, -0.25), neckL: 1.2, neckW: 0.62 }),
+    head: dog(r, { mz: r.range(1.2, 1.6), tipR: r.range(0.42, 0.5), tongue: r.pick(['flame', 'fork', null]), gape: r.range(0.3, 0.45) }),
+    limbs: legs(r, { lift: r.range(0.35, 0.55), len: r.range(1.6, 2) }), tail: tl(r, { up: r.chance(0.5), curl: r.range(0.6, 1.6), tip: 'dragonFlame', len: r.range(8, 11) }),
+    dorsal: ridge(r, 'flame', { n: r.int(6, 9), h: r.range(0.7, 1.1) }), crown: r.wpick([[1, ears(r, { len: r.range(0.9, 1.3) })], [1, none()]]), surface: eye(),
+  }) },
+  { name: 'jaculus', w: 1.5, genes: r => ({ // the javelin-snake that flies
+    chassis: serpent(r, { mode: 'wave', len: r.range(24, 32), amp: r.range(2.4, 3.6), humps: 1, rise: r.range(3, 4.5), riseA: r.range(0.7, 1.1), backT: [0.5, 0.92], r: r.range(4.2, 5) }),
+    head: dog(r, { mz: r.range(1.3, 1.7), tongue: 'fork', gape: r.range(0.3, 0.45), neck: sneck(r, 0.6, 1.2) }),
+    limbs: none(), tail: tl(r, { len: r.range(5, 8), up: r.chance(0.5), curl: r.range(0.6, 1.4), tip: r.pick(['dragonBarb', 'point']) }),
+    dorsal: r.wpick([[2, bird(r, { at: 0.8, size: r.range(4.2, 5.4) })], [1, bat(r, { at: 0.8, size: r.range(4.2, 5.2) })]]), crown: r.wpick([[1, ears(r)], [1, none()]]), surface: eye(),
+  }) },
+  { name: 'hydra', w: 2, genes: r => ({
+    chassis: beast(r, { legs: r.pick(['quad', 'biped']), extraNecks: r.int(2, 4), pitch: r.range(0.1, 0.3), len: r.range(17, 21), r: r.range(7, 8.4), headS: r.range(0.56, 0.64), legAt: 0.3, neckA: r.range(-0.5, -0.2) }),
+    head: dog(r, { neck: sneck(r, 2.4, 3.4), mz: r.range(1.4, 1.7), tongue: r.pick(['fork', null]) }),
+    limbs: legs(r, { lift: r.range(0.5, 0.8) }), tail: r.wpick([[2, tl(r, { curl: r.range(1, 2) })], [1, knot(r)]]),
+    dorsal: r.wpick([[2, none()], [1, ridge(r, 'saw', { n: r.int(4, 6) })]]), crown: ears(r, { len: r.range(1, 1.4) }), surface: eye(),
+  }) },
+  { name: 'sea serpent', w: 2, genes: r => ({ // arches rising from the line
+    chassis: serpent(r, { mode: 'wave', len: r.range(38, 52), amp: r.range(2.6, 4), humps: r.int(2, 3), rise: r.range(4, 5.5), riseA: r.range(1.1, 1.4), backT: [0.1, 0.95], r: r.range(4.4, 5.4) }),
+    head: r.wpick([[2, longjaw(r, { neck: sneck(r, 0.8, 1.4) })], [1, dog(r, { neck: sneck(r, 0.8, 1.4) })]]),
+    limbs: none(), tail: tl(r, { len: r.range(3.5, 5.5), up: true, curl: r.range(1.2, 2), wave: 0, tip: 'dragonFluke', w1: 0.3 }),
+    dorsal: r.wpick([[2, ridge(r, 'fin', { n: r.int(8, 14), h: r.range(0.7, 1.1) })], [1, ridge(r, 'saw', { n: r.int(12, 18), wid: 0.26 })], [1, none()]]), crown: r.wpick([[1, ears(r)], [1, horns(r)], [1, none()]]), surface: eye(),
+  }) },
+  { name: 'serra', w: 1.2, genes: r => ({ // the bestiary's winged saw-fish that races ships
+    chassis: beast(r, { lie: true, legs: 'none', len: r.range(18, 24), r: r.range(7, 8.4), arch: r.range(0.3, 0.5), headS: r.range(0.78, 0.9), neckA: r.range(-0.25, 0.05), neckL: 1.1, neckW: 0.75, tailLift: 0.45, face: 0 }),
+    head: dog(r, { mz: r.range(1.3, 1.7), gape: r.chance(0.6) ? r.range(0.3, 0.5) : 0, tongue: null }),
+    limbs: none(), tail: tl(r, { len: r.range(4, 6), up: true, curl: r.range(0.8, 1.6), wave: 0, w1: 0.34, tip: 'dragonFluke', tipS: 1.2 }),
+    dorsal: r.wpick([[3, bat(r, { size: r.range(4, 5.2), at: r.range(0.6, 0.75) })], [1.5, ridge(r, 'fin', { n: r.int(7, 10), h: r.range(1.5, 2.2), lean: 0.5 })]]), crown: r.wpick([[1, ears(r, { len: r.range(0.9, 1.3) })], [1, none()]]), surface: eye(),
+  }) },
+  { name: 'ouroboros', w: 2, genes: r => ({
+    chassis: serpent(r, { mode: 'ring', R: r.range(3.3, 4.4), r: r.range(4.2, 5.2), gap: r.range(0.4, 0.6), headS: r.range(0.95, 1.1), radKeys: [[0, 0.16], [0.2, 0.62], [0.55, 1], [0.9, 0.86], [1, 0.7]], backT: [0.5, 0.9], legsAt: r.chance(0.3) ? [{ t: 0.47, role: 'fore' }] : [] }),
+    head: dog(r, { gape: r.range(0.4, 0.55), tongue: null, mz: r.range(1.3, 1.6), beard: 0 }),
+    limbs: legs(r, { lift: 0.3, len: 1.2 }), tail: none(),
+    dorsal: r.wpick([[2, none()], [1, ridge(r, 'saw', { n: r.int(8, 12), wid: 0.26, h: 0.5 })], [1.2, bat(r, { at: 0.75, size: r.range(3.2, 4.2) })]]), crown: r.wpick([[2, ears(r, { len: r.range(1, 1.5) })], [1, none()]]), surface: eye(),
+  }) },
+  { name: 'interlace beast', w: 1.6, genes: r => ({ // Insular / Romanesque initial: knotted, biting back, leaf-tailed
+    chassis: beast(r, { legs: 'quad', len: r.range(20, 26), r: r.range(4.6, 5.6), arch: r.range(0.3, 0.6), headS: r.range(0.78, 0.9), neckA: r.range(-1.25, -1), neckW: 0.6, haunch: true }),
+    head: longjaw(r, { regard: true, neck: sneck(r, 3.2, 4.2), lookDown: r.range(0.2, 0.5), mz: r.range(1.8, 2.3), tongue: null }),
+    limbs: legs(r, { w: 0.42, lift: r.range(0.9, 1.2) }), tail: knot(r, { tip2: 'trefoil', len: r.range(6, 8), knotR: 1.3, up: true }),
+    dorsal: none(), crown: r.wpick([[2, { type: 'dragonLappet', len: r.range(2.2, 3.2) }], [1, ears(r)]]), surface: eye(),
+  }) },
+  { name: 'foliate wyvern', w: 2, genes: r => ({ // Romanesque: the tail flowers into a leafy scroll
+    chassis: beast(r, { legs: 'biped', pitch: r.range(0.3, 0.6), len: r.range(14, 18), legAt: 0.25 }),
+    head: dog(r, { neck: sneck(r, 1.6, 2.6) }),
+    limbs: legs(r), tail: tl(r, { len: r.range(4.5, 6.5), w1: 0.24, curl: r.range(0.6, 1.2), tip: 'dragonScroll', tipS: r.range(1, 1.25) }),
+    dorsal: r.wpick([[2, bird(r, { size: r.range(2.8, 3.6) })], [1, bat(r, { size: r.range(2.8, 3.6) })]]), crown: r.wpick([[2, ears(r)], [1, longEars(r)]]), surface: eye(),
+  }) },
+  { name: 'urnes ribbon beast', w: 1.5, genes: r => ({ // slender Norse greyhound-serpent, all loops
+    chassis: beast(r, { legs: 'quad', pawUp: r.chance(0.5), len: r.range(22, 28), r: r.range(3.6, 4.4), arch: r.range(0.5, 1), headS: r.range(0.9, 1.05), neckA: r.range(-1.2, -0.9), neckW: 0.62, belly: 0.85, haunch: true }),
+    head: longjaw(r, { neck: { len: r.range(3, 4.2), sway: r.range(0.9, 1.3), w0: 0.6, w1: 0.45 }, mz: r.range(2, 2.5), gape: r.range(0.25, 0.4), tongue: null, nose: 0.7 }),
+    limbs: legs(r, { w: 0.5, len: r.range(2.6, 3.2), lift: r.range(1.5, 2), hindW: 1.3 }), tail: knot(r, { len: r.range(9, 12), w0: 0.8, w1: 0.26, knotR: 1.5, knotOut: r.range(3, 4.5), tip2: r.pick(['trefoil', 'barb']), up: true, curl: r.range(1, 1.8) }),
+    dorsal: none(), crown: { type: 'dragonLappet', len: r.range(2.6, 3.6) }, surface: eye(),
+  }) },
+  { name: 'prow wyrm', w: 1.2, genes: r => ({ // longship: head reared at one end, tail curled at the other
+    chassis: serpent(r, { mode: 'wave', len: r.range(30, 40), amp: r.range(0, 0.5), humps: 1, rise: r.range(6, 8), riseA: r.range(1.35, 1.6), r: r.range(4.8, 5.8), backT: [0.15, 0.6], radKeys: [[0, 0.5], [0.3, 1], [0.6, 0.95], [0.85, 0.74], [1, 0.6]] }),
+    head: dog(r, { neck: { len: r.range(1.4, 2), sway: 1.2, w0: 0.66, w1: 0.5 }, gape: r.range(0.3, 0.5) }),
+    limbs: none(), tail: tl(r, { len: r.range(9, 12), w0: 0.9, up: true, curl: r.range(5, 6.4), spiral: true, wave: 0, tip: 'point' }),
+    dorsal: r.wpick([[2, ridge(r, 'scallop', { n: r.int(6, 9), h: 0.7, wid: 0.34 })], [1, none()]]), crown: r.wpick([[1, { type: 'dragonLappet', len: r.range(2, 2.8) }], [1, ears(r)]]), surface: eye(),
+  }) },
+  { name: 'draco constellation', w: 1.2, genes: r => ({ // star-atlas Draco: a long thin wyrm with a loop in it
+    chassis: serpent(r, { mode: 'loop', len: r.range(40, 52), amp: r.range(1, 2), loopAt: r.range(0.3, 0.55), loopR: r.range(0, 0.5), r: r.range(3.4, 4.2), rise: r.range(3, 4.5), riseA: r.range(0.8, 1.2), headS: r.range(1.05, 1.2) }),
+    head: dog(r, { mz: r.range(1.2, 1.6), tongue: 'fork', gape: r.range(0.3, 0.45), neck: sneck(r, 0.6, 1.2) }),
+    limbs: none(), tail: tl(r, { len: r.range(7, 10), up: false, curl: 0.4, wave: 2, tip: 'point' }),
+    dorsal: none(), crown: r.wpick([[1, ears(r, { len: r.range(0.9, 1.3) })], [1, none()]]), surface: eye(),
+  }) },
+  { name: 'coiled wyrm', w: 2.2, genes: r => ({ // flat spiral coil, head up; winged it is the alchemists' serpent
+    chassis: serpent(r, { mode: 'spiral', turns: r.range(1.6, 2.15), gapW: r.range(1.9, 2.5), r: r.range(3.3, 4), rise: r.range(2.5, 4), riseA: r.range(0.9, 1.3), headS: r.range(1.15, 1.35), backT: [0.82, 0.97], radKeys: [[0, 0.4], [0.25, 0.9], [0.7, 1], [1, 0.72]] }),
+    head: dog(r, { mz: r.range(1.2, 1.6), tongue: r.pick(['fork', 'barb', null]), neck: sneck(r, 0.8, 1.6) }),
+    limbs: none(), tail: none(),
+    dorsal: r.wpick([[2.5, none()], [1.5, bat(r, { at: 0.5, size: r.range(4.6, 5.8), far: false })], [1, bird(r, { at: 0.5, size: r.range(4.6, 5.8), far: false })]]), crown: r.wpick([[1, ears(r)], [1, horns(r)], [1, none()]]), surface: eye(),
+  }) },
+  { name: 'long', w: 1.4, genes: r => ({ // a compact Chinese dragon: humped, maned, antlered, whiskered
+    chassis: serpent(r, { mode: 'wave', len: r.range(34, 42), amp: r.range(1.6, 2.6), humps: 2, rise: r.range(2.5, 3.5), riseA: r.range(0.8, 1.1), clear: r.range(0.7, 1), clearT: [0.05, 0.2], legsAt: [{ t: 0.24, role: 'hind' }, { t: 0.8, role: 'fore' }], legS: 1.1, r: r.range(4.6, 5.4), backT: [0.12, 0.92], headS: r.range(0.95, 1.1) }),
+    head: dog(r, { mz: r.range(1.4, 1.8), tipR: r.range(0.44, 0.52), whisker: r.range(2, 2.8), beard: r.range(0.8, 1.1), gape: r.range(0.3, 0.45), tongue: null, neck: sneck(r, 0.8, 1.4) }),
+    limbs: legs(r, { lift: 1, len: r.range(1.5, 1.9), hindW: 1.1 }), tail: tl(r, { len: r.range(5, 7), up: true, curl: r.range(1, 2), tip: 'dragonFlame', w1: 0.3 }),
+    dorsal: ridge(r, 'mane', { n: r.int(10, 15), h: r.range(0.5, 0.75), wid: 0.26 }), crown: { type: 'dragonAntler', len: r.range(1.8, 2.5), pair: true }, surface: eye(),
+  }) },
+  { name: 'tarasque', w: 1.2, genes: r => ({ // six-legged, lion-headed, under a spiked shell
+    chassis: beast(r, { legs: 'six', shell: r.range(0.55, 0.85), len: r.range(18, 23), r: r.range(7, 8.2), arch: 0.2, headS: r.range(0.8, 0.92), neckA: r.range(-0.5, -0.2), neckL: 1.3, neckW: 0.7, haunch: false }),
+    head: pug(r, { beard: r.range(0.8, 1.1) }),
+    limbs: legs(r, { lift: r.range(0.35, 0.5), len: r.range(1.5, 1.8), hindW: 1.1 }), tail: tl(r, { len: r.range(5, 7), up: r.chance(0.5), curl: r.range(0.8, 1.6) }),
+    dorsal: ridge(r, 'saw', { n: r.int(6, 9), h: r.range(0.6, 0.9), wid: 0.34, lean: 0 }), crown: r.wpick([[2, { type: 'tuft', n: r.int(3, 4), spread: 1, len: r.range(0.9, 1.3) }], [1, ears(r, { len: 1 })]]), surface: eye(),
+  }) },
+  { name: 'sleeping drake', w: 1.5, genes: r => ({
+    chassis: beast(r, { lie: true, legs: 'lie', len: r.range(16, 20), r: r.range(7.4, 8.8), arch: r.range(0.5, 0.8), headS: r.range(0.74, 0.84), neckA: r.range(0.2, 0.35), neckL: 1.1, neckW: 0.7, face: 0.02, tailLift: 0.2 }),
+    head: dog(r, { gape: 0, tongue: null, mz: r.range(1.3, 1.7), up: 0 }),
+    limbs: none(), tail: r.wpick([[2, coil(r, { len: r.range(8, 10) })], [1, tl(r, { up: false, curl: 0.2, wave: 1.2, len: r.range(6, 9) })]]),
+    dorsal: r.wpick([[3, { type: 'dragonWings', kind: 'bat', size: r.range(3, 3.8), fingers: 3, tilt: r.range(1.1, 1.3), f0: 0.1, f1: r.range(0.9, 1.2), fl: 1.15, far: false, at: r.range(0.6, 0.75) }], [1, ridge(r, 'saw')]]), crown: r.wpick([[2, ears(r)], [1, horns(r)]]), surface: { eyes: 'none' },
+  }) },
+];
+
+export default {
+  id: 'dragon', label: 'Small dragons', short: 'Dragons',
+  sig: { dorsal: 3, tail: 3, head: 2, crown: 2 },
+  species,
+};
