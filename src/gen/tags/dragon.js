@@ -11,6 +11,16 @@ const none = () => ({ type: 'none' });
 // lower-vertex ovals and dots: Ink.finish cost grows with vertex count
 const ov = (ink, c, rx, ry, rot = 0, n = 16) => ink.poly(ellipse(c, rx, ry, rot, n));
 const dt = (ink, c, rr, n = 12) => ink.poly(ellipse(c, rr, rr, 0, n));
+// a cheap leaf/petal outline (same signature as core leaf, ~12 vertices instead of ~40)
+function lf(p, ang, len, wid, bend = 0, fat = 0.4) {
+  const L = [], R = [], n = 5, ca = Math.cos(ang), sa = Math.sin(ang);
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, w = wid * 0.5 * (t <= fat ? 0.24 + 0.76 * Math.sin(PI / 2 * t / fat) : Math.cos(PI / 2 * (t - fat) / (1 - fat))), off = bend * len * 4 * t * (1 - t);
+    const x = p[0] + ca * len * t - sa * off, y = p[1] + sa * len * t + ca * off;
+    L.push([x - sa * w, y + ca * w]); R.push([x + sa * w, y - ca * w]);
+  }
+  return L.concat(R.slice(0, n).reverse());
+}
 
 // ---------------------------------------------------------------- helpers
 function resample(pts, n) {
@@ -57,7 +67,7 @@ function miniHead(ink, p, ang, s, o = {}) {
   dt(ink, F(1.6, -0.22), s * 0.2);
   const gape = o.gape ?? 0.45;
   ink.poly(tube(polyline([F(0.1, 0.34), polar(F(0.1, 0.34), F.dir(gape), s * 1.25)], 3), profile([[0, s * 0.36], [1, s * 0.17]])));
-  if (o.ears !== false) ink.poly(leaf(F(-0.35, -0.5), F.dir(-PI / 2 - 0.9), s * 1.25, s * 0.55, 0, 0.4));
+  if (o.ears !== false) ink.poly(lf(F(-0.35, -0.5), F.dir(-PI / 2 - 0.9), s * 1.25, s * 0.55, 0, 0.4));
   return { eye: F(0.3, -0.25) };
 }
 
@@ -221,7 +231,7 @@ heads.dragonHead = (C, sock, g) => {
     ink.poly(tube(spline([F(0.2, -0.1), F(mz * 0.55, -0.16), F(mz * 0.9, 0.02), F(mz, 0.34)], 4), profile([[0, sk * 0.66 * s], [0.55, 0.33 * s], [1, 0.1 * s]])));
     const J = F(0.2, 0.36 * sk);
     ink.poly(tube(polyline([J, polar(J, F.dir(gape + 0.12), mz * 0.72 * s)], 4), profile([[0, sk * 0.4 * s], [1, 0.09 * s]])));
-    if (g.wattle) for (const [dx, k] of [[0.42, 1], [0.12, 0.72]]) ink.poly(leaf(F(dx, sk * 0.55), PI / 2 + flip * 0.12, g.wattle * k * s, g.wattle * 0.62 * k * s, 0, 0.66));
+    if (g.wattle) for (const [dx, k] of [[0.42, 1], [0.12, 0.72]]) ink.poly(lf(F(dx, sk * 0.55), PI / 2 + flip * 0.12, g.wattle * k * s, g.wattle * 0.62 * k * s, 0, 0.66));
   } else {
     const yo = gape ? -0.12 * sk : 0.06;
     ink.poly(tube(spline([F(0.2, yo), F(mz * 0.55, yo + up * 0.45), F(mz, yo + up)], 4), profile([[0, sk * 0.7 * s], [0.55, mix(sk * 0.7, tr, 0.7) * s], [1, tr * s]])));
@@ -231,15 +241,15 @@ heads.dragonHead = (C, sock, g) => {
       const jt = polar(J, ja, jl);
       ink.poly(tube(spline([J, polar(lerp(J, jt, 0.55), ja + flip * PI / 2, s * 0.1), jt], 4), profile([[0, sk * 0.42 * s], [0.6, tr * 0.72 * s], [1, tr * 0.6 * s]])));
       dt(ink, F(-0.05, 0.36 * sk), sk * 0.52 * s);
-      if (g.beard) ink.poly(leaf(lerp(J, jt, 0.45), ja + flip * 1.9, g.beard * s, g.beard * 0.5 * s, 0, 0.4));
+      if (g.beard) ink.poly(lf(lerp(J, jt, 0.45), ja + flip * 1.9, g.beard * s, g.beard * 0.5 * s, 0, 0.4));
       if (g.tongue) {
         const ta = F.dir(gape * 0.5 + 0.02), b = F(0.5, 0.2 * sk), e = polar(b, ta, (mz + (g.tongueL ?? 0.5)) * s), w = Math.max(s * 0.15, 0.95);
         ink.poly(tube(spline([b, polar(lerp(b, e, 0.5), ta + flip * PI / 2, s * 0.12), e], 5), w / 2));
         if (g.tongue === 'barb') ink.poly([polar(e, ta, s * 0.55), polar(e, ta + 2.3, s * 0.36), polar(e, ta + PI, s * 0.05), polar(e, ta - 2.3, s * 0.36)]);
         else if (g.tongue === 'fork') for (const sd of [-1, 1]) ink.poly(tube(polyline([e, polar(e, ta + sd * 0.5, s * 0.5)], 3), w / 2));
-        else if (g.tongue === 'flame') for (const [da, k] of [[-0.45, 0.8], [0, 1.25], [0.5, 0.75]]) ink.poly(leaf(polar(e, ta, -s * 0.2), ta + da, s * 1.1 * k, s * 0.5, da * 0.5, 0.4));
+        else if (g.tongue === 'flame') for (const [da, k] of [[-0.45, 0.8], [0, 1.25], [0.5, 0.75]]) ink.poly(lf(polar(e, ta, -s * 0.2), ta + da, s * 1.1 * k, s * 0.5, da * 0.5, 0.4));
       }
-    } else if (g.beard) ink.poly(leaf(F(mz * 0.5, 0.3), F.dir(1.9), g.beard * s, g.beard * 0.5 * s, 0, 0.4));
+    } else if (g.beard) ink.poly(lf(F(mz * 0.5, 0.3), F.dir(1.9), g.beard * s, g.beard * 0.5 * s, 0, 0.4));
     if (g.whisker) for (const [a, k] of [[2.2, 1], [2.75, 0.75]]) {
       const b = F(mz * 0.9, yo + up + tr * 0.3);
       ink.line([b, polar(b, F.dir(a - 0.7), g.whisker * k * s * 0.5), polar(polar(b, F.dir(a - 0.7), g.whisker * k * s * 0.5), F.dir(a), g.whisker * k * s * 0.6)], Math.max(s * 0.13, 0.95));
@@ -304,7 +314,7 @@ function featherWing(g) {
 const WING = { membrane: membraneWing, bat: membraneWing, feather: featherWing, bird: featherWing };
 dorsals.dragonWings = (C, plan, st, sd, si, g, at) => {
   const side = plan.view === 'side' && !plan.rooted, r = plan.r, k = at(g.at ?? 0.8);
-  const S = r * g.size * (plan.view === 'top' ? 0.85 : 1), shape = (WING[g.kind] ?? membraneWing)(g);
+  const S = Math.min(r, 8) * g.size * (plan.view === 'top' ? 0.85 : 1), shape = (WING[g.kind] ?? membraneWing)(g);
   // side view: the arm angle is mostly absolute (up, leaning back by tilt) so a pitched body
   // does not bury the trailing fingers in its own back
   const tilt = plan.rooted ? -0.3 : (g.tilt ?? 0.2), base = polar(k.p, k.dir, -r * 0.25);
@@ -350,16 +360,16 @@ dorsals.dragonRidge = (C, plan, st, sd, si, g, at) => {
 // ---------------------------------------------------------------- tail tips
 const barb = (ink, e, a, q) => ink.poly([polar(e, a, q * 1.75), polar(e, a + 2.25, q * 1.05), polar(e, a + PI, -q * 0.15), polar(e, a - 2.25, q * 1.05)]);
 const trefoil = (ink, e, a, q) => {
-  ink.poly(leaf(polar(e, a, -q * 0.2), a, q * 2, q * 1.15, 0, 0.55));
-  for (const sd of [-1, 1]) ink.poly(leaf(polar(e, a, -q * 0.1), a + sd * 1.05, q * 1.45, q * 0.95, sd * 0.12, 0.55));
+  ink.poly(lf(polar(e, a, -q * 0.2), a, q * 2, q * 1.15, 0, 0.55));
+  for (const sd of [-1, 1]) ink.poly(lf(polar(e, a, -q * 0.1), a + sd * 1.05, q * 1.45, q * 0.95, sd * 0.12, 0.55));
 };
 function tipEnd(C, kind, e, a, s, g) {
   const q = s * (g.tipS ?? 1) * 0.85, ink = C.ink;
   if (kind === 'barb') barb(ink, e, a, q);
   else if (kind === 'trefoil') trefoil(ink, e, a, q);
   else if (kind === 'head') miniHead(ink, e, a, s * (g.tipS ?? 1) * 0.95, { gape: g.gape2 ?? 0.4 });
-  else if (kind === 'fluke') for (const sd of [-1, 1]) ink.poly(leaf(polar(e, a, -q * 0.3), a + sd * 0.72, q * 2.3, q * 1.1, sd * 0.18, 0.55));
-  else if (kind === 'flame') for (const [da, k] of [[-0.6, 0.8], [0, 1.3], [0.55, 0.9]]) ink.poly(leaf(polar(e, a, -q * 0.3), a + da, q * 2 * k, q * 0.95, da * 0.5 + 0.12, 0.42));
+  else if (kind === 'fluke') for (const sd of [-1, 1]) ink.poly(lf(polar(e, a, -q * 0.3), a + sd * 0.72, q * 2.3, q * 1.1, sd * 0.18, 0.55));
+  else if (kind === 'flame') for (const [da, k] of [[-0.6, 0.8], [0, 1.3], [0.55, 0.9]]) ink.poly(lf(polar(e, a, -q * 0.3), a + da, q * 2 * k, q * 0.95, da * 0.5 + 0.12, 0.42));
 }
 tips.dragonBarb = (C, e, a, s, g) => tipEnd(C, 'barb', e, a, s, g);
 tips.dragonTrefoil = (C, e, a, s, g) => tipEnd(C, 'trefoil', e, a, s, g);
@@ -390,7 +400,7 @@ tips.dragonScroll = (C, e, a, s, g, curl) => {
     const u = i / n; h += sg * (0.7 + 5.2 * u * u) * 1.25 / n * 1.6; p = polar(p, h, L / n * (1.25 - 0.85 * u));
     if (side && p[1] > -w - 0.4) p = [p[0], -w - 0.4];
     pts.push(p);
-    if (i % 6 === 3 && i < n - 4) ink.poly(leaf(p, h - sg * 1.25, q * 1.7 * (1.15 - u * 0.5), q * 0.95, -sg * 0.15, 0.5));
+    if (i % 6 === 3 && i < n - 4) ink.poly(lf(p, h - sg * 1.25, q * 1.7 * (1.15 - u * 0.5), q * 0.95, -sg * 0.15, 0.5));
   }
   ink.poly(tube(pts, profile([[0, w], [1, w * 0.8]])));
   dt(ink, p, w * 1.25);
