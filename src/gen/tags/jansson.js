@@ -16,7 +16,7 @@ const stroke = (ink, pts, w, per = 6) => ink.poly(tube(spline(pts, per), Math.ma
 const bar = (ink, a, b, w) => ink.poly(tube(polyline([a, b], 3), Math.max(w, MINW) / 2));
 
 // Broad-nib pen stroke: width swells and thins with stroke direction, like handwriting.
-function pen(ink, pts, w, { con = 0.5, nib = 0.5, t0 = 1, t1 = 1, per = 8 } = {}) {
+function pen(ink, pts, w, { con = 0.5, nib = 0.5, t0 = 1, t1 = 1, per = 6 } = {}) {
   const path = spline(pts, per), n = path.length;
   let R = [];
   for (let i = 0; i < n; i++) {
@@ -172,7 +172,7 @@ const PROPS = {
   umbrella(C, S, sc, o) {
     const { ink, rng } = C, H = add(S, [sc * 0.6, sc * 0.05]); arm(ink, S, H, sc);
     const c = [H[0] - sc * rng.range(0.25, 0.6), o.yTop - sc * 0.35], hb = [H[0] + sc * 0.03, H[1] + sc * 0.5];
-    stroke(ink, [hb, H, c], 1.3);
+    stroke(ink, [hb, H, add(c, [0, -sc * 0.5])], 1.3);
     stroke(ink, [hb, add(hb, [sc * 0.2, sc * 0.2]), add(hb, [sc * 0.4, sc * 0.02])], 1.3);
     canopy(ink, c, sc * rng.range(1.5, 1.95), rng.int(3, 4));
   },
@@ -690,8 +690,9 @@ chassis.janssonGlyph = (C, g) => {
         if (g.br === 'square') { bar(ink, Pm(sd * gp, H), Pm(sd * gp, 0.9), 2.5 * k); for (const y of [H, 0.9]) bar(ink, Pm(sd * gp, y), Pm(sd * gp * 0.62, y), 2 * k); }
         else pen(ink, pts, (g.br === 'brace' ? 2.1 : 2.6) * k, { con: 0.55, t0: 0.55, t1: 0.55, per: 6 });
         tick(sd * gp * (g.br === 'square' ? 1 : 0.72) * k, -1.2 * k, sd);
-        ink.oval(Pm(sd * gp * 0.62, hy - 0.4), 1.5 * k, 1.1 * k);
-        bar(ink, Pm(sd * gp * 0.62, hy - 0.4), Pm(sd * br * 0.7, hy - 0.2), 1.4 * k);
+        const hxk = sd * gp * (g.br === 'square' ? 1 : g.br === 'paren' ? 1.08 : 0.95);
+        ink.oval(Pm(hxk, hy - 0.4), 1.5 * k, 1.1 * k);
+        bar(ink, Pm(hxk, hy - 0.4), Pm(sd * br * 0.7, hy - 0.2), 1.4 * k);
       }
       hr = br * k; hc = Pm(0, hy + 0.6); ink.dot(hc, hr);
       eyes.push(...[-1, 1].map(sd => ({ p: [hc[0] + sd * hr * 0.42, hc[1] - hr * 0.05], r: hr * 0.32 / 1.5 })));
@@ -709,7 +710,7 @@ chassis.janssonGlyph = (C, g) => {
       }
       base.push(P(x, 2.2), P(x + 2.6, 5.6));
       stroke(ink, base, 1.3 * k);
-      hc = ball(P(x + 3.2, 8.2), 5 * k); hr = 5 * k; tick((x + 2.6) * k, -lg - 2 * k);
+      hc = ball(P(x + 3.2, 8.2), 5 * k); hr = 5 * k; tick((x + 2.6) * k, -lg - 4 * k);
       pen(ink, [P(-3, 1.6), P(-7, 3.2), P(-9.6, 7.6), P(-7.6, 10.4)], 1.9 * k, { con: 0.3, t1: 0.5 });
       tailP = P(-7.6, 10.4); tailDir = -0.6;
     }
@@ -891,18 +892,18 @@ const glyph = (r, ch, o = {}) => ({ chassis: { type: 'janssonGlyph', lg: r.range
 
 const species = [
   // ----- word-creatures -----
-  sp('comma crawler', 3, r => glyph(r, { kind: 'comma', k: r.range(1.25, 1.6), n: r.wpick([[3, 1], [2, 2], [0.7, 3]]), curl: r.range(0, 1), legs: r.int(2, 4) })),
-  sp('ampersand knot', 2.5, r => glyph(r, { kind: 'amp', k: r.range(1.35, 1.65) })),
+  sp('comma crawler', 3.5, r => glyph(r, { kind: 'comma', k: r.range(1.25, 1.6), n: r.wpick([[3, 1], [2, 2], [0.7, 3]]), curl: r.range(0, 1), legs: r.int(2, 4) })),
+  sp('ampersand knot', 3.5, r => glyph(r, { kind: 'amp', k: r.range(1.35, 1.65) })),
   sp('crook stemling', 2.5, r => glyph(r, { kind: 'stem', k: r.range(1.25, 1.5), H: r.range(17, 24), bowl: r.range(6, 8.2), backBowl: r.chance(0.4), arms: r.chance(0.6) })),
-  sp('minim caterpillar', 2.5, r => glyph(r, { kind: 'minim', k: r.range(1.25, 1.55), n: r.int(2, 5), amp: r.range(0, 2.2), ph: r.range(0, 6) })),
-  sp('loop runner', 2.5, r => glyph(r, { kind: 'loop', k: r.range(1.2, 1.45), tall: Array.from({ length: r.int(2, 4) }, () => r.chance(0.5)) })),
-  sp('query hook', 2, r => glyph(r, { kind: 'query', k: r.range(1.2, 1.5), hs: r.range(0.85, 1.2) }, { tail: r.chance(0.5) ? tassel(r, { len: r.range(3, 5) }) : none() })),
-  sp('pilcrow strider', 2, r => glyph(r, { kind: 'pilcrow', k: r.range(1.2, 1.5), H: r.range(18, 26), stride: r.range(0, 3.4) })),
-  sp('asterisk mite', 2.5, r => glyph(r, { kind: 'aster', k: r.range(1.25, 1.5), spokes: r.wpick([[3, 5], [2, 6], [0.8, 7]]), L: r.range(8, 10.5), splay: r.range(0.5, 0.72) })),
-  sp('at-snail', 2.5, r => glyph(r, { kind: 'at', k: r.range(1.15, 1.35), R: r.range(8.5, 10.5) }, { crown: r.chance(0.75) ? { type: 'antennae', len: r.range(1.4, 2), curve: r.range(-0.3, 0.1), club: true, pair: true } : none() })),
-  sp('bracket peeper', 2.5, r => glyph(r, { kind: 'bracket', k: r.range(1.2, 1.45), br: r.wpick([[2.2, 'paren'], [1, 'brace'], [1.3, 'square']]), H: r.range(17, 22), gap: r.range(7, 8.5) }, { crown: r.chance(0.5) ? hair(r, { n: r.int(1, 3), len: r.range(0.8, 1.3) }) : none() })),
-  sp('swash inchworm', 2, r => glyph(r, { kind: 'swash', k: r.range(1.15, 1.45), arch: r.range(-1.5, 6), curl: r.range(-1, 3) })),
-  sp('cursive procession', 3, r => glyph(r, { kind: 'word', k: r.range(1.1, 1.3), units: (() => { const n = r.int(3, 5), u = Array.from({ length: n }, () => r.pick(['o', 'l', 'n', 't', 'l', 'o'])); if (!u.includes('o')) u[r.int(0, n - 1)] = 'o'; return u; })() })),
+  sp('minim caterpillar', 3, r => glyph(r, { kind: 'minim', k: r.range(1.25, 1.55), n: r.int(2, 5), amp: r.range(0, 2.2), ph: r.range(0, 6) })),
+  sp('loop runner', 3, r => glyph(r, { kind: 'loop', k: r.range(1.2, 1.45), tall: Array.from({ length: r.int(2, 4) }, () => r.chance(0.5)) })),
+  sp('query hook', 3, r => glyph(r, { kind: 'query', k: r.range(1.2, 1.5), hs: r.range(0.85, 1.2) }, { tail: r.chance(0.5) ? tassel(r, { len: r.range(3, 5) }) : none() })),
+  sp('pilcrow strider', 3, r => glyph(r, { kind: 'pilcrow', k: r.range(1.2, 1.5), H: r.range(18, 26), stride: r.range(0, 3.4) })),
+  sp('asterisk mite', 3, r => glyph(r, { kind: 'aster', k: r.range(1.25, 1.5), spokes: r.wpick([[3, 5], [2, 6], [0.8, 7]]), L: r.range(8, 10.5), splay: r.range(0.5, 0.72) })),
+  sp('at-snail', 3.5, r => glyph(r, { kind: 'at', k: r.range(1.15, 1.35), R: r.range(8.5, 10.5) }, { crown: r.chance(0.75) ? { type: 'antennae', len: r.range(1.4, 2), curve: r.range(-0.3, 0.1), club: true, pair: true } : none() })),
+  sp('bracket peeper', 3, r => glyph(r, { kind: 'bracket', k: r.range(1.2, 1.45), br: r.wpick([[2.2, 'paren'], [1, 'brace'], [1.3, 'square']]), H: r.range(17, 22), gap: r.range(7, 8.5) }, { crown: r.chance(0.5) ? hair(r, { n: r.int(1, 3), len: r.range(0.8, 1.3) }) : none() })),
+  sp('swash inchworm', 3, r => glyph(r, { kind: 'swash', k: r.range(1.15, 1.45), arch: r.range(-1.5, 6), curl: r.range(-1, 3) })),
+  sp('cursive procession', 3, r => glyph(r, { kind: 'word', k: r.range(1.1, 1.3), units: (() => { const n = r.int(3, 4), u = Array.from({ length: n }, () => r.pick(['o', 'l', 'n', 't', 'l', 'o'])); if (!u.includes('o')) u[r.int(0, n - 1)] = 'o'; return u; })() })),
 
   // ----- single folk -----
   sp('shy lump', 4, r => std(r, { chassis: { type: 'janssonFolk', shape: r.pick(['lump', 'lump', 'egg']), w: r.range(8.5, 11), hk: r.range(1.5, 2.0), face: 'front', eyeK: r.range(0.95, 1.15) } })),
