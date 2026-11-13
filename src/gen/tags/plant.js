@@ -96,16 +96,17 @@ const U = {
     for (let i = 0; i <= 60; i++) { const th = (i / 60 - 0.5) * 5.4, rr = L * (0.5 + 0.5 * Math.abs(Math.cos(th * lobes / 5.4 * PI / 2 * 2)) ** 0.8) * (0.72 + 0.28 * Math.cos(th / 2)) * (1 + 0.06 * Math.cos(i * 2.1)); pts.push(F(rr * Math.cos(th) * 0.75, rr * Math.sin(th) * sq)); }
     C.ink.poly(pts);
   },
-  peltate: (C, p, a, s, o) => { // umbrella leaf seen from the side (lotus, nasturtium)
-    const w = s * (o.wid ?? 1.3), F = frame(p, a, 1, 1);
-    C.ink.poly(tube(spline([F(w * 0.16, -w), F(-w * 0.06, -w * 0.5), F(0, 0), F(-w * 0.06, w * 0.5), F(w * 0.2, w)], 6), P([[0, 0.3], [0.2, w * 0.12], [0.5, w * 0.17], [0.8, w * 0.12], [1, 0.3]])));
+  peltate: (C, p, a, s, o) => { // umbrella leaf seen from the side (lotus, nasturtium): a shallow tilted lens
+    const w = s * (o.wid ?? 1.3), tilt = (a - UP) * 0.5, c = polar(p, a, w * 0.12), pts = [];
+    for (let i = 0; i <= 24; i++) { const t = i / 24 * TAU, x = Math.cos(t) * w, y = Math.sin(t) * w * (Math.sin(t) < 0 ? 0.2 : 0.1) - w * 0.08 * (Math.cos(t) ** 2); pts.push(polar(polar(c, tilt, x), tilt + PI / 2, y)); }
+    C.ink.poly(pts);
   },
   frond: (C, p, a, s, o) => frond(C.ink, droop(p, a, s * (o.len ?? 1), o.grav ?? 0.8, 12, 1), s * (o.pl ?? 0.3), s * (o.pw ?? 0.12), o.n ?? 7, { rw: 0.42 }),
   key: (C, p, a, s) => { // sycamore / maple samara pair
     C.ink.dot(p, s * 0.22);
     for (const sd of [-1, 1]) C.ink.poly(tube(arcPath(p, a + sd * 0.5, s * 1.25, sd * 0.35, 8), P([[0, s * 0.14], [0.45, s * 0.24], [0.8, s * 0.3], [1, s * 0.2]])));
   },
-  disc: (C, p, a, s) => { C.ink.oval(polar(p, a, s * 0.55), s * 0.58, s * 0.44, a); C.ink.poly(leaf(polar(p, a, s * 0.95), a, s * 0.45, s * 0.2, 0, 0.3)); }, // honesty
+  disc: (C, p, a, s) => { C.ink.oval(polar(p, a, s * 0.6), s * 0.62, s * 0.56, a); C.ink.poly(leaf(polar(p, a, s * 1.1), a, s * 0.3, s * 0.14, 0, 0.3)); }, // honesty
   catkin: (C, p, a, s) => { C.ink.oval(polar(p, a, s * 0.42), s * 0.52, s * 0.27, a); C.ink.poly(leaf(p, a - 0.5, s * 0.4, s * 0.25, 0, 0.4)); },
   thorn: (C, p, a, s, o) => C.ink.poly(leaf(p, a, s * (o.len ?? 1), s * 0.5, o.hook ?? 0.25, 0.2)),
   bud: (C, p, a, s, o) => C.ink.oval(polar(p, a, s * 0.4), s * (o.len ?? 0.55), s * (o.wid ?? 0.34), a),
@@ -124,8 +125,8 @@ const U = {
   plantlet: (C, p, a, s) => { for (const d of [-0.8, 0, 0.8]) C.ink.poly(leaf(p, UP + d, s * 1.1, s * 0.7, d * 0.2, 0.55)); },
   // nepenthes leaf: blade, then the midrib runs on as a tendril that loops down and up into a pitcher
   nepLeaf: (C, p, a, s, o) => {
-    const sd = Math.cos(a) >= 0 ? 1 : -1, bend = sd * 0.22, L = s * 3;
-    C.ink.poly(leaf(p, a, L, s * 1.05, bend, 0.5));
+    const sd = Math.cos(a) >= 0 ? 1 : -1, bend = sd * 0.22, L = s * 2.6;
+    C.ink.poly(leaf(p, a, L, s * 0.7, bend, 0.5));
     const tip = polar(p, a + bend * 0.6, L * 0.96), ps = s * (o.ps ?? 1), drop = Math.min(s * (o.drop ?? 2), -tip[1] - 1.6);
     if (drop < s * 0.6) return;
     const end = [tip[0] + sd * s * 1.7, tip[1] + drop * 0.72];
@@ -273,15 +274,15 @@ head('plantPod', (C, sock, g) => {
   return hend(H, [top, 0]);
 });
 
-// snap-trap: two toothed lobes hinged at the base
+// snap-trap: two toothed lobes hinged at the base, opening like jaws, rims set with cilia
 head('plantTrap', (C, sock, g) => {
-  const H = hstart(C, sock, g, -0.25), { ink, s, ax, o } = H, n = g.teeth ?? 5;
-  ink.dot(o, s * 0.34);
+  const H = hstart(C, sock, g, -0.25), { ink, s, ax, o } = H, n = g.teeth ?? 4, wid = Math.min(g.wid ?? 0.6, 0.65);
+  ink.dot(o, s * 0.3);
   for (const sd of [-1, 1]) {
     const Fl = frame(o, ax + sd * g.gape, s, sd), pts = [];
-    for (let i = 0; i <= 14; i++) { const t = i / 14 * PI; pts.push(Fl(g.len * 0.5 * (1 - Math.cos(t)), 0.78 * g.wid * Math.sin(t) ** 0.8)); }
+    for (let i = 0; i <= 14; i++) { const t = i / 14 * PI; pts.push(Fl(g.len * 0.5 * (1 - Math.cos(t)), 0.78 * wid * Math.sin(t) ** 0.8)); }
     ink.poly(pts);
-    for (let i = 0; i < n; i++) { const u = (i + 0.7) / n, x = g.len * u, tl = 0.5 * Math.sin(PI * mix(0.25, 0.8, u)) + 0.08; ink.poly([Fl(x - 0.13, 0.06), Fl(x + 0.05, -tl), Fl(x + 0.13, 0.06)]); }
+    for (let i = 0; i < n; i++) { const x = g.len * (i + 0.8) / (n + 0.6), b = Fl(x, -0.02), a = ax + sd * g.gape - sd * (1.0 + 0.5 * (i / n)); ink.poly(tube([b, polar(b, a, s * (g.cil ?? 0.6))], P([[0, Math.max(s * 0.07, hair)], [1, hair * 0.8]]))); }
   }
   return hend(H, [g.len, 0]);
 });
@@ -296,12 +297,14 @@ head('plantPitcher', (C, sock, g) => {
     ink.oval(F(L + 0.05, 0), 0.2 * s, 0.9 * w * s, ax + fs * 0.12);
     ink.poly(leaf(F(L - 0.15, bk * 0.6 * w), ax - bk * 0.3, 1.9 * s, 1.7 * w * s, -bk * 0.2, 0.6));
     apex = [L + 1.6, 0];
-  } else if (g.kind === 'cobra') {
-    const pts = arcPath(o, ax - fs * 0.12, (g.len ?? 4.4) * s, fs * (g.hook ?? 2.6), 18, 2);
-    ink.poly(tube(pts, P([[0, 0.16 * s], [0.45, 0.3 * w * s], [0.78, 0.68 * w * s], [0.93, 0.86 * w * s], [1, 0.62 * w * s]])));
-    const e = last(pts), he = endAng(pts), b = polar(e, he, 0.45 * s);
-    for (const sd of [-1, 1]) ink.poly(tube(arcPath(b, he + sd * 0.55 + fs * 0.25, 1.7 * s, sd * 0.9, 8), P([[0, 0.2 * s], [0.5, 0.26 * s], [1, 0.08]])));
-    world = pts.reduce((m, p) => (p[1] < m[1] ? p : m), pts[0]);
+  } else if (g.kind === 'cobra') { // tall twisted tube, a domed hood, a forked fishtail tongue hanging in front
+    const L = g.len ?? 4.4, pts = arcPath(o, ax - fs * 0.05, L * s, fs * (g.hook ?? 0.35), 14);
+    ink.poly(tube(pts, P([[0, 0.16 * s], [0.5, 0.3 * w * s], [0.85, 0.42 * w * s], [1, 0.5 * w * s]])));
+    const e = last(pts), he = endAng(pts), hc = polar(polar(e, he, 0.35 * s), he + fs * PI / 2, 0.45 * s);
+    ink.oval(hc, 1.0 * w * s, 0.82 * w * s, he + fs * 0.35);
+    const mouth = polar(polar(hc, he + fs * PI / 2, 0.75 * w * s), he, -0.35 * s);
+    for (const k of [-1, 1]) ink.poly(tube(arcPath(mouth, DOWN + fs * 0.15 + k * 0.32, 1.3 * s, -k * 0.5, 6), P([[0, 0.24 * s], [0.6, 0.2 * s], [1, 0.07 * s]])));
+    world = polar(hc, he, 0.8 * w * s);
   } else { // nepenthes
     const L = g.len ?? 2.7;
     ink.poly(axTube(H, 0.3, L, [[0, 0.34 * w], [0.2, 0.8 * w], [0.5, 0.62 * w], [0.8, 0.56 * w], [1, 0.64 * w]]));
@@ -329,12 +332,13 @@ head('plantArum', (C, sock, g) => {
       ink.poly(axTube(H, 1.8, 3.3, [[0, 0.17], [1, 0.19]]));
       apex = [3.8, 0]; break;
     }
-    case 'titan': {
-      const pts = [F(0, -0.5), F(1.1, -1.5 * w), F(1.6, -2.1 * w)];
-      for (let i = 0; i <= 10; i++) { const t = i / 10 * 2 - 1; pts.push(F(1.55 + 0.16 * Math.cos(i * PI), t * 2.05 * w)); }
-      pts.push(F(1.6, 2.1 * w), F(1.1, 1.5 * w), F(0, 0.5)); ink.poly(pts);
-      ink.poly(axTube(H, 0.8, g.len ?? 5.4, [[0, 0.62], [0.3, 0.56], [0.75, 0.36], [1, 0.2]]));
-      apex = [(g.len ?? 5.4) + 0.2, 0]; break;
+    case 'titan': { // ribbed vase-shaped spathe with a frilled rim, a huge spadix rising from it
+      const cup = 2.6, top = [], bot = [], N = 16, prof = P([[0, 0.55], [0.35, 1.25 * w], [0.75, 1.6 * w], [1, 2.05 * w]]);
+      for (let i = 0; i <= N; i++) { const t = i / N, x = cup * t, rr = prof(t) + (i === N ? 0.25 : 0); top.push(F(x, -rr)); bot.push(F(x, rr)); }
+      for (let i = 0; i <= 10; i++) { const t = i / 10 * 2 - 1; bot.push(F(cup + 0.12 + 0.18 * Math.cos(i * PI) - 0.25 * t * t, -t * 2.15 * w)); }
+      ink.poly(top.concat(bot.slice(N + 1).reverse(), bot.slice(0, N + 1).reverse()));
+      ink.poly(axTube(H, 1.0, g.len ?? 6, [[0, 0.75], [0.35, 0.68], [0.8, 0.42], [1, 0.22]]));
+      apex = [(g.len ?? 6) + 0.2, 0]; break;
     }
     default: { // cuckoo-pint: hooded sheath with a club standing in front of it
       ink.oval(F(0.55, 0), 0.62 * s, 0.5 * w * s, ax);
@@ -409,11 +413,12 @@ head('plantBur', (C, sock, g) => {
       ink.oval(F(1.05, 0), 0.85 * s, 0.6 * w * s, ax);
       top = 2; break;
     }
-    default: { // thistle
-      ink.oval(F(0.9, 0), 0.95 * s, 0.84 * w * s, ax);
-      for (let i = 0; i < 13; i++) { const t = (i / 12 - 0.5) * 4.6, q = F(0.9 - 0.9 * Math.cos(t) * -1 * 0 + 0.92 * Math.cos(t + PI) * -1, 0.82 * w * Math.sin(t + PI) * -1); ink.poly(leaf(q, ax + t * 0.62, 0.55 * s, 0.3 * s, 0, 0.25)); }
-      for (let i = 0; i < 9; i++) { const f = i / 8 - 0.5; ink.poly(leaf(F(1.5, f * 0.5), ax + f * 1.5, 1.35 * s * rng.range(0.92, 1.05), 0.3 * s, 0, 0.5)); }
-      top = 2.8;
+    default: { // thistle: a spiny, bulbous involucre with a shaving-brush of florets on top
+      ink.poly(lathe(H, 0, 1.75, [[0, 0.25], [0.45, 0.88 * w], [0.8, 0.78 * w], [1, 0.5 * w]]));
+      for (let i = 0; i < 4; i++) for (const sd of [-1, 1]) { const x = 0.35 + i * 0.35; ink.poly(leaf(F(x, sd * 0.75 * w * Math.sin(PI * (0.25 + x / 2.2))), ax + sd * (1.25 - i * 0.18), 0.6 * s, 0.22 * s, 0, 0.2)); }
+      ink.poly(lathe(H, 1.6, 2.8, [[0, 0.45 * w], [0.6, 0.8 * w], [1, 0.95 * w]]));
+      for (let i = 0; i < 5; i++) { const f = i / 4 - 0.5; ink.poly(leaf(F(2.6, f * 1.6 * w), ax + f * 0.8, 0.5 * s, 0.32 * s, 0, 0.5)); }
+      top = 3.1;
     }
   }
   void ring;
@@ -486,11 +491,15 @@ head('plantUmbel', (C, sock, g) => {
     thin(ink, [c, F(st + R * 0.55, 0)], MINW); U.berries(C, F(st + R * 0.5, 0), ax, s * 0.8, { n: 4 });
     return hend(H, [st + R, 0]);
   }
+  // compound umbel: spokes to a flat-topped parasol of florets
+  const sp = g.spread ?? 2.1, ends = [];
   for (let i = 0; i < n; i++) {
-    const f = n > 1 ? i / (n - 1) - 0.5 : 0, a = ax + f * (g.spread ?? 2.1), e = polar(o, a, R * s * (1 - 0.3 * f * f * 4 * 0.5) * rng.range(0.96, 1.04));
-    thin(ink, [o, e], Math.max(0.1 * s, MINW));
-    ink.oval(polar(e, a, 0.05 * s), 0.24 * s * (g.puff ?? 1), 0.5 * s * (g.puff ?? 1) * (7 / n) ** 0.5, mix(a, ax, 0.6));
+    const f = n > 1 ? i / (n - 1) - 0.5 : 0, a = ax + f * sp, e = polar(o, a, R * s * (1 + 0.35 * f * f * 4) * rng.range(0.97, 1.03));
+    thin(ink, [o, e], Math.max(0.09 * s, MINW)); ends.push(e);
   }
+  const top = ends.map(e => polar(e, ax, 0.12 * s));
+  ink.poly(tube(spline(top, 4), Math.max(0.24 * s * (g.puff ?? 1), 0.8)));
+  for (let i = 0; i < 2 * n - 1; i++) { const q = lerp(top[Math.floor(i / 2)], top[Math.ceil(i / 2)], 0.5); ink.dot(polar(q, ax, 0.22 * s), 0.27 * s * (g.puff ?? 1)); }
   return hend(H, [R, 0]);
 });
 
@@ -518,7 +527,7 @@ head('plantSpire', (C, sock, g) => {
     if (g.kind === 'lupin') for (const sd of [-1, 1]) ink.poly(leaf(p, ang + sd * 0.95, 0.95 * k, 0.6 * k, -sd * 0.3, 0.55));
     else if (g.kind === 'torch') { const d = mix(2.5, 0.5, u ** 1.5); for (const sd of [-1, 1]) ink.poly(leaf(p, ang + sd * d, 1.0 * k + 0.2 * s, 0.34 * s, 0, 0.5)); }
     else if (g.kind === 'mast') { if (i % 2 === 0 || true) { const sd = i % 2 ? 1 : -1, e = polar(polar(p, ang + sd * 1.35, 1.5 * k), ang, 0.5 * k); ink.poly(tube(spline([p, polar(p, ang + sd * 1.4, 1.1 * k), e], 4), Math.max(0.09 * s, hair))); ink.oval(e, 0.3 * k + 0.1 * s, 0.75 * k, ang); } }
-    else heads.plantBell(C, usock(p, ang + fs * mix(2.0, 1.2, u) + rng.range(-0.1, 0.1), 0.62 * k + 0.12 * s, fs), { kind: 'foxglove', fs });
+    else if (i < n - 1) heads.plantBell(C, usock(polar(p, ang + fs * PI / 2, 0.25 * s), ang + fs * mix(2.3, 1.9, u) + rng.range(-0.1, 0.1), 0.42 * k + 0.1 * s, fs), { kind: 'foxglove', fs });
   }
   ink.poly(leaf(last(pts), endAng(pts), 0.5 * s, 0.3 * s, 0, 0.4));
   return hend(H, null, last(pts));
@@ -625,7 +634,7 @@ function stemPts(p, a0, len, turn = 0, nod = 0, n = 16, wav = 0, ph = 0) {
 // One stem with leaves, whorls, prickles, branches and a crowning unit. Returns its points.
 function drawStem(Cp, p, a0, st, keepHead) {
   const K = Cp.ink, rng = Cp.rng;
-  const pts = floorPts(stemPts(p, a0, st.h, st.arc ?? 0, st.nod ?? 0, 16, st.wav ?? 0, rng.range(0, TAU)), 0.4);
+  const raw = stemPts(p, a0, st.h, st.arc ?? 0, st.nod ?? 0, 16, st.wav ?? 0, rng.range(0, TAU)), pts = floorPts(raw, 0.4);
   const w0 = Math.max(st.w ?? 1, hair), w1 = Math.max(st.w1 ?? w0 * 0.6, hair);
   const rad = P([[0, w0], [1, w1]]);
   K.poly(tube(pts, rad));
@@ -641,9 +650,9 @@ function drawStem(Cp, p, a0, st, keepHead) {
   if (J) for (let i = 0; i < J.n; i++) {
     const u = (i + 1) / (J.n + 1), q = pathAt(pts, u), wr = rad(u);
     K.poly(tube([polar(q.p, q.ang, -wr * 0.8), polar(q.p, q.ang, wr * 0.8)], wr * 1.35));
-    if (J.len) for (const sd of [-1, 1]) for (let j = 0; j < (J.k ?? 2); j++) {
-      const len = J.len * mix(1, J.k1 ?? 0.35, u) * rng.range(0.85, 1.1) * (j ? 0.8 : 1), a = q.ang + sd * (J.ang ?? 1.15) * (j ? 0.75 : 1);
-      K.poly(tube(arcPath(q.p, a, len, -sd * (J.curl ?? 0.5), 6), P([[0, Math.max(wr * 0.35, hair)], [1, hair * 0.9]])));
+    if (J.len) for (const sd of [-1, 1]) for (let j = 0; j < (J.k ?? 1); j++) {
+      const len = J.len * mix(1, J.k1 ?? 0.35, u) * rng.range(0.85, 1.1) * (j ? 0.7 : 1), a = q.ang + sd * (J.ang ?? 1.15) * (j ? 0.6 : 1);
+      K.poly(tube(floorPts(arcPath(q.p, a, len, sd * (J.curl ?? 0.5), 8, 1.6), 0.4), P([[0, hair * 1.15], [1, hair * 0.85]])));
     }
   }
   if (st.prickles) for (let i = 0; i < st.prickles; i++) { const t = rng.range(0.08, 0.85), q = pathAt(pts, t), sd = rng.sign(); K.poly(leaf(polar(q.p, q.ang + sd * PI / 2, rad(t) * 0.6), q.ang + sd * 1.1 + 0.4 * (sd > 0 ? -1 : 1) * 0, rad(t) * 1.2 + 0.6, rad(t) * 0.9 + 0.3, 0, 0.2)); }
@@ -654,7 +663,7 @@ function drawStem(Cp, p, a0, st, keepHead) {
     drawStem(Cp, q.p, q.ang + sd * (B.ang ?? 0.6) + rng.range(-0.12, 0.12), { ...B, n: 0, h: B.h * k, w: Math.min(B.w ?? rad(t) * 0.75, rad(t)), w1: B.w1, arc: (B.arc ?? 0) * sd, nod: (B.nod ?? 0) * sd, branch: B.branch, hs: (B.hs ?? 1) * mix(1, 0.85, u) });
   }
   if (st.head) {
-    const e = last(pts), ea = endAng(pts);
+    const e = last(pts), ea = endAng(raw);
     if (keepHead) return { pts, main: { p: e, a: ea, s: st.hs, spec: st.head } };
     drawUnit(Cp, e, ea, st.hs, st.head);
   }
@@ -671,13 +680,14 @@ function drawBasal(Cp, B) {
 }
 // ground substrates
 const SUB = {
-  cushion: (Cp, o) => { const rng = Cp.rng, pts = []; for (let i = 0; i <= 30; i++) { const t = i / 30, x = (t - 0.5) * 2 * o.w, y = -o.h * Math.sqrt(Math.max(1 - (2 * t - 1) ** 2, 0)) ** 0.7 * (1 + 0.08 * Math.sin(i * 1.9 + o.ph)); pts.push([o.x + x, y]); } pts.push([o.x + o.w, 0.5], [o.x - o.w, 0.5]); Cp.ink.poly(pts); for (let i = 0; i < 14; i++) { const t = rng.range(0.05, 0.95), x = (t - 0.5) * 2 * o.w, y = -o.h * Math.sqrt(1 - (2 * t - 1) ** 2) ** 0.7; Cp.ink.poly(leaf([o.x + x, y + 0.6], UP + (t - 0.5) * 2.4 + rng.range(-0.3, 0.3), rng.range(1.2, 2.2), 0.9, 0, 0.4)); } },
-  thallus: (Cp, o) => { const rng = Cp.rng; for (let i = 0; i < o.n; i++) { const x = o.x + (i / (o.n - 1) - 0.5) * o.w, sd = i % 2 ? 1 : -1; Cp.ink.poly(leaf([x, -0.3], sd > 0 ? -0.18 : PI + 0.18, rng.range(5, 8), rng.range(2.8, 3.8), sd * -0.12, 0.6)); } },
+  cushion: (Cp, o) => { const rng = Cp.rng, pts = []; for (let i = 0; i <= 30; i++) { const t = i / 30, x = (t - 0.5) * 2 * o.w, y = -o.h * Math.sqrt(Math.max(1 - (2 * t - 1) ** 2, 0)) ** 0.45 * (1 + 0.07 * Math.sin(i * 1.9 + o.ph)); pts.push([o.x + x, y]); } pts.push([o.x + o.w, 0.5], [o.x - o.w, 0.5]); Cp.ink.poly(pts); for (let i = 0; i < 14; i++) { const t = rng.range(0.05, 0.95), x = (t - 0.5) * 2 * o.w, y = -o.h * Math.sqrt(1 - (2 * t - 1) ** 2) ** 0.45; Cp.ink.poly(leaf([o.x + x, y + 0.6], UP + (t - 0.5) * 2.4 + rng.range(-0.3, 0.3), rng.range(1.2, 2.2), 0.9, 0, 0.4)); } },
+  thallus: (Cp, o) => { const rng = Cp.rng, pts = [[o.x - o.w / 2, 0.4]]; for (let i = 0; i <= o.n * 4; i++) { const t = i / (o.n * 4), x = o.x + (t - 0.5) * o.w, lobe = Math.abs(Math.sin(t * o.n * PI)); pts.push([x, -(0.6 + 1.6 * lobe ** 0.6) * Math.min(1, Math.sin(PI * t) * 3 + 0.3)]); } pts.push([o.x + o.w / 2, 0.4]); Cp.ink.poly(pts); void rng; },
   pebbles: (Cp, o) => { const rng = Cp.rng; for (let i = 0; i < o.n; i++) { const r = rng.range(0.9, 1.8); Cp.ink.oval([o.x + rng.range(-o.w, o.w), -r * 0.7], r * 1.25, r, rng.range(-0.3, 0.3)); } },
 };
 // 'stems': the workhorse. A substrate, a basal rosette, and stems; stems[0] is the main stem.
 FORMS.stems = (Cp, g) => {
   if (g.sub) SUB[g.sub.kind](Cp, g.sub);
+  if (g.base) Cp.ink.poly(superE([g.base.x ?? 0, 0], g.base.w, g.base.h, 0, 2.2));
   for (const B of g.basal ?? []) drawBasal(Cp, B);
   let main = null, mp = null, mst = null;
   g.stems.forEach((st, i) => {
@@ -693,6 +703,18 @@ FORMS.stems = (Cp, g) => {
 };
 
 // more units, used by the forms and species below
+// a stalk (petiole, pedicel) carrying a unit, which turns partly upward
+U.stalk = (C, p, a, s, o) => {
+  const sg = Math.cos(a) >= 0 ? 1 : -1, pts = floorPts(arcPath(p, a, s * (o.ped ?? 0.8), -sg * (o.rise ?? 0.3), 6), 0.5);
+  thin(C.ink, pts, Math.max(s * (o.pw ?? 0.06), MINW));
+  const ea = endAng(pts); drawUnit(C, last(pts), ea + angDiff(UP, ea) * (o.up ?? 0.3), s * (o.k ?? 1), o.spec);
+};
+// a pedicel arching over, with a unit hanging from it (lanterns, bells, pods, hearts)
+U.hang = (C, p, a, s, o) => {
+  const sg = Math.cos(a) >= 0 ? 1 : -1, pts = floorPts(arcPath(p, a, s * (o.ped ?? 0.6), sg * (o.droop ?? 1.6), 6, 1.5), 1);
+  thin(C.ink, pts, Math.max(s * 0.08, MINW));
+  drawUnit(C, last(pts), DOWN - sg * (o.swing ?? 0.25), s * (o.k ?? 1), o.spec);
+};
 // runcinate leaf with backward-pointing lobes (dandelion, poppy, thistle when spiny)
 U.jag = (C, p, a, s, o) => {
   const L = s * (o.len ?? 1), W = s * (o.wid ?? 0.32), n = o.lobes ?? 4, F = frame(p, a, 1, 1), top = [], bot = [], N = n * 6;
@@ -707,17 +729,17 @@ U.jag = (C, p, a, s, o) => {
 // Venus flytrap leaf: winged petiole, then the trap
 U.flytrap = (C, p, a, s, o) => {
   const L = s * (o.len ?? 1.5), bend = (o.bend ?? 0.25) * (Math.cos(a) >= 0 ? -1 : 1), pts = arcPath(p, a, L, bend, 8), e = last(pts), ea = endAng(pts);
-  C.ink.poly(tube(pts, P([[0, 0.12 * s], [0.55, 0.3 * s], [0.9, 0.36 * s], [1, 0.12 * s]])));
-  const gape = o.closed ? 0.12 : C.rng.range(o.gape0 ?? 0.35, o.gape1 ?? 0.7);
-  heads.plantTrap(C, usock(e, ea + bend * 0.5, s * (o.ts ?? 0.55)), { len: 2.3, wid: 1.0, gape, teeth: o.teeth ?? 6 });
+  C.ink.poly(tube(pts, P([[0, 0.1 * s], [0.5, 0.18 * s], [0.88, 0.3 * s], [1, 0.1 * s]])));
+  const gape = o.closed ? 0.1 : C.rng.range(o.gape0 ?? 0.4, o.gape1 ?? 0.75);
+  heads.plantTrap(C, usock(e, ea + angDiff(UP, ea) * 0.35, s * (o.ts ?? 0.62)), { len: 2.3, wid: 0.6, gape, teeth: o.teeth ?? 4 });
 };
 // cape sundew leaf: a strap fringed with glue-tipped tentacles, tip curled over
 U.drosera = (C, p, a, s, o) => {
-  const sg = Math.cos(a) >= 0 ? 1 : -1, pts = arcPath(p, a, s * (o.len ?? 1), sg * (o.curl ?? 1.6), 16, 2.6), n = o.n ?? 9;
+  const sg = Math.cos(a) >= 0 ? 1 : -1, pts = arcPath(p, a, s * (o.len ?? 1), sg * (o.curl ?? 1.6), 16, 2.6), n = Math.max(3, Math.min(o.n ?? 9, Math.floor(s * (o.len ?? 1) * 0.67 / 2.3)));
   C.ink.poly(tube(pts, P([[0, 0.05 * s], [0.25, 0.04 * s], [1, 0.035 * s]].map(([t, v]) => [t, Math.max(v, hair)]))));
   for (let i = 0; i < n; i++) {
     const t = mix(0.3, 0.97, i / (n - 1)), q = pathAt(pts, t);
-    for (const sd of [-1, 1]) { const e = polar(q.p, q.ang + sd * 1.35, s * 0.12); thin(C.ink, [q.p, e]); C.ink.dot(e, Math.max(s * 0.04, 0.55)); }
+    for (const sd of [-1, 1]) { const e = polar(q.p, q.ang + sd * 1.25 - sg * 0.2, Math.max(s * 0.11, 1.8)); thin(C.ink, [q.p, e]); C.ink.dot(e, Math.max(s * 0.035, 0.6)); }
   }
 };
 // pea / bean pod with swelling seeds
@@ -766,20 +788,21 @@ const leafU = (len = 1, wid = 0.45) => ({ u: 'leaf', len, wid });
 const species = [
   // ---------------- carnivores ----------------
   { name: 'venus flytrap', w: 3, genes: r => {
-    const form = { form: 'stems', R: 7, r: 4, keepHead: false, stems: [],
-      basal: [{ n: r.int(4, 7), spread: r.range(2.3, 2.9), s: r.range(4.4, 5.4), inner: 0.65, wx: 4, spec: { u: 'flytrap', len: r.range(1.3, 1.7) } }] };
+    const fan = sd => ({ n: r.int(1, 3), tilt: sd * r.range(0.75, 1.0), spread: r.range(0.5, 0.8), s: r.range(4.8, 5.6), inner: 0.85, wx: 2, x: sd * 1.5, spec: { u: 'flytrap', len: r.range(1.4, 1.9), bend: 0.45 } });
+    const form = { form: 'stems', R: 7, r: 4, keepHead: false, stems: [], basal: [fan(-1), fan(1)] };
+    if (r.chance(0.5)) form.basal.push({ n: 1, spread: 0, tilt: r.range(-0.2, 0.2), s: r.range(3.6, 4.2), spec: { u: 'flytrap', len: 1.2, closed: r.chance(0.5) } });
     if (r.chance(0.45)) form.stems.push({ x: r.range(-1, 1), lean: r.range(-0.15, 0.15), arc: r.range(-0.2, 0.2), h: r.range(28, 38), w: 0.75, w1: 0.55, head: { type: 'plantBloom', petals: 5, spread: 2.3, pl: 1.3, pw: 0.8, disc: 0.35 }, hs: 2.2 });
     return build(r, form, { head: { type: 'plantTrap', len: 2.3, wid: 1, gape: r.range(0.35, 0.6), teeth: 6 }, orn: { u: 'flytrap', len: 1.2 }, tipS: 0.7, crownS: 0.55, rowS: 0.4 });
   } },
   { name: 'cape sundew', w: 2, genes: r => {
     const form = { form: 'stems', R: 6, r: 4, keepHead: false,
-      basal: [{ n: r.int(5, 8), spread: r.range(2.0, 2.8), s: r.range(16, 22), inner: 0.7, wx: 3, spec: { u: 'drosera', len: 1, curl: r.range(1.2, 2.2), n: 9 } }],
+      basal: [{ n: r.int(3, 5), spread: r.range(1.3, 1.9), s: r.range(20, 26), inner: 0.75, wx: 3, spec: { u: 'drosera', len: 1, curl: r.range(1.4, 2.4), n: 9 } }],
       stems: r.chance(0.6) ? [{ x: r.range(-1, 1), lean: r.range(-0.2, 0.2), h: r.range(26, 36), w: 0.6, w1: 0.45, head: { u: 'buds', sign: r.sign() }, hs: 2.4 }] : [] };
     return build(r, form, { head: { type: 'plantLeaf', unit: { u: 'sundew' } , size: 1.8 }, orn: { u: 'sundew' }, row: { u: 'drosera', len: 1, curl: 1.8, n: 6 }, rowS: 1.6, tipS: 1, crownS: 1 });
   } },
   { name: 'trumpet pitchers', w: 2.2, genes: r => {
     const n = r.int(3, 6), stems = [];
-    for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) - 0.5 : 0, k = 1 - 0.35 * Math.abs(u) * 2 * r.range(0.6, 1.2); stems.push({ x: u * r.range(6, 10), lean: u * 0.5 + r.range(-0.08, 0.08), h: 0.6, w: 0.8, head: { type: 'plantPitcher', kind: 'sarracenia', len: r.range(6.5, 8.5) * k, wid: r.range(0.9, 1.15), fs: r.sign() }, hs: r.range(3.6, 4.3) }); }
+    for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) - 0.5 : 0, k = 1 - 0.35 * Math.abs(u) * 2 * r.range(0.6, 1.2); stems.push({ x: u * n * r.range(3.5, 4.5), lean: u * 0.35 + r.range(-0.06, 0.06), h: 0.6, w: 0.8, head: { type: 'plantPitcher', kind: 'sarracenia', len: r.range(7, 9) * k, wid: r.range(0.72, 0.9), fs: r.sign() }, hs: r.range(3.6, 4.2) }); }
     stems.sort((a, b) => b.head.len - a.head.len);
     if (r.chance(0.5)) stems.push({ x: r.range(-4, 4), lean: r.range(-0.2, 0.2), h: r.range(22, 30), w: 0.7, w1: 0.55, nod: r.sign() * 2.4, head: { type: 'plantBell', kind: 'fritillary', wid: 0.9 }, hs: 2 });
     return build(r, { form: 'stems', R: 7, r: 4, stems }, { head: { type: 'plantPitcher', kind: 'sarracenia', len: 3.5 }, headSize: 0.8, orn: { type: 'plantPitcher', kind: 'sarracenia', len: 3 }, tipS: 0.5, crownS: 0.45, rowS: 0.3 });
@@ -804,20 +827,146 @@ const species = [
   } },
   // ---------------- ferns and allies ----------------
   { name: 'horsetail', w: 2, genes: r => {
-    const n = r.int(2, 5), stems = [];
+    const n = r.int(1, 3), stems = [];
     for (let i = 0; i < n; i++) {
-      const fertile = i > 0 && r.chance(0.35), h = r.range(26, 44) * (i ? r.range(0.6, 0.95) : 1);
-      stems.push({ x: (i % 2 ? 1 : -1) * Math.ceil(i / 2) * r.range(4, 7), lean: r.range(-0.18, 0.18), arc: r.range(-0.2, 0.2), h, w: fertile ? 1.1 : 0.9, w1: fertile ? 0.9 : 0.4,
-        joints: { n: fertile ? r.int(3, 4) : r.int(6, 9), len: fertile ? 0 : r.range(6, 10), k: 2, ang: r.range(1.0, 1.3), curl: r.range(0.3, 0.8), k1: 0.3 },
+      const fertile = i > 0 && r.chance(0.45), h = r.range(30, 44) * (i ? r.range(0.6, 0.85) : 1);
+      stems.push({ x: (i % 2 ? 1 : -1) * Math.ceil(i / 2) * r.range(9, 13), lean: r.range(-0.18, 0.18), arc: r.range(-0.2, 0.2), h, w: fertile ? 1.1 : 0.9, w1: fertile ? 0.9 : 0.4,
+        joints: { n: fertile ? r.int(3, 4) : r.int(5, 7), len: fertile ? 0 : r.range(9, 13), k: 1, ang: r.range(0.7, 0.95), curl: r.range(0.5, 1.1), k1: 0.35 },
         ...(fertile ? { head: { type: 'plantCone', kind: 'horsetail', len: 2.3, wid: 1.1 }, hs: 2.4 } : {}) });
     }
     return build(r, { form: 'stems', R: 6, r: 4, stems }, { head: { type: 'plantCone', kind: 'horsetail', len: 2.3 }, headSize: 0.8, orn: { type: 'plantCone', kind: 'horsetail', len: 2 }, row: { u: 'needles', n: 5, spread: 1.6 }, rowS: 1.2, tipS: 0.6, crownS: 0.5 });
   } },
   { name: 'moss sporophytes', w: 1.8, genes: r => {
-    const W = r.range(9, 15), H = r.range(3.5, 5.5), n = r.int(4, 8), stems = [];
-    for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) - 0.5 : 0; stems.push({ x: u * W * 1.3 + r.range(-1, 1), lean: u * 0.6 + r.range(-0.15, 0.15), arc: r.range(-0.3, 0.3), h: (r.range(14, 22) + H) * (1 - 0.3 * Math.abs(u)), w: 0.42, w1: 0.38, nod: r.range(0.5, 1.6) * (u >= 0 ? 1 : -1), head: { type: 'plantCone', kind: 'moss', wid: 0.95 }, hs: r.range(1.4, 1.7) }); }
+    const W = r.range(9, 14), H = r.range(4.5, 7), n = r.int(3, 6), stems = [];
+    for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) - 0.5 : 0; stems.push({ x: u * W * 1.2 + r.range(-1, 1), lean: u * 0.5 + r.range(-0.12, 0.12), arc: r.range(-0.2, 0.2), h: (r.range(14, 22) + H) * (1 - 0.3 * Math.abs(u)), w: 0.42, w1: 0.38, nod: r.range(0.4, 1.3) * (u >= 0 ? 1 : -1), head: { type: 'plantCone', kind: 'moss', wid: 1.0 }, hs: r.range(2.1, 2.5) }); }
     stems.sort((a, b) => b.h - a.h);
     return build(r, { form: 'stems', R: W, r: 4, stems, sub: { kind: 'cushion', x: 0, w: W, h: H, ph: r.range(0, 6) } }, { head: { type: 'plantCone', kind: 'moss' }, headSize: 1.1, orn: { type: 'plantCone', kind: 'moss' }, crownS: 0.7, tipS: 0.8, stem: 1.8 });
+  } },
+
+  { name: 'nepenthes', w: 2.4, genes: r => {
+    const sd = r.sign(), h = r.range(36, 48), nl = r.int(3, 5);
+    const stems = [{ x: 0, lean: sd * r.range(0.05, 0.2), arc: -sd * r.range(0.2, 0.6), wav: r.range(0.08, 0.16), h, w: 1.1, w1: 0.7,
+      leaves: { n: nl, t0: 0.2, t1: 0.85, ang: 1.05, s: r.range(3.6, 4.2), k1: 0.75, spec: { u: 'nepLeaf', ps: r.range(0.9, 1.1), drop: 2.2 } }, head: { u: 'leaves', n: 2, spread: 0.8, len: 2.4, wid: 0.32 }, hs: 3 }];
+    return build(r, { form: 'stems', R: 5, r: 4, stems, keepHead: false }, { head: { type: 'plantPitcher', kind: 'nepenthes' }, headSize: 0.85, orn: { type: 'plantPitcher', kind: 'nepenthes' }, tipS: 0.55, crownS: 0.5, row: { u: 'nepLeaf', ps: 0.9, drop: 1.6 }, rowS: 0.55 });
+  } },
+  { name: 'cobra lily', w: 1.8, genes: r => {
+    const n = r.int(2, 4), stems = [];
+    for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) - 0.5 : 0, fs = r.sign(); stems.push({ x: u * n * r.range(4, 5.5), lean: u * 0.3 + r.range(-0.08, 0.08), h: 0.6, w: 0.8, head: { type: 'plantPitcher', kind: 'cobra', len: r.range(4.6, 5.6) * (1 - 0.3 * Math.abs(u)), hook: r.range(0.15, 0.45), wid: r.range(0.9, 1.1), fs }, hs: r.range(4.2, 5) }); }
+    return build(r, { form: 'stems', R: 7, r: 4, stems }, { head: { type: 'plantPitcher', kind: 'cobra', len: 3.6 }, headSize: 0.8, orn: { type: 'plantPitcher', kind: 'cobra', len: 3.4 }, tipS: 0.55, crownS: 0.45, rowS: 0.3 });
+  } },
+  // ---------------- arums and orchids ----------------
+  { name: 'jack-in-the-pulpit', w: 2.2, genes: r => {
+    const sd = r.sign();
+    const stems = [{ x: 0, lean: r.range(-0.1, 0.1), arc: r.range(-0.15, 0.15), h: r.range(14, 20), w: 1.2, w1: 1.0, head: { type: 'plantArum', kind: 'jack', wid: r.range(0.9, 1.1), fs: sd }, hs: r.range(4.4, 5) }];
+    for (let i = 0; i < r.int(1, 2); i++) stems.push({ x: -sd * r.range(3, 5) * (i ? -0.6 : 1), lean: -sd * r.range(0.1, 0.25) * (i ? -1 : 1), h: r.range(30, 40) * (i ? 0.75 : 1), w: 1.0, w1: 0.8, nod: -sd * r.range(0.6, 1.2) * (i ? -1 : 1), head: { u: 'leaves', n: 3, spread: r.range(2.4, 3.0), len: 1, wid: 0.42, fat: 0.5 }, hs: r.range(9, 11) });
+    return build(r, { form: 'stems', R: 5, r: 4, stems }, { head: { type: 'plantArum', kind: 'jack' }, headSize: 0.7, orn: { type: 'plantArum', kind: 'jack' }, tipS: 0.4, crownS: 0.38, row: { u: 'leaves', n: 3, spread: 2.4, wid: 0.42 }, rowS: 0.9 });
+  } },
+  { name: 'cuckoo-pint', w: 1.8, genes: r => {
+    const sd = r.sign(), fruit = false;
+    const stems = [{ x: 0, lean: r.range(-0.12, 0.12), h: fruit ? r.range(18, 24) : r.range(8, 13), w: 1.0, w1: 0.9, head: fruit ? { u: 'berries', n: 7 } : { type: 'plantArum', kind: r.chance(0.3) ? 'calla' : 'cuckoo', wid: r.range(0.9, 1.1), fs: sd }, hs: fruit ? 2.6 : r.range(4.2, 5) }];
+    if (fruit) stems[0].leaves = { n: 6, t0: 0.6, t1: 0.98, ang: 0.9, s: 2.6, k1: 0.75, spec: { u: 'berries', n: 2 } };
+    return build(r, { form: 'stems', R: 6, r: 4, stems, basal: [{ n: r.int(2, 3), spread: r.range(1.6, 2.2), s: r.range(9, 11), inner: 0.8, wx: 3, spec: { u: 'stalk', ped: 0.9, rise: 0.4, up: 0.2, k: 0.85, spec: { u: 'heart', arrow: true, len: 0.9, wid: 0.75 } } }] },
+      { head: { type: 'plantArum', kind: 'cuckoo' }, headSize: 0.7, orn: { type: 'plantArum', kind: 'cuckoo' }, tipS: 0.4, crownS: 0.38, row: { u: 'heart', arrow: true, len: 0.9, wid: 0.75 }, rowS: 0.9 });
+  } },
+  { name: 'titan arum', w: 1.3, genes: r => {
+    const stems = [{ x: 0, lean: r.range(-0.06, 0.06), h: r.range(3, 6), w: 2.4, w1: 2.2, head: { type: 'plantArum', kind: 'titan', len: r.range(5, 6.4), wid: r.range(0.9, 1.1) }, hs: r.range(6.2, 7.2) }];
+    return build(r, { form: 'stems', R: 8, r: 6, stems }, { head: { type: 'plantArum', kind: 'titan', len: 5 }, headSize: 0.55, orn: { type: 'plantArum', kind: 'titan', len: 4.6 }, tipS: 0.35, crownS: 0.3, rowS: 0.25 });
+  } },
+  { name: 'lady\'s slipper', w: 2, genes: r => {
+    const sd = r.sign(), n = r.int(1, 2), stems = [];
+    for (let i = 0; i < n; i++) stems.push({ x: i ? -sd * r.range(5, 7) : 0, lean: (i ? -sd : sd) * r.range(0.05, 0.2), arc: sd * r.range(0.1, 0.4), h: r.range(22, 30) * (i ? 0.8 : 1), w: 0.8, w1: 0.6, leaves: { n: 1, t0: 0.6, t1: 0.6, ang: 0.6, s: 4, spec: { u: 'leaf', len: 1, wid: 0.3 } }, head: { type: 'plantSlipper', pouch: r.range(0.9, 1.15), fs: sd }, hs: r.range(3.2, 3.7) });
+    return build(r, { form: 'stems', R: 6, r: 4, stems, basal: [{ n: 2, spread: r.range(1.5, 2.1), s: r.range(12, 15), inner: 1, wx: 2, spec: { u: 'leaf', len: 1, wid: 0.5, fat: 0.5 } }] },
+      { head: { type: 'plantSlipper' }, headSize: 0.85, orn: { type: 'plantSlipper' }, tipS: 0.5, crownS: 0.45, row: leafU(1, 0.5), rowS: 0.9 });
+  } },
+  // ---------------- seed-heads and flowers ----------------
+  { name: 'teasel', w: 1.8, genes: r => {
+    const nb = r.int(0, 2), stems = [{ x: 0, lean: r.range(-0.08, 0.08), arc: r.range(-0.15, 0.15), h: r.range(36, 46), w: 1.1, w1: 0.8, prickles: 6,
+      leaves: { n: 2, pair: true, t0: 0.3, t1: 0.55, ang: 0.75, s: r.range(9, 11), k1: 0.8, spec: { u: 'leaf', len: 1, wid: 0.22, bend: 0.1 } },
+      branch: nb ? { n: nb, t0: 0.62, t1: 0.75, ang: 0.55, h: r.range(10, 15), w: 0.7, arc: -0.25, head: { type: 'plantBur', kind: 'teasel', wid: 0.95 }, hs: 2.2 } : null,
+      head: { type: 'plantBur', kind: 'teasel', wid: r.range(0.95, 1.1) }, hs: r.range(3.8, 4.4) }];
+    return build(r, { form: 'stems', R: 5, r: 4, stems }, { head: { type: 'plantBur', kind: 'teasel' }, headSize: 0.8, orn: { type: 'plantBur', kind: 'teasel' }, tipS: 0.5, crownS: 0.45, row: { u: 'thorn', len: 1 }, rowS: 0.5, rowN: 6 });
+  } },
+  { name: 'thistle', w: 2, genes: r => {
+    const nb = r.int(1, 3), stems = [{ x: 0, lean: r.range(-0.1, 0.1), arc: r.range(-0.2, 0.2), h: r.range(30, 42), w: 1.2, w1: 0.8, prickles: 8,
+      leaves: { n: r.int(2, 3), t0: 0.12, t1: 0.5, ang: 0.85, s: r.range(9, 11), k1: 0.65, spec: { u: 'jag', lobes: 3, wid: 0.28 } },
+      branch: { n: nb, t0: 0.62, t1: 0.8, ang: 0.6, h: r.range(9, 14), w: 0.8, arc: -0.3, head: { type: 'plantBur', kind: 'thistle', wid: 0.95 }, hs: 2.9 },
+      head: { type: 'plantBur', kind: 'thistle', wid: r.range(0.95, 1.1) }, hs: r.range(3.6, 4.1) }];
+    return build(r, { form: 'stems', R: 5, r: 4, stems }, { head: { type: 'plantBur', kind: 'thistle' }, headSize: 0.8, orn: { type: 'plantBur', kind: 'thistle' }, tipS: 0.5, crownS: 0.45, row: { u: 'jag', lobes: 3, wid: 0.3, spiny: true }, rowS: 1.1 });
+  } },
+  { name: 'chinese lanterns', w: 1.8, genes: r => {
+    const sd = r.sign(), nl = r.int(3, 4);
+    const stems = [{ x: 0, lean: sd * r.range(0.05, 0.2), arc: sd * r.range(0.9, 1.4), h: r.range(36, 44), w: 1.0, w1: 0.55,
+      leaves: { n: nl, t0: 0.4, t1: 0.95, ang: 1.3, sd: -sd, s: r.range(3.6, 4.2), k1: 0.8, spec: { u: 'hang', ped: 0.7, droop: 1.6, swing: 0.1, k: 1, spec: { type: 'plantPod', kind: 'physalis', wid: 1.1 } } },
+      branch: { n: 2, t0: 0.2, t1: 0.5, ang: 0.9, sd, h: 0.2, w: 0.5, head: { u: 'leaf', len: 1, wid: 0.5 }, hs: 5.5 } }];
+    return build(r, { form: 'stems', R: 5, r: 4, stems }, { head: { type: 'plantPod', kind: 'physalis' }, headSize: 1, orn: { type: 'plantPod', kind: 'physalis' }, tipS: 0.7, crownS: 0.6, row: { u: 'hang', spec: { type: 'plantPod', kind: 'physalis' } }, rowS: 0.6 });
+  } },
+  { name: 'honesty', w: 1.5, genes: r => {
+    const nb = r.int(2, 3), disc = { u: 'disc' }, sdisc = { u: 'stalk', ped: 0.9, rise: 0.2, up: 0.15, k: 1, spec: disc };
+    const stems = [{ x: 0, lean: r.range(-0.1, 0.1), arc: r.range(-0.2, 0.2), h: r.range(38, 46), w: 0.9, w1: 0.5,
+      leaves: { n: 3, t0: 0.65, t1: 0.92, ang: 0.95, s: r.range(3.4, 3.8), k1: 0.85, spec: sdisc },
+      branch: { n: nb, t0: 0.3, t1: 0.5, ang: 0.7, h: r.range(14, 18), w: 0.6, arc: -0.4, leaves: { n: 2, t0: 0.45, t1: 0.8, ang: 1.0, s: 3.2, k1: 0.9, spec: sdisc }, head: disc, hs: 3.4 },
+      head: disc, hs: 3.6 }];
+    return build(r, { form: 'stems', R: 5, r: 4, stems }, { head: { type: 'plantLeaf', unit: disc, size: 2 }, orn: disc, tipS: 1.2, crownS: 1, row: disc, rowS: 0.8 });
+  } },
+  { name: 'lotus', w: 1.6, genes: r => {
+    const n = r.int(3, 5), stems = [];
+    for (let i = 0; i < n; i++) {
+      const kind = i === 0 ? 'pod' : r.wpick([[3, 'leaf'], [1.5, 'pod'], [1, 'bud']]), x = (i % 2 ? 1 : -1) * Math.ceil(i / 2) * r.range(5, 8);
+      const head = kind === 'leaf' ? { u: 'peltate', wid: 1.3 } : kind === 'pod' ? { type: 'plantPod', kind: 'lotus', wid: r.range(0.9, 1.1) } : { u: 'bud', len: 0.75, wid: 0.42 };
+      stems.push({ x, lean: Math.sign(x) * r.range(0, 0.2), arc: r.range(-0.3, 0.3), nod: kind === 'leaf' ? r.sign() * r.range(0.6, 1.4) : (kind === 'pod' && i ? r.sign() * r.range(0.3, 1.2) : 0), h: r.range(22, 38) * (kind === 'leaf' ? 0.85 : 1), w: 0.8, w1: 0.7, head, hs: kind === 'leaf' ? r.range(7, 9) : kind === 'pod' ? r.range(3.2, 3.8) : 4.5 });
+    }
+    return build(r, { form: 'stems', R: 6, r: 4, stems }, { head: { type: 'plantPod', kind: 'lotus' }, headSize: 0.85, orn: { type: 'plantPod', kind: 'lotus' }, tipS: 0.55, crownS: 0.5, row: { u: 'peltate', wid: 1.3 }, rowS: 0.8, ears: r.chance(0.3) });
+  } },
+  { name: 'foxglove', w: 1.6, genes: r => {
+    const sd = r.sign(), lupin = r.chance(0.35);
+    const stems = [{ x: 0, lean: r.range(-0.1, 0.1), h: r.range(8, 14), w: 1.1, w1: 0.9, head: { type: 'plantSpire', kind: lupin ? 'lupin' : 'foxglove', len: r.range(5.5, 7), n: lupin ? r.int(9, 12) : r.int(6, 7), bow: r.range(0.1, 0.3), fs: sd, t0: lupin ? 0.1 : 0.25 }, hs: r.range(4.2, 5) }];
+    const basal = lupin ? [{ n: r.int(3, 4), spread: 2.0, s: 8, inner: 0.8, wx: 3, spec: { u: 'hang', ped: 0.8, droop: 0.4, swing: 0, k: 0.8, spec: { u: 'leaves', n: 7, spread: 3.4, len: 0.8, wid: 0.22 } } }] : [{ n: r.int(4, 6), spread: 2.4, s: r.range(10, 13), inner: 0.75, wx: 3, spec: leafU(1, 0.38) }];
+    return build(r, { form: 'stems', R: 6, r: 4, stems, basal }, { head: { type: 'plantSpire', kind: lupin ? 'lupin' : 'foxglove', len: 5 }, headSize: 0.7, orn: { type: 'plantBell', kind: 'foxglove' }, tipS: 0.6, crownS: 0.55, row: { type: 'plantBell', kind: 'foxglove' }, rowS: 0.45 });
+  } },
+  { name: 'fritillary', w: 1.3, genes: r => {
+    const n = r.int(1, 3), stems = [];
+    for (let i = 0; i < n; i++) { const sd = r.sign(); stems.push({ x: (i - (n - 1) / 2) * r.range(5, 8), lean: r.range(-0.15, 0.15), arc: sd * r.range(0, 0.3), nod: sd * r.range(2.2, 2.8), h: r.range(26, 36) * (i ? 0.85 : 1), w: 0.65, w1: 0.55, leaves: { n: 3, t0: 0.2, t1: 0.6, ang: 0.5, s: r.range(7, 9), k1: 0.7, spec: { u: 'strap', len: 1, wid: 0.1, grav: 0.6 } }, head: { type: 'plantBell', kind: 'fritillary', wid: r.range(0.9, 1.05) }, hs: r.range(3, 3.5) }); }
+    return build(r, { form: 'stems', R: 5, r: 4, stems }, { head: { type: 'plantBell', kind: 'fritillary' }, headSize: 0.9, orn: { type: 'plantBell', kind: 'fritillary' }, tipS: 0.6, crownS: 0.55, row: { type: 'plantBell', kind: 'fritillary' }, rowS: 0.45 });
+  } },
+  { name: 'bleeding heart', w: 1.4, genes: r => {
+    const sd = r.sign(), nh = r.int(3, 5);
+    const stems = [{ x: 0, lean: sd * r.range(0.25, 0.45), arc: sd * r.range(1.2, 1.7), h: r.range(32, 40), w: 0.9, w1: 0.45,
+      leaves: { n: nh, t0: 0.5, t1: 0.95, ang: 1.4, sd: -sd, s: 3.0, k1: 0.55, spec: { u: 'hang', ped: 0.7, droop: 1.2, swing: 0, k: 0.8, spec: { type: 'plantBell', kind: 'heart' } } },
+      branch: { n: 2, t0: 0.1, t1: 0.3, ang: 0.7, sd: -sd, h: r.range(14, 18), w: 0.6, arc: 0.4, nod: 0.6, head: { u: 'leaves', n: 3, spread: 2.2, len: 1, wid: 0.36 }, hs: 6 } }];
+    return build(r, { form: 'stems', R: 5, r: 4, stems }, { head: { type: 'plantBell', kind: 'heart' }, headSize: 1, orn: { type: 'plantBell', kind: 'heart' }, tipS: 0.6, crownS: 0.55, row: { u: 'hang', spec: { type: 'plantBell', kind: 'heart' } }, rowS: 0.55 });
+  } },
+  { name: 'hogweed', w: 1.5, genes: r => {
+    const nb = r.int(1, 3);
+    const stems = [{ x: 0, lean: r.range(-0.08, 0.08), arc: r.range(-0.15, 0.15), h: r.range(36, 46), w: 1.4, w1: 0.9,
+      leaves: { n: 2, t0: 0.25, t1: 0.45, ang: 0.8, s: r.range(9, 11), k1: 0.8, spec: { u: 'jag', lobes: 4, wid: 0.35 } },
+      branch: { n: nb, t0: 0.65, t1: 0.82, ang: 0.6, h: r.range(9, 13), w: 0.7, arc: -0.2, head: { type: 'plantUmbel', n: 6, R: 1.8, spread: 2.0 }, hs: 2.6 },
+      head: { type: 'plantUmbel', n: r.int(7, 9), R: 2.1, spread: 2.2 }, hs: r.range(3.6, 4.2) }];
+    return build(r, { form: 'stems', R: 5, r: 4, stems }, { head: { type: 'plantUmbel', n: 7, R: 2 }, headSize: 0.8, orn: { type: 'plantUmbel', n: 6, R: 1.8 }, tipS: 0.55, crownS: 0.5, row: { u: 'jag', lobes: 3, wid: 0.35 }, rowS: 1.1 });
+  } },
+  { name: 'cattail', w: 1.5, genes: r => {
+    const n = r.int(1, 3), stems = [];
+    for (let i = 0; i < n; i++) stems.push({ x: (i - (n - 1) / 2) * r.range(3, 5), lean: r.range(-0.12, 0.12), arc: r.range(-0.15, 0.15), h: r.range(26, 36) * (i ? 0.85 : 1), w: 0.8, w1: 0.6, head: { type: 'plantCone', kind: 'cattail', len: r.range(2.6, 3.4), wid: r.range(1.1, 1.3) }, hs: r.range(3, 3.4) });
+    return build(r, { form: 'stems', R: 6, r: 4, stems, basal: [{ n: r.int(4, 6), spread: 1.1, s: r.range(30, 40), inner: 0.9, wx: 4, spec: { u: 'strap', len: 1, wid: 0.07, grav: 0.55 } }] },
+      { head: { type: 'plantCone', kind: 'cattail' }, headSize: 0.9, orn: { type: 'plantCone', kind: 'cattail' }, tipS: 0.55, crownS: 0.5, row: { u: 'strap', len: 1, wid: 0.12 }, rowS: 2 });
+  } },
+  { name: 'fiddleheads', w: 2.6, genes: r => {
+    const n = r.int(3, 5), stems = [];
+    for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) - 0.5 : 0, fs = u >= 0 ? -1 : 1, open = r.chance(0.3);
+      stems.push({ x: u * n * 2.6 + r.range(-0.8, 0.8), lean: u * 0.5, h: 0.5, w: 1.2, head: { type: 'plantFiddle', len: r.range(9, 13) * (1 - 0.3 * Math.abs(u)), turns: open ? r.range(0.6, 0.9) : r.range(1.3, 1.8), k: open ? 2.2 : 3.2, w: 0.42, nubs: r.chance(0.6), fs, lean: r.range(0.1, 0.4) }, hs: r.range(2.4, 2.9) }); }
+    stems.sort((a, b) => b.head.len - a.head.len);
+    const basal = r.chance(0.5) ? [{ n: r.int(1, 2), spread: 1.2, s: r.range(28, 34), inner: 1, wx: 3, spec: { u: 'frond', len: 1, pl: 0.2, pw: 0.075, n: 9, grav: 0.5 } }] : [];
+    return build(r, { form: 'stems', R: 6, r: 4, stems, basal }, { head: { type: 'plantFiddle', len: 7, turns: 1.6, w: 0.35 }, headSize: 0.8, orn: { type: 'plantFiddle', len: 6, turns: 1.6, w: 0.3 }, tipS: 0.6, crownS: 0.55, row: { type: 'plantFiddle', len: 5, turns: 1.4, w: 0.3 }, rowS: 0.4, spiral: true });
+  } },
+  { name: 'shuttlecock fern', w: 1.8, genes: r => {
+    const n = r.int(5, 7);
+    return build(r, { form: 'stems', R: 6, r: 4, keepHead: false, base: { w: 3.2, h: 3 }, stems: r.chance(0.6) ? [{ x: 0, lean: r.range(-0.1, 0.1), h: 0.4, w: 1, head: { type: 'plantFiddle', len: 8, turns: 1.6, w: 0.4, nubs: true, fs: r.sign() }, hs: 2.2 }] : [],
+      basal: [{ n, spread: r.range(1.3, 1.7), s: r.range(32, 40), inner: 0.8, wx: 3, y: 1.5, spec: { u: 'frond', len: 1, pl: 0.19, pw: 0.07, n: 10, grav: r.range(0.45, 0.8) } }] },
+      { head: { type: 'plantFiddle', len: 7, turns: 1.6, w: 0.35 }, headSize: 0.8, orn: { u: 'frond', len: 1, pl: 0.3, pw: 0.12, n: 6, grav: 0.6 }, tipS: 2.2, crownS: 2, row: { u: 'frond', len: 1, pl: 0.3, pw: 0.12, n: 6, grav: 0.6 }, rowS: 1.6 });
+  } },
+  { name: 'liverwort umbrellas', w: 1.4, genes: r => {
+    const n = r.int(2, 5), stems = [];
+    for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) - 0.5 : 0, palm = r.chance(0.6); stems.push({ x: u * n * 4 + r.range(-1, 1), lean: u * 0.4 + r.range(-0.1, 0.1), arc: r.range(-0.2, 0.2), h: r.range(9, 15), w: 0.6, w1: 0.5, head: palm ? { type: 'plantUmbel', kind: 'palm', n: r.int(7, 9), R: 1.6 } : { u: 'peltate', wid: 1.1 }, hs: palm ? r.range(2.3, 2.7) : r.range(3, 3.6) }); }
+    return build(r, { form: 'stems', R: 7, r: 4, stems, sub: { kind: 'thallus', x: 0, w: n * 5 + 6, n: n + 2 } }, { head: { type: 'plantUmbel', kind: 'palm', n: 8, R: 1.6 }, headSize: 0.9, orn: { type: 'plantUmbel', kind: 'palm', n: 8, R: 1.6 }, tipS: 0.6, crownS: 0.6, stem: 1.6, rowS: 0.5 });
   } },
 ];
 
