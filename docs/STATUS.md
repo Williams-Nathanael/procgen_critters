@@ -19,9 +19,10 @@ below it (rooted forms may poke a sliver of root).
 **Species libraries**: 7 tags hold 28-46 species each, written by Fable agents that were cut
 off by usage limits before finishing their review rounds, so all of it is **unreviewed**.
 Plant still has the 1-species first pass (its helper code is on `wip/plant-species`). On
-2026-11-13 Opus `species-builder` agents were started on all 8 tags to finish this work; check
-`git log` and each `docs/tags/<tag>.md` State section to see how far they got. WIP sheets:
-`out/roads/wip/`.
+2026-11-13 Opus `species-builder` runs began, three at a time: fungus, plant, salamander
+first; then jansson, dragon, arthropod; then amphibian, mammal. A tag is finished when it has
+`out/roads/03-<tag>-species.png` and its State section says so; check `git log` and each
+`docs/tags/<tag>.md` to see how far the run got. WIP sheets: `out/roads/wip/`.
 
 ## Queue
 
