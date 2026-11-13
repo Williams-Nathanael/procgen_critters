@@ -43,7 +43,10 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
 4. **M4 Mixing quality** (engineer, model opus; no tag workers running). Lent parts scaled
    to the receiving body; `sig` weights tuned; mixes coherent across all 28 tag pairs and
    some triples; per-border tag weights (e.g. mostly fungus, a little dragon) if the user
-   wants them. [critic on a 28-pair sheet]
+   wants them. Known: lent tails scale with the receiving chassis's tail-socket size, so e.g.
+   jansson tassel tails get very long on jerboa-like mammal bodies; cap lent tail length
+   relative to body radius in `parts.js` (salamander already caps its own lent tails at 3.2x).
+   [critic on a 28-pair sheet]
 5. **M5 Placement polish** (engineer). No identical species adjacent; spacing by actual
    critter width; corners of boxes and tight curves handled; "both sides" staggered;
    placement fast enough to drag sliders smoothly (now ~1 s for ~60 critters: cache
