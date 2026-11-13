@@ -243,39 +243,67 @@ heads.dragonHead = (C, sock, g) => {
 };
 
 // ---------------------------------------------------------------- wings
-// Local frame: x runs out along the arm, +y is the trailing side (towards the tail).
-function batWing(ink, F, S, g) {
-  const n = g.fingers ?? 3, W = [0.5, -0.06], f0 = g.f0 ?? 0.15, f1 = g.f1 ?? 2.1, sc = g.scallop ?? 0.36;
-  const tp = [];
-  for (let i = 0; i < n; i++) { const u = i / (n - 1), a = mix(f0, f1, u), l = mix(0.66, 0.5, u) * (g.fl ?? 1); tp.push([W[0] + l * Math.cos(a), W[1] + l * Math.sin(a)]); }
-  const A = [-0.14, 0.26], mem = [F(-0.05, -0.02), F(0.26, -0.11), F(W[0], W[1])];
-  for (let i = 0; i < n; i++) {
-    mem.push(F(...tp[i]));
-    const b = i < n - 1 ? tp[i + 1] : A, m = lerp(tp[i], b, 0.5), ctl = lerp(m, i < n - 1 ? W : [0.2, 0.1], i < n - 1 ? sc * 1.6 : 0.3);
-    mem.push(...qcurve(tp[i], ctl, b, 6).map(q => F(...q)));
-  }
-  mem.push(F(...A));
-  ink.poly(mem);
-  const tipR = Math.max(S * 0.024, 0.5);
-  for (const t of tp) ink.poly(tube(polyline([F(W[0], W[1]), F(...t)], 3), profile([[0, S * 0.05], [1, tipR]])));
-  ink.poly(tube(spline([F(-0.05, 0), F(0.26, -0.09), F(W[0], W[1])], 5), profile([[0, S * 0.1], [1, S * 0.062]])));
-  ink.poly(leaf(F(W[0] - 0.02, W[1]), F.dir(-0.75), S * 0.2, S * 0.11, F.flip * 0.2, 0.35)); // thumb claw
+// Every wing is ONE outline polygon (cheap to union, no piles of finger tubes).
+// Local frame: x runs out along the arm, +y is the trailing side (towards the tail); unit = S.
+// Kinds: membrane (bat / heraldic / round Uccello / folded / stub), feather, leafy.
+function lobe(out, T, a, w, k = 1) { // rounded feather end centred on tip T pointing along a
+  const c = polar(T, a + PI, w);
+  for (const d of [-1.25, -0.6, 0, 0.6, 1.25]) out.push(polar(c, a + d * k, w));
 }
-function birdWing(ink, F, S, g) {
-  const n = g.feathers ?? 6, f0 = g.f0 ?? 0.2, f1 = g.f1 ?? 1.5;
+function membraneWing(g) {
+  const n = g.fingers ?? 4, W = g.W ?? [0.36, -0.04], E = [W[0] * 0.5, W[1] - 0.09 - (g.elbow ?? 0.03)];
+  const f0 = g.f0 ?? 0.1, f1 = g.f1 ?? 2.1, sc = g.scallop ?? 0.42, aw = g.aw ?? 0.06, A = g.A ?? [-0.05, 0.8];
+  const tips = [];
   for (let i = 0; i < n; i++) {
-    const u = i / (n - 1), root = [mix(0.08, 0.6, u), 0], a = mix(f1, f0, u ** 0.8), l = mix(0.4, 0.56, u) * (g.fl ?? 1);
-    const tipP = [root[0] + l * Math.cos(a), root[1] + l * Math.sin(a)];
-    ink.poly(tube(polyline([F(...root), F(...tipP)], 4), profile([[0, S * 0.1], [0.75, S * 0.085], [1, S * 0.045]])));
+    const u = i / (n - 1), a = mix(f0, f1, u), l = mix(g.l0 ?? 0.76, g.l1 ?? 0.56, u) * (g.fl ?? 1);
+    tips.push(polar(W, a, l));
   }
-  ink.poly(tube(spline([F(-0.05, 0), F(0.3, -0.1), F(0.64, -0.03)], 5), profile([[0, S * 0.15], [0.7, S * 0.12], [1, S * 0.08]])));
+  const out = [[-0.04, -aw], [E[0], E[1] - aw], [W[0] - aw * 0.4, W[1] - aw * 1.1]];
+  if (g.thumb !== false) out.push(polar(W, f0 - 1.75, 0.15), [W[0] + aw * 0.5, W[1] - aw * 0.9]);
+  if (g.hook) { // the leading rib curls over forwards at its end (heraldic)
+    const T = tips[0], a = f0;
+    out.push(polar(W, a, mix(0, dist(W, T), 0.62)), polar(polar(W, a, dist(W, T) * 0.92), a - PI / 2, g.hook * 0.1));
+  }
+  for (let i = 0; i < n; i++) {
+    const T = tips[i], B = i < n - 1 ? tips[i + 1] : A;
+    out.push(T);
+    const m = lerp(T, B, 0.5), ctl = i < n - 1 ? lerp(m, W, sc) : lerp(m, [W[0] * 0.4, W[1] + 0.12], 0.6 * sc);
+    out.push(...qcurve(T, ctl, B, 6));
+  }
+  out.push(A, [A[0] - 0.12, A[1] * 0.5]);
+  return out;
 }
+function featherWing(g) {
+  // leading edge arches out to the wing tip; feather ends lie along a convex trailing curve
+  // from the tip back to the body, each pointing away from the bone line
+  const n = g.feathers ?? 7, W = g.W ?? [0.46, -0.06], A = g.A ?? [-0.06, 0.56], notch = g.notch ?? 0.3;
+  const T0 = polar(W, g.f0 ?? 0.15, g.l0 ?? 0.62), Q = g.Q ?? [0.62, 0.62];
+  const out = [[-0.04, -0.07], [W[0] * 0.5, W[1] - 0.13], [W[0], W[1] - 0.08]];
+  if (g.hook) out.push(lerp(W, T0, 0.55), polar(lerp(W, T0, 0.97), angOf(W, T0) - PI / 2, g.hook * 0.1));
+  const tipAt = u => { const v = u; return lerp(lerp(T0, Q, v), lerp(Q, A, v), v); };
+  const boneAt = u => lerp(lerp(W, [W[0] * 0.5, W[1] * 0.5], u), [0, 0], u * u);
+  let prev = null;
+  for (let i = 0; i < n; i++) {
+    const u = mix(0, g.span ?? 0.82, (i / (n - 1)) ** (g.bunch ?? 1.15)), T = tipAt(u), B = boneAt(u), a = angOf(B, T);
+    const fw = (g.fw ?? 0.055) * mix(1, 1.3, u);
+    if (prev) { const m = lerp(prev, T, 0.5); out.push(lerp(m, lerp(boneAt(u - 0.05), B, 0.5), notch)); }
+    lobe(out, T, a, fw, g.round ?? 1);
+    prev = T;
+  }
+  out.push(lerp(prev, A, 0.5), A, [A[0] - 0.12, A[1] * 0.5]);
+  return out;
+}
+const WING = { membrane: membraneWing, bat: membraneWing, feather: featherWing, bird: featherWing };
 dorsals.dragonWings = (C, plan, st, sd, si, g, at) => {
   const side = plan.view === 'side' && !plan.rooted, r = plan.r, k = at(g.at ?? 0.8);
-  const S = r * g.size * (plan.view === 'top' ? 0.85 : 1), fn = g.kind === 'bird' ? birdWing : batWing;
-  const tilt = plan.rooted ? -0.3 : (g.tilt ?? 0.45), base = polar(k.p, k.dir, -r * 0.25);
-  if (side && g.far !== false) fn(C.ink, frame(polar(base, k.dir - sd * PI / 2, r * 0.45), k.dir + sd * (tilt - (g.farA ?? 0.42)), S * 0.9, sd), S * 0.9, g);
-  fn(C.ink, frame(base, k.dir + sd * tilt, S, sd), S, g);
+  const S = r * g.size * (plan.view === 'top' ? 0.85 : 1), shape = (WING[g.kind] ?? membraneWing)(g);
+  // side view: the arm angle is mostly absolute (up, leaning back by tilt) so a pitched body
+  // does not bury the trailing fingers in its own back
+  const tilt = plan.rooted ? -0.3 : (g.tilt ?? 0.2), base = polar(k.p, k.dir, -r * 0.25);
+  const up = side ? angDiff(k.dir, -PI / 2) * 0.35 - PI / 2 : k.dir;
+  const draw = F => C.ink.poly(shape.map(q => F(q[0], q[1])));
+  if (side && g.far !== false) draw(frame(polar(base, k.dir - sd * PI / 2, r * (g.farX ?? 0.45)), up + sd * (tilt - (g.farA ?? 0.42)), S * (g.farS ?? 0.88), sd));
+  draw(frame(base, up + sd * tilt, S, sd));
 };
 
 // Ridges along the back: saw teeth, soft scallops, flames, a rayed fin, a mane.
@@ -407,13 +435,18 @@ const legs = (r, o = {}) => ({ len: r.range(2, 2.5), w: 0.5, taper: 0.55, bend: 
 const tl = (r, o = {}) => ({ len: r.range(8, 11.5), w0: 0.9, mid: 0.5, w1: 0.16, curl: r.range(0.8, 1.8), wave: r.range(0.6, 1.6), freq: 1, up: true, tip: 'dragonBarb', tipS: 1, ...o });
 const knot = (r, o = {}) => tl(r, { len: r.range(6.5, 9), w1: 0.2, curl: r.range(0.5, 1.4), tip: 'dragonKnot', tip2: r.wpick([[3, 'barb'], [1, 'trefoil']]), knotOut: r.range(1.8, 3), knotOver: r.range(-0.8, -0.2), ...o });
 const coil = (r, o = {}) => tl(r, { len: r.range(10, 14), curl: r.range(4.6, 6.6), wave: 0, spiral: true, tip: r.wpick([[2, 'dragonBarb'], [1, 'point']]), tipS: 0.8, ...o });
-const bat = (r, o = {}) => r.wpick([
-  [3, { type: 'dragonWings', kind: 'bat', size: r.range(3.3, 4.6), fingers: r.int(3, 4), tilt: r.range(0.2, 0.6), f0: r.range(0, 0.3), f1: r.range(1.9, 2.4), at: r.range(0.72, 0.86), ...o }], // raised
-  [1.5, { type: 'dragonWings', kind: 'bat', size: r.range(3.6, 4.8), fingers: 3, tilt: r.range(0.95, 1.25), f0: 0.1, f1: r.range(1.0, 1.4), fl: 1.15, farA: 0.2, at: r.range(0.74, 0.86), ...o }], // half-folded
-  [1.2, { type: 'dragonWings', kind: 'bat', size: r.range(4.2, 5.4), fingers: 4, tilt: r.range(0.5, 0.8), f0: -0.1, f1: r.range(2.2, 2.6), farA: 0.75, at: r.range(0.72, 0.84), ...o }], // spread
-]);
-const bird = (r, o = {}) => ({ type: 'dragonWings', kind: 'bird', size: r.range(3.2, 4.6), feathers: r.int(5, 7), tilt: r.range(0.25, 0.9), f0: r.range(0.1, 0.35), f1: r.range(1.3, 1.7), farA: r.range(0.3, 0.6), at: r.range(0.72, 0.86), ...o });
-const stub = (r, o = {}) => ({ type: 'dragonWings', kind: 'bat', size: r.range(1.7, 2.4), fingers: 3, tilt: r.range(0.3, 0.8), f0: 0.2, f1: 2, at: r.range(0.7, 0.85), far: r.chance(0.5), ...o });
+// Wing presets: each is a distinct silhouette, not new numbers on one template.
+const WG = (r, kind, o) => ({ type: 'dragonWings', kind, at: r.range(0.72, 0.86), ...o });
+const heraldic = (r, o = {}) => WG(r, 'membrane', { size: r.range(3, 3.8), fingers: r.int(4, 5), tilt: r.range(-0.1, 0.15), f0: r.range(-0.4, -0.2), f1: r.range(1.6, 1.8), l0: 0.9, l1: r.range(0.8, 0.95), scallop: r.range(0.36, 0.46), hook: r.range(0.5, 1), farA: r.range(0.45, 0.65), ...o });
+const batw = (r, o = {}) => WG(r, 'membrane', { size: r.range(3, 3.8), fingers: r.int(3, 4), tilt: r.range(0.15, 0.4), f0: r.range(0, 0.2), f1: r.range(1.5, 1.75), l0: 0.8, l1: r.range(0.75, 0.9), scallop: r.range(0.38, 0.48), farA: r.range(0.35, 0.5), ...o });
+const roundw = (r, o = {}) => WG(r, 'membrane', { size: r.range(2.8, 3.4), fingers: r.int(5, 6), W: [0.28, -0.02], tilt: r.range(0.05, 0.3), f0: r.range(-0.8, -0.6), f1: r.range(1.85, 2.05), l0: 0.68, l1: 0.66, A: [-0.04, 0.66], scallop: r.range(0.16, 0.24), thumb: false, farA: r.range(0.55, 0.75), ...o });
+const folded = (r, o = {}) => WG(r, 'membrane', { size: r.range(3.4, 4.2), fingers: 3, W: [0.4, -0.06], tilt: r.range(0.75, 0.95), f0: r.range(1.0, 1.15), f1: r.range(1.6, 1.8), l0: r.range(0.95, 1.1), l1: 0.8, A: [-0.06, 0.45], scallop: 0.28, farA: 0.12, farS: 0.8, ...o });
+const stub = (r, o = {}) => WG(r, 'membrane', { size: r.range(1.8, 2.4), fingers: 3, tilt: r.range(0.1, 0.4), f0: 0.15, f1: 1.8, A: [-0.06, 0.45], scallop: 0.4, far: r.chance(0.5), ...o });
+const feather = (r, o = {}) => WG(r, 'feather', { size: r.range(3.1, 4), feathers: r.int(6, 8), tilt: r.range(0, 0.3), f0: r.range(0.05, 0.3), l0: r.range(0.55, 0.7), Q: [r.range(0.55, 0.7), r.range(0.65, 0.85)], notch: r.range(0.25, 0.35), fw: 0.05, farA: r.range(0.35, 0.55), ...o });
+const leafy = (r, o = {}) => WG(r, 'feather', { size: r.range(2.9, 3.5), feathers: r.int(4, 5), tilt: r.range(0, 0.25), f0: r.range(-0.3, -0.1), l0: 0.5, Q: [0.6, 0.7], notch: 0.32, fw: 0.12, bunch: 0.9, hook: r.range(0.8, 1.2), round: 0.8, farA: 0.5, ...o });
+const bat = (r, o = {}) => r.wpick([[3, batw(r, o)], [2, heraldic(r, o)]]);
+const bird = feather;
+export const wingPresets = { heraldic, batw, roundw, folded, stub, feather, leafy };
 const ridge = (r, shape, o = {}) => ({ type: 'dragonRidge', shape, n: r.int(6, 10), h: r.range(0.5, 0.8), wid: 0.3, lean: 0.35, ...o });
 const horns = (r, o = {}) => ({ type: 'horns', len: r.range(1.3, 2.3), curve: r.range(-0.5, 0.5), wid: 0.55, pair: true, ...o });
 const ears = (r, o = {}) => ({ type: 'ears', len: r.range(1.3, 2), wid: r.range(0.6, 0.8), lean: r.range(-0.5, -0.1), bend: 0.08, fat: 0.4, pair: true, ...o });
