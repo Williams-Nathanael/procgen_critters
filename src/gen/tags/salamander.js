@@ -99,9 +99,49 @@ chassis.salamanderTop = (C, g) => {
   const face = e.ang + (P.headTurn ?? 0), hs = rad(1) / 0.74 * (g.headS ?? 1);
   const bendMid = clamp(kap(0.5) / 3, -1, 1), gait = g.gait ?? 0.4;
   const want = g.limbs ?? 'four', ls = r * (g.limbS ?? 1.1);
+  // Where will the limb land? (limb() bends the lower leg toward the front for forelimbs and
+  // toward the back for hindlimbs.) A leg whose elbow, foot or toes come back onto the body
+  // encloses a white hole; turn it out until it is clear.
+  const LL = (g.legLen ?? 2.1) * ls, BB = g.legBend ?? 0.9, TL = 0.75 * ls;
+  const body = path.map((q, i) => ({ q, t: i / N, R: rad(i / N) }));
+  // the tail is drawn later; its base continues the trunk backward
+  for (let j = 1; j <= 7; j++) body.push({ q: polar(path[0], angOf(path[1], path[0]), j * r * 0.55), t: -0.2, R: rad(0) * (1 - j * 0.07) });
+  const headC = polar(e.p, face, hs * 0.7), headR = hs * 1.25;
+  // external gills (drawn later as a crown) sweep back from the sides of the head: keep the
+  // forelimbs out of them too
+  const gillZone = [];
+  if (g.gill) for (const sd of [-1, 1]) {
+    const m0 = polar(e.p, face + sd * PI / 2, hs * 0.75);
+    for (let i = 0; i < 3; i++) for (const u of [0.45, 0.8, 1]) gillZone.push({ p: polar(m0, face + sd * (1.3 + g.gill.fan[i] + g.gill.bend * u * 0.6), g.gill.len * hs * u * 0.95), r: hs * (0.25 + (g.gill.fl ?? 0.2)) });
+  }
+  const legPts = (p0, dir, fwd, role) => {
+    const bs = (Math.sign(angDiff(fwd, dir)) || 1) * (role === 'hind' ? -1 : 1);
+    const knee = polar(p0, dir, LL / 2), fa = dir + bs * BB;
+    return { knee, fa, foot: polar(knee, fa, LL / 2) };
+  };
+  const clearance = (p0, dir, fwd, role, t) => {
+    const { knee, fa, foot } = legPts(p0, dir, fwd, role);
+    let m = Infinity;
+    for (const x of [lerp(p0, knee, 0.75), knee, lerp(knee, foot, 0.5), foot, polar(foot, fa, TL), polar(foot, fa + 0.95, TL * 0.85), polar(foot, fa - 0.95, TL * 0.85)]) {
+      for (const B of body) if (Math.abs(B.t - t) > 0.07) m = Math.min(m, dist(x, B.q) - B.R);
+      if (role === 'fore') { m = Math.min(m, dist(x, headC) - headR); for (const G of gillZone) m = Math.min(m, dist(x, G.p) - G.r); }
+    }
+    return m;
+  };
+  const clearDir = (p0, dir, fwd, role, t) => {
+    const need = ls * 0.42 + 1;
+    if (clearance(p0, dir, fwd, role, t) > need) return dir;
+    let best = dir, bm = -Infinity;
+    for (let k = 1; k <= 9; k++) for (const sg of [1, -1]) {
+      const d2 = dir + sg * k * 0.12, m = clearance(p0, d2, fwd, role, t);
+      if (m > need) return d2;
+      if (m > bm) { bm = m; best = d2; }
+    }
+    return best;
+  };
   const pairs = [];
   if (want !== 'none') pairs.push([g.tF ?? 0.86, 'fore', -0.45]);
-  if (want === 'four') pairs.push([g.tH ?? 0.12, 'hind', 0.3]);
+  if (want === 'four') pairs.push([g.tH ?? 0.12, 'hind', 0.18]);
   for (const [t, role, tilt] of pairs) {
     const { p, ang } = pathAt(path, t);
     for (const sd of [-1, 1]) {
@@ -110,9 +150,14 @@ chassis.salamanderTop = (C, g) => {
       let dir = ang + sd * (PI / 2 + tl);
       // a forelimb never reaches along a turned head (it would trap a white sliver against it)
       if (role === 'fore' && sd * angDiff(dir, face) < 1.2) dir = face + sd * 1.2;
-      const sock = { p: polar(p, ang + sd * PI / 2, rad(t) * 0.5), dir, s: ls, role, fwd: ang, side: sd };
+      const sp0 = polar(p, ang + sd * PI / 2, rad(t) * 0.5);
+      dir = clearDir(sp0, dir, ang, role, t);
+      const sock = { p: sp0, dir, s: ls, role, fwd: ang, side: sd };
       limbs.push(sock);
       obst.push({ p: polar(sock.p, sock.dir, ls * 1.5), r: ls * 0.9, from: role === 'hind' ? 0.3 : 0 });
+      // the tail must also keep off the (predicted) lower leg and foot
+      const lp = legPts(sp0, dir, ang, role);
+      obst.push({ p: lerp(lp.knee, lp.foot, 0.5), r: ls * 0.45 }, { p: polar(lp.foot, lp.fa, TL * 0.4), r: TL * 0.75 });
     }
   }
   obst.push({ p: polar(e.p, face, hs * 0.9), r: hs * 1.15 });
@@ -145,16 +190,24 @@ chassis.salamanderSide = (C, g) => {
   const limbs = [], ls = r * (g.limbS ?? 1.0), st = (g.gait ?? 0.55) * r * rng.sign();
   const want = g.limbs ?? 'four';
   const mk = (base, dx, role, far) => {
-    if (swim) limbs.push({ p: add(base, [dx * 0.6, r * 0.45]), dir: PI - (role === 'fore' ? 0.75 : 0.45) + rng.range(-0.15, 0.15), s: ls, role, far, fwd: PI / 2, side: 1 });
+    if (swim) limbs.push({ p: add(base, [dx, r * 0.55]), dir: PI - (role === 'fore' ? 1.0 : 0.6) + rng.range(-0.12, 0.12), s: ls * 0.9, role, far, fwd: role === 'fore' ? -PI / 2 : PI / 2, side: 1 }); // lower legs fold back
     else limbs.push({ p: add(base, [dx, r * 0.55]), dir: PI / 2, s: ls, role, far, ground: 0, fwd: 0, side: 1 });
   };
-  if (want !== 'none') { mk(sh, st - r * 0.2, 'fore', true); if (want === 'four') mk(hip, -st, 'hind', true); mk(sh, -st * 0.4 - r * 0.2, 'fore', false); if (want === 'four') mk(hip, st * 0.4, 'hind', false); }
+  // swimming: limbs folded back along the flank, near side only (a far leg would cross it)
+  if (want !== 'none' && swim) { mk(sh, -r * 0.2, 'fore', false); if (want === 'four') mk(hip, r * 0.1, 'hind', false); }
+  else if (want !== 'none') {
+    // near and far leg of a pair stand a full foot-length apart (diagonal gait), so toes never
+    // touch the other foot and close a white hole under the belly
+    const D = ls * rng.range(1.6, 1.8), sg = rng.sign();
+    mk(sh, -0.25 * r + sg * D / 2, 'fore', true); if (want === 'four') mk(hip, 0.15 * r - sg * D / 2, 'hind', true);
+    mk(sh, -0.25 * r - sg * D / 2, 'fore', false); if (want === 'four') mk(hip, 0.15 * r + sg * D / 2, 'hind', false);
+  }
   const b = pathAt(path, 0);
   return {
     view: 'side', r, path, rad,
     head: { p: neckEnd, dir: neckA, face: neckA * (P.faceK ?? 0.35) - (P.face ?? 0), s: rad(1) / 0.74 * (g.headS ?? 1), sym: false },
     tail: { p: tb, dir: b.ang + PI, s: rad(0) * (g.tailS ?? 1), sal: { up: P.tailUp ?? false, swim } },
-    limbs, back: [strip(path, rad, g.backT0 ?? 0.05, g.backT1 ?? 0.9, 16, -1)],
+    limbs, back: [strip(path, rad, g.backT0 ?? 0, g.backT1 ?? 0.9, 16, -1)],
   };
 };
 
@@ -206,12 +259,12 @@ heads.salamanderHead = (C, sock, g) => {
 function toesFoot(C, p, ang, s, g, k, n, web) {
   const { ink } = C, plan = C.plan;
   n = Math.max(1, n);
-  const tl = (g.toeLen ?? 0.62) * s * k;
+  const tl0 = (g.toeLen ?? 0.62) * s * k, tl = tl0;
   const tw = Math.max(s * 0.085 * k * (g.toeW ?? 1), MINW / 2);
   const back = Math.abs(angDiff(ang, PI)) < 0.4, fwdish = Math.abs(angDiff(ang, 0)) < 0.4;
   if (plan && plan.view === 'side' && (back || fwdish) && p[1] > -s * 0.7) {
     // standing foot seen from the side: flat sole, toes fanned forward and a little upward
-    const dx = back ? -1 : 1, gy = Math.min(p[1] + s * 0.14 * k, 0), m = Math.min(n, 3);
+    const dx = back ? -1 : 1, gy = Math.min(p[1] + s * 0.14 * k, 0), m = Math.min(n, 3), tl = tl0 * 0.75;
     const q = [p[0], gy - tw];
     const cl = pts => pts.map(([x, y]) => [x, Math.min(y, gy)]);
     for (let i = 0; i < m; i++) {
@@ -258,10 +311,13 @@ function tailTop(C, sock, T) {
   if (!sal?.obst && plan.head) obst.push({ p: plan.head.p, r: plan.head.s * 1.3 });
   if (plan.path && plan.rad) for (let i = 0; i <= 12; i++) { const t = 0.22 + 0.78 * i / 12; obst.push({ p: pathAt(plan.path, t).p, r: plan.rad(t), from: 0.25 }); }
   let pts, R, k = 1, flip = 1;
-  for (let tries = 0; tries < 8; tries++) {
+  for (let tries = 0; tries < 10; tries++) {
     const kk = k, fl = flip;
-    const kap = u => (sal?.kap ? -sal.kap(-u * Lt / sal.L) * (Lt / sal.L) * Math.pow(1 - u, 1.2) * (T.follow ?? 1) : 0)
-      + kk * fl * ((T.curl ?? 0) + (T.coil ?? 0) * 3 * u * u) + (T.wave ?? 0) * Math.cos(ph + TAU * freq * u) * mix(0.6, 1.2, u);
+    // later tries straighten the whole tail (body-wave follow-through included), so a tail that
+    // cannot clear the legs ends up as a plain sweep rather than a loop that traps white
+    const kf = Math.min(1, kk * 1.25);
+    const kap = u => (sal?.kap ? -sal.kap(-u * Lt / sal.L) * (Lt / sal.L) * Math.pow(1 - u, 1.2) * (T.follow ?? 1) * kf : 0)
+      + kk * fl * ((T.curl ?? 0) + (T.coil ?? 0) * 3 * u * u) + (T.wave ?? 0) * kf * Math.cos(ph + TAU * freq * u) * mix(0.6, 1.2, u);
     pts = walk(sock.p, sock.dir, Lt, n, kap, rf).pts;
     R = pts.map((_, i) => rf(i / n));
     if (isClear(pts, R, obst, 1.6)) break;
@@ -337,6 +393,7 @@ crowns.salamanderGills = (C, m, F, s, g) => {
   const sideV = C.plan.view === 'side', SF = [0.35, -0.35, -1.05];
   const dirAt = (i, k) => sideV ? -PI / 2 + SF[i] - k - (far ? 0.3 : 0) : m.dir + m.flip * (fan[i] + k + (far ? 0.25 : 0));
   const Q = (i, k, d) => polar(m.p, dirAt(i, k), d * s);
+  const web = [m.p];
   for (let i = far ? 1 : 0; i < 3; i++) {
     const len = g.len * lens[i] * (far ? 0.82 : 1) * (sideV ? 1.3 : 1), bend = g.bend ?? 0.45;
     const pts = spline([Q(i, 0, -0.2), Q(i, bend * 0.1, len * 0.4), Q(i, bend * 0.5, len * 0.75), Q(i, bend, len)], 6);
@@ -352,7 +409,10 @@ crowns.salamanderGills = (C, m, F, s, g) => {
     }
     ink.poly(ribbon(pts, A, B));
     ink.dot(pts[n - 1], core(1));
+    web.push(pts[Math.round((n - 1) * 0.5)]);
   }
+  // fill the crotches between the rami near the head: open fronds, never trapped white gaps
+  ink.poly(web);
 };
 
 // ---------------------------------------------------------------------
@@ -446,7 +506,7 @@ const isTop = k => !['walkS', 'alert', 'tall', 'unken', 'swim', 'tailcurl'].incl
 
 // Seen from the side a sprawling leg shows only its lower part: shorter, nearly straight legs
 // angled fore-forward / hind-back read as walking; long bent ones merge into blocks.
-const sideLegs = (L, top, d) => top ? L : { ...L, len: L.len * (d.sideLegK ?? 0.7), w: L.w * 0.78, stance: d.sideStance ?? 0.8 };
+const sideLegs = (L, top, d) => top ? L : { ...L, len: L.len * (d.sideLegK ?? 0.7), w: L.w * 0.78, stance: d.sideStance ?? 0.35 };
 
 // One generic assembler: d describes the species; kind is the chosen pose.
 function make(r, d, kinds) {
@@ -455,12 +515,13 @@ function make(r, d, kinds) {
   const pose = top ? topPose(r, kind, d.waveK ?? 1) : sidePose(r, kind === 'walkS' ? 'walk' : kind);
   if (d.poseFix) Object.assign(pose, d.poseFix(pose, top) ?? {});
   const k0 = (top ? d.prof : d.sideProf)?.[0][1] ?? (top ? 0.7 : 0.62);
+  const LG = d.limbsG ?? legs(r);
   const ch = top
-    ? { type: 'salamanderTop', len: len * (d.topLenK ?? 1.18), r: R, pose, belly: d.belly, neckW: d.neckW, prof: d.prof, headS: d.headS, limbs: d.limbs, tF: d.tF, tH: d.tH, limbS: d.limbS, gait: d.gait, backT0: d.backT0, backT1: d.backT1 }
+    ? { type: 'salamanderTop', len: len * (d.topLenK ?? 1.18), r: R, pose, belly: d.belly, neckW: d.neckW, prof: d.prof, headS: d.headS, limbs: d.limbs, tF: d.tF, tH: d.tH, limbS: d.limbS, gait: d.gait, backT0: d.backT0, backT1: d.backT1, legLen: LG.len, legBend: LG.bend, gill: d.crown?.type === 'salamanderGills' ? { len: d.crown.len, fan: d.crown.fan ?? [-0.3, 0.38, 1.05], bend: d.crown.bend ?? 0.45, fl: d.crown.style === 'ray' ? 0.1 : d.crown.fl } : null }
     : { type: 'salamanderSide', len: len * (d.sideLenK ?? 0.92), r: R * (d.sideR ?? 0.95), pose, belly: d.belly, neckW: d.sideNeckW, prof: d.sideProf, headS: d.headS, limbs: d.limbs, limbS: d.sideLimbS, neckLen: d.neckLen, backT0: d.backT0s, backT1: d.backT1s };
   const T = { len: tl(d.tail, top ? len * (d.topLenK ?? 1.18) : len, R, k0), ...(d.T ?? {}) };
   return {
-    chassis: ch, head: d.head, limbs: sideLegs(d.limbsG ?? legs(r), top, d), tail: tailG(r, pose, T),
+    chassis: ch, head: d.head, limbs: sideLegs(LG, top, d), tail: tailG(r, pose, T),
     dorsal: (top ? d.dorsalTop : d.dorsalSide) ?? d.dorsal ?? none(), crown: d.crown ?? none(),
     surface: { eyes: 'none', spots: d.spots ?? 0, stripe: d.stripe ?? false },
   };
@@ -598,7 +659,7 @@ const species = [
   }, [[3, 'eel'], [2, 'ess']]) },
 
   { name: 'siren', w: 3, genes: r => make(r, {
-    r: r.range(4.8, 5.6), len: r.range(76, 92), neckW: 0.82, tail: r.range(0.3, 0.38), limbs: 'fore', tF: 0.92, limbS: 0.9,
+    r: r.range(4.8, 5.6), len: r.range(76, 92), neckW: 0.82, tail: r.range(0.3, 0.38), limbs: 'fore', tF: 0.84, limbS: 0.9,
     prof: [[0, 0.72], [0.3, 1], [0.7, 1], [1, 0.82]],
     head: headG(r, { len: r.range(1.35, 1.5), wid: r.range(1.0, 1.06), p: 2.6, eye: 0.06, eyeIn: 0.3 }),
     limbsG: legs(r, { len: r.range(1.5, 1.8), w: 0.4, toeLen: 0.5, toesF: r.pick([3, 4, 4]), bend: 0.8 }),
@@ -692,7 +753,7 @@ const species = [
     crown: gills(r, { style: 'plume', len: r.range(2.5, 3.0), fl: 0.5, w: 0.14, nf: 4, fan: [-0.5, 0.2, 0.9] }),
     dorsalSide: { type: 'salamanderCrest', h: r.range(0.7, 0.95), env: [[0, 1], [0.6, 0.9], [1, 0]], top: 0 }, backT0s: 0.03, backT1s: 0.8,
     dorsalTop: none(),
-  }, [[4, 'swim'], [1.5, 'walkS'], [2, 'walk'], [1, 'curl']]) },
+  }, [[4, 'swim'], [1.5, 'walkS'], [2.5, 'walk']]) },
 
   { name: 'newt larva', w: 2, genes: r => { const two = r.chance(0.5); return make(r, {
     r: r.range(4.2, 4.8), len: r.range(24, 28), belly: 1.02, neckW: 0.8, tail: r.range(1.2, 1.45), headS: 1.15, limbs: two ? 'fore' : 'four', tF: 0.84, limbS: 1.1,
@@ -701,7 +762,7 @@ const species = [
     T: { fin: 0.9, finB: 0.7, finBase: 1, topK: 0.55, keys: [[0, 1], [0.5, 0.52], [0.92, 0.12], [1, 0.05]], fil: 0.8 },
     crown: gills(r, { style: 'plume', len: r.range(2.4, 2.9), fl: 0.32, w: 0.13, nf: 6, bend: 0.6, fan: [-0.4, 0.25, 0.9] }),
     dorsalSide: { type: 'salamanderCrest', h: 0.7, env: [[0, 1], [0.6, 0.9], [1, 0]], top: 0 }, dorsalTop: none(),
-  }, [[3, 'walk'], [2, 'ess'], [1.5, 'curl'], [2, 'swim']]); } },
+  }, [[3, 'walk'], [2, 'ess'], [2, 'swim']]); } },
 ];
 
 export default {
