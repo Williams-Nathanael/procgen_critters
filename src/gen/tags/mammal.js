@@ -33,6 +33,8 @@ const samp = (st, u) => {
   const x = clamp(u, 0, 1) * (st.length - 1), i = Math.min(Math.floor(x), st.length - 2), f = x - i;
   return { p: lerp(st[i].p, st[i + 1].p, f), dir: st[i].dir + angDiff(st[i + 1].dir, st[i].dir) * f };
 };
+// interior points of a quadratic Bezier a-c-b
+const bez = (a, c, b, n = 5) => { const o = []; for (let i = 1; i < n; i++) { const t = i / n; o.push([(1 - t) * (1 - t) * a[0] + 2 * t * (1 - t) * c[0] + t * t * b[0], (1 - t) * (1 - t) * a[1] + 2 * t * (1 - t) * c[1] + t * t * b[1]]); } return o; };
 const taper = (C, pts, w0, w1, per = 6) => C.ink.poly(tube(spline(pts, per), profile([[0, Math.max(w0, MINW / 2)], [1, Math.max(w1, MINW / 2)]])));
 // flat foot lying on the ground from heel toward dir (+1 fwd, -1 back)
 const flatFoot = (C, heel, len, fh, dir = 1) => C.ink.poly(tube(polyline([[heel[0] - dir * fh * 0.4, -fh], [heel[0] + dir * len, -fh * 0.85]], 3), profile([[0, fh], [0.7, fh * 0.9], [1, fh * 0.75]])));
@@ -232,7 +234,6 @@ chassis.mammalBat = (C, g) => {
   ink.poly(body);
   const ua = r * g.arm, fa = r * g.arm * 1.2, fl = r * g.finger, back = [];
   // one outline per wing: arm leading edge to the wrist, then finger tips joined by deep scallops
-  const bez = (a, c, b, n = 5) => { const o = []; for (let i = 1; i < n; i++) { const t = i / n; o.push([(1 - t) * (1 - t) * a[0] + 2 * t * (1 - t) * c[0] + t * t * b[0], (1 - t) * (1 - t) * a[1] + 2 * t * (1 - t) * c[1] + t * t * b[1]]); } return o; };
   for (const sd of [-1, 1]) {
     const el = g.elev + sd * (g.skew ?? 0);
     const shp = [sd * bw * 0.5, -bh * 0.45];
@@ -403,6 +404,7 @@ chassis.mammalHill = (C, g) => {
 // HEAD
 // =====================================================================
 heads.mammalHead = (C, sock, g) => {
+  C.mHead = true;
   const { ink, rng } = C, s = sock.s, sym = sock.sym, sk = g.skull ?? 1;
   const c = polar(sock.p, sock.dir, s * sk * 0.45), F = frame(c, sock.face, s, 1);
   const dr = sym ? 0 : (g.droop ?? 0.1), L = g.snoutLen, tr = g.tipR;
@@ -438,8 +440,14 @@ heads.mammalHead = (C, sock, g) => {
 // EARS
 // =====================================================================
 crowns.mammalEar = (C, m, F0, s, g) => {
+  // a cap or other single top mount gets no paired copy: splay a pair of ears from it
+  if (!C.mHead && C.plan.rooted && !m.far && !m.split) {
+    for (const sd of [-1, 1]) crowns.mammalEar(C, { ...m, split: true, p: polar(m.p, m.dir + PI / 2, sd * s * 0.75), dir: m.dir + sd * 0.5, flip: sd }, F0, s * 0.9, g);
+    return;
+  }
   const { ink, rng } = C, a = m.dir + m.flip * ((g.lean ?? 0) + (m.far ? (g.farLean ?? 0) : 0)), F = frame(m.p, a, s, m.flip);
-  const len = g.len, wid = g.wid;
+  // lent to a foreign head: small ears vanish, so give them a readable minimum size
+  const lent = !C.mHead, len = lent ? Math.max(g.len * 1.2, 1.15) : g.len, wid = lent ? Math.max(g.wid, 0.95) : g.wid;
   switch (g.shape) {
     case 'round': ink.oval(F(len * 0.42, 0), len * 0.56 * s, wid * 0.5 * s, a); ink.poly(tube(polyline([F(-0.15, 0), F(len * 0.3, 0)], 2), wid * 0.3 * s)); break;
     case 'long': ink.poly(tube(spline([F(-0.2, 0), F(len * 0.5, (g.bend ?? 0) * len * 0.3), F(len, (g.bend ?? 0) * len)], 6), profile([[0, wid * 0.3 * s], [0.45, wid * 0.5 * s], [0.85, wid * 0.36 * s], [1, wid * 0.14 * s]]))); break;
@@ -583,19 +591,19 @@ dorsals.mammalBatWing = (C, plan, st, sd, si, g) => {
   if (plan.mBat) return;
   const side = plan.view === 'side' && !plan.rooted;
   if (side && si > 0) return;
-  const { ink } = C, r = Math.min(plan.r, 10), k = samp(st, g.at ?? 0.7), s = r * g.size;
+  const { ink } = C, r = clamp(plan.r, 6.5, 10), k = samp(st, g.at ?? 0.7), s = r * g.size;
   const base = polar(k.p, k.dir, -plan.r * 0.3);
-  const wings = side ? [[1, 0.88, -0.35], [0, 1, 0]] : [[0, 1, 0]];
+  const wings = side ? [[1, 0.85, 0.3], [0, 1, 0]] : [[0, 1, 0]];
   for (const [far, ks, da] of wings) {
     // local frame: x along the arm (outward), y toward the trailing edge (backward / down)
-    const a0 = side ? -PI / 2 - 0.55 + da : k.dir + sd * 0.15;
-    const back = side ? 1 : -sd, F = frame(base, a0, s * ks, back);
-    const E = [0.38, -0.1], W = [0.72, -0.12], nf = g.nf ?? 4, tipsP = [];
-    for (let i = 0; i < nf; i++) { const a = 0.15 + i * (g.fan ?? 1.45) / (nf - 1), len = 0.62 * (1 - 0.15 * i); tipsP.push(polar(W, a, len)); }
-    const sc = g.scallop ?? 0.45, root = [0.02, 0.4];
-    const mem = [[0, -0.08], E, W, tipsP[0]];
-    for (let i = 0; i < nf - 1; i++) { const m = lerp(lerp(tipsP[i], tipsP[i + 1], 0.5), W, sc); mem.push(lerp(tipsP[i], m, 0.55), m, lerp(tipsP[i + 1], m, 0.55), tipsP[i + 1]); }
-    const m = lerp(lerp(tipsP[nf - 1], root, 0.5), [0.2, 0.05], sc); mem.push(lerp(tipsP[nf - 1], m, 0.55), m, lerp(root, m, 0.55), root);
+    const a0 = side ? -PI / 2 - 0.3 + da : k.dir - sd * 0.25;
+    const F = frame(base, a0, s * ks, sd);
+    const E = [0.3, -0.06], W = [0.62, -0.1], nf = g.nf ?? 4, tipsP = [], fan = clamp(g.fan ?? 1.4, 1.3, 1.5);
+    for (let i = 0; i < nf; i++) { const a = 0.55 + i * fan / (nf - 1), len = 0.7 * (1 - 0.12 * i); tipsP.push(polar(W, a, len)); }
+    const sc = Math.min(g.scallop ?? 0.45, 0.45), root = [0.0, 0.4];
+    const mem = [[0, -0.06], E, W, tipsP[0]];
+    for (let i = 0; i < nf - 1; i++) mem.push(...bez(tipsP[i], lerp(lerp(tipsP[i], tipsP[i + 1], 0.5), W, sc), tipsP[i + 1]), tipsP[i + 1]);
+    mem.push(...bez(tipsP[nf - 1], lerp(lerp(tipsP[nf - 1], root, 0.5), [0.15, 0.1], sc), root), root);
     ink.poly(mem.map(p => F(p[0], p[1])));
     ink.poly(tube(spline([F(0, -0.04), F(E[0], E[1]), F(W[0], W[1])], 4), profile([[0, r * 0.22], [1, r * 0.11]])));
     if (far) continue;
