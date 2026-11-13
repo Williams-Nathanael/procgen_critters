@@ -310,6 +310,8 @@ function tailTop(C, sock, T) {
   const obst = sal?.obst ? sal.obst.slice() : [];
   if (!sal?.obst && plan.head) obst.push({ p: plan.head.p, r: plan.head.s * 1.3 });
   if (plan.path && plan.rad) for (let i = 0; i <= 12; i++) { const t = 0.22 + 0.78 * i / 12; obst.push({ p: pathAt(plan.path, t).p, r: plan.rad(t), from: 0.25 }); }
+  // an obstacle that already covers the tail root cannot be avoided by bending: ignore it
+  for (let i = obst.length - 1; i >= 0; i--) if (obst[i].from == null && dist(obst[i].p, sock.p) < obst[i].r + rf(0) + 1.6) obst.splice(i, 1);
   let pts, R, k = 1, flip = 1;
   for (let tries = 0; tries < 10; tries++) {
     const kk = k, fl = flip;
@@ -667,13 +669,13 @@ const species = [
     crown: gills(r, { style: 'bush', len: r.range(1.7, 2.1), fl: 0.34, w: 0.16, nf: 3, bend: 0.4, fan: [-0.45, 0.25, 0.9] }),
   }, [[3, 'eel'], [2, 'eelcoil'], [1, 'ess']]) },
 
-  { name: 'amphiuma', w: 2, genes: r => make(r, {
+  { name: 'amphiuma', w: 1.5, genes: r => make(r, {
     r: r.range(3.9, 4.5), len: r.range(84, 100), neckW: 0.8, tail: r.range(0.22, 0.28), tF: 0.9, tH: 0.03, limbS: 0.8,
     prof: [[0, 0.7], [0.3, 1], [0.7, 1], [1, 0.8]],
     head: headG(r, { len: r.range(1.9, 2.2), wid: r.range(0.94, 1.0), p: 1.7, jawX: 0.3, eye: 0 }),
     limbsG: legs(r, { len: r.range(1.0, 1.25), w: 0.3, toeLen: 0.36, toesF: r.int(2, 3), toesH: r.int(2, 3), bend: 0.5 }),
     T: { keys: [[0, 1], [0.5, 0.66], [1, 0.06]], curlK: 0.5 },
-  }, [[3.5, 'eel'], [1.5, 'eelcoil']]) },
+  }, [[3.5, 'eel'], [1.2, 'ess']]) },
 
   { name: 'blind cave salamander', w: 2, genes: r => make(r, {
     r: r.range(3.8, 4.4), len: r.range(32, 38), neckW: 0.66, tail: r.range(0.7, 0.85), gait: 0.5, limbS: 1.2,
@@ -755,7 +757,7 @@ const species = [
     dorsalTop: none(),
   }, [[4, 'swim'], [1.5, 'walkS'], [2.5, 'walk']]) },
 
-  { name: 'newt larva', w: 2, genes: r => { const two = r.chance(0.5); return make(r, {
+  { name: 'newt larva', w: 1.5, genes: r => { const two = r.chance(0.5); return make(r, {
     r: r.range(4.2, 4.8), len: r.range(24, 28), belly: 1.02, neckW: 0.8, tail: r.range(1.2, 1.45), headS: 1.15, limbs: two ? 'fore' : 'four', tF: 0.84, limbS: 1.1,
     head: headG(r, { len: r.range(1.1, 1.2), wid: r.range(1.2, 1.3), p: 2.6, eye: 0.16, eyeIn: 0.35 }),
     limbsG: legs(r, { len: r.range(1.6, 2.0), w: 0.26, toeLen: 0.55, toeW: 0.8, toesF: 3, toesH: 3, bend: 0.5 }),
