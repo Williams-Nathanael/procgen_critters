@@ -1,7 +1,7 @@
 // Small mammals: a species library of real forms and poses.
 //
 // Shape vocabulary registered here (all prefixed `mammal`):
-//   chassis  mammalWalk (side-view quadruped / bipedal hopper / crawling bat), mammalUp (sitting on
+//   chassis  mammalWalk (side-view quadruped / bipedal hopper), mammalUp (sitting on
 //            haunches or standing sentinel), mammalBall (curled asleep / rolled up), mammalBat (flight,
 //            seen flat with head up), mammalGlide (top-view glider), mammalClimb (clinging to a stalk
 //            or branch), mammalFloat (otter on its back), mammalHill (mole surfacing from a molehill)
@@ -81,7 +81,7 @@ const GAIT = {
   biped: { f: [0, 0], h: [0, 0.3] },
 };
 
-// Side-view body on four legs; also bipedal hoppers (gait 'biped') and crawling bats (fore 'wing').
+// Side-view body on four legs; also bipedal hoppers (gait 'biped').
 chassis.mammalWalk = (C, g) => {
   const { ink, rng } = C, own = isOwn(g), r = g.r * C.plump, L = g.len;
   const lift = own ? g.clr * r : clamp(C.lift, 0.2, 1.1) * r;
@@ -129,13 +129,6 @@ chassis.mammalWalk = (C, g) => {
       }
       const off = G.f[i] * r * (g.stride ?? 1) + j(), ps = (g.pawS ?? 1) * k;
       const paw = [sp[0] + off, -fh];
-      if (g.fore === 'wing') { // folded bat wing: elbow up, wrist down, fingers swept back
-        const el = add(sp, [-r * 0.85, -r * (1.1 + (i ? 0.25 : 0))]), tipP = add(el, [-r * rng.range(1.5, 2.1), -r * rng.range(0.1, 0.7)]);
-        taper(C, [sp, el], lw * 0.7, lw * 0.5, 3); taper(C, [el, paw], lw * 0.5, lw * 0.4, 3);
-        ink.poly([paw, add(el, [r * 0.12, -r * 0.1]), tipP, lerp(paw, tipP, 0.45)]);
-        ink.poly(leaf(paw, -0.5, r * 0.5, r * 0.22, 0, 0.3));
-        return;
-      }
       const d = dist(sp, paw), el = add(lerp(sp, paw, 0.5), [-d * 0.1, 0]);
       taper(C, [sp, el, [paw[0], -fh * 1.2]], lw * 0.85 * k, lw * 0.5 * k);
       if (g.fore === 'spade') feet.mammalSpade(C, [paw[0], -r * 0.34 * ps], 0.15, r * 0.95, {}, ps);
@@ -225,45 +218,50 @@ chassis.mammalBall = (C, g) => {
   for (let i = 0; i < 16; i++) { const a = mix(PI - (g.b0 ?? 0.45), 2 * PI - (g.b1 ?? 0.05), i / 15); back.push({ p: [c[0] + rx * 0.86 * Math.cos(a), c[1] + ry * 0.86 * Math.sin(a)], dir: Math.atan2(Math.sin(a) * rx, Math.cos(a) * ry), t: i / 15 }); }
   return {
     view: 'side', r, path, rad,
-    head: { p: add(c, [rx * (g.headX ?? 0.58), ry * (g.headY ?? 0.42)]), dir: 0.35, face: g.face ?? rng.range(0.15, 0.4), s: r * g.headS, sym: false },
+    head: { p: add(c, [rx * (g.headX ?? 0.58), ry * (g.headY ?? 0.42)]), dir: g.headDir ?? 0.35, face: g.face ?? rng.range(0.15, 0.4), s: r * g.headS, sym: false },
     tail: { p: add(c, [-rx * 0.8, ry * 0.42]), dir: g.tailA ?? PI + 0.9, s: r * 0.6 },
-    limbs, back: [back],
+    limbs, back: [back], wrap: { c, rx, ry },
   };
 };
 
 // Bat in flight, seen flat-on with the head up and wings spread.
 chassis.mammalBat = (C, g) => {
-  const { ink, rng } = C, own = isOwn(g), r = g.r * C.plump, bw = r * 0.62, bh = r;
-  const F = frame([0, 0], g.bank ?? 0, 1, 1);
-  const body = []; for (let i = 0; i < 28; i++) { const a = i / 28 * 2 * PI; body.push(F(bw * Math.cos(a) * (1 - 0.18 * Math.sin(a)), bh * Math.sin(a))); }
+  const { ink } = C, own = isOwn(g), r = g.r * C.plump, bw = r * 0.62, bh = r;
+  const F = frame([0, 0], g.bank ?? 0, 1, 1), FP = p => F(p[0], p[1]);
+  const body = []; for (let i = 0; i < 22; i++) { const a = i / 22 * 2 * PI; body.push(F(bw * Math.cos(a) * (1 - 0.15 * Math.sin(a)), bh * Math.sin(a))); }
   ink.poly(body);
-  const ua = r * g.arm, fa = r * g.arm * 1.15, fl = r * g.finger, back = [];
+  const ua = r * g.arm, fa = r * g.arm * 1.2, fl = r * g.finger, back = [];
+  // one outline per wing: arm leading edge to the wrist, then finger tips joined by deep scallops
+  const bez = (a, c, b, n = 5) => { const o = []; for (let i = 1; i < n; i++) { const t = i / n; o.push([(1 - t) * (1 - t) * a[0] + 2 * t * (1 - t) * c[0] + t * t * b[0], (1 - t) * (1 - t) * a[1] + 2 * t * (1 - t) * c[1] + t * t * b[1]]); } return o; };
   for (const sd of [-1, 1]) {
     const el = g.elev + sd * (g.skew ?? 0);
-    const shp = [sd * bw * 0.55, -bh * 0.5];
-    const E = add(shp, [sd * ua * Math.cos(el + 0.3), -ua * Math.sin(el + 0.3)]);
-    const W = add(E, [sd * fa * Math.cos(el - 0.25), -fa * Math.sin(el - 0.25)]);
-    const nf = 3, tipsP = [];
-    for (let i = 0; i < nf; i++) { const a = g.droop - el * 0.4 + i * g.fan / (nf - 1), len = fl * (1 - 0.12 * i); tipsP.push(add(W, [sd * Math.cos(a) * len, Math.sin(a) * len])); }
-    const ank = [sd * bw * 0.5, bh * 1.05];
-    const sc = (a, b) => lerp(lerp(a, b, 0.5), W, 0.3);
-    const mem = [shp, E, W, tipsP[0]];
-    for (let i = 0; i < nf - 1; i++) mem.push(sc(tipsP[i], tipsP[i + 1]), tipsP[i + 1]);
-    mem.push(lerp(lerp(tipsP[nf - 1], ank, 0.5), shp, 0.28), ank, [0, 0]);
-    ink.poly(mem.map(p => F(p[0], p[1])));
-    ink.poly(tube(spline([shp, E, W].map(p => F(p[0], p[1])), 5), profile([[0, r * 0.2], [1, r * 0.12]])));
-    for (const t of tipsP) taper(C, [F(W[0], W[1]), F(t[0], t[1])], r * 0.1, MINW / 2, 3);
-    ink.poly(leaf(F(W[0], W[1]), (g.bank ?? 0) - PI / 2 + sd * 0.5, r * 0.42, r * 0.2, 0, 0.3)); // thumb
-    const st = []; for (let i = 0; i < 8; i++) { const u = i / 7, p = u < 0.5 ? lerp(shp, E, u * 2) : lerp(E, W, u * 2 - 1); st.push({ p: F(p[0], p[1]), dir: (g.bank ?? 0) - PI / 2, t: u }); }
+    const shp = [sd * bw * 0.5, -bh * 0.45];
+    const E = add(shp, [sd * ua * Math.cos(el + 0.45), -ua * Math.sin(el + 0.45)]);
+    const W = add(E, [sd * fa * Math.cos(el - 0.2), -fa * Math.sin(el - 0.2)]);
+    const nf = g.nf ?? 4, tipsP = [];
+    const d0 = g.droop - el * 0.45;
+    for (let i = 0; i < nf; i++) { const a = d0 + i * g.fan / (nf - 1), len = fl * (1 - 0.1 * i); tipsP.push(add(W, [sd * Math.cos(a) * len, Math.sin(a) * len])); }
+    const ank = [sd * bw * 0.45, bh * 0.92];
+    const sc = g.scallop ?? 0.45;
+    const mem = [shp, lerp(shp, E, 0.5), E, W, ...bez(W, add(lerp(W, tipsP[0], 0.5), [0, -r * 0.08]), tipsP[0], 3), tipsP[0]];
+    for (let i = 0; i < nf - 1; i++) mem.push(...bez(tipsP[i], lerp(lerp(tipsP[i], tipsP[i + 1], 0.5), W, sc), tipsP[i + 1]), tipsP[i + 1]);
+    mem.push(...bez(tipsP[nf - 1], lerp(lerp(tipsP[nf - 1], ank, 0.5), [sd * bw * 0.3, -bh * 0.1], sc * 0.9), ank), ank, [0, bh * 0.4]);
+    ink.poly(mem.map(FP));
+    ink.poly(tube(spline([shp, E, W].map(FP), 4), profile([[0, r * 0.2], [1, r * 0.12]])));
+    ink.poly(leaf(FP(W), (g.bank ?? 0) - PI / 2 - sd * 0.35, r * 0.38, r * 0.2, 0, 0.3)); // thumb claw
+    const st = []; for (let i = 0; i < 8; i++) { const u = i / 7, p = u < 0.5 ? lerp(shp, E, u * 2) : lerp(E, W, u * 2 - 1); st.push({ p: FP(p), dir: (g.bank ?? 0) - PI / 2, t: u }); }
     back.push(st);
-    if (own) { const a = F(ank[0], ank[1]); taper(C, [a, F(ank[0] + sd * r * 0.1, ank[1] + r * 0.4)], r * 0.11, r * 0.08, 3); }
+    if (own) { const a = FP(ank); taper(C, [a, F(ank[0] + sd * r * 0.08, ank[1] + r * 0.32)], r * 0.12, r * 0.09, 2); ink.dot(F(ank[0] + sd * r * 0.1, ank[1] + r * 0.36), r * 0.1); }
   }
-  // tail membrane
-  if (g.uro !== false) ink.poly([F(-bw * 0.5, bh * 1.05), F(-bw * 0.2, bh * 1.15), F(0, bh * (1.45 + (g.tailM ?? 0))), F(bw * 0.2, bh * 1.15), F(bw * 0.5, bh * 1.05), F(0, bh * 0.4)]);
+  // tail membrane between the ankles
+  if (g.uro !== false) {
+    const tm = bh * (1.4 + (g.tailM ?? 0)), L0 = [-bw * 0.45, bh * 0.92], R0 = [bw * 0.45, bh * 0.92], T = [0, tm];
+    ink.poly([L0, ...bez(L0, [-bw * 0.15, tm * 0.97], T, 4), T, ...bez(T, [bw * 0.15, tm * 0.97], R0, 4), R0, [0, bh * 0.3]].map(FP));
+  }
   const up = (g.bank ?? 0) - PI / 2, path = [F(0, bh * 0.8), F(0, 0), F(0, -bh * 0.8)];
   const limbs = own ? [] : [-1, 1].map(sd => ({ p: F(sd * bw * 0.4, bh * 0.8), dir: up + PI - sd * 0.5, s: r * 0.6, role: 'hind', fwd: up, side: sd }));
   return {
-    view: 'top', r, path, rad: () => bw * 0.8,
+    view: 'top', mBat: true, r, path, rad: () => bw * 0.8,
     head: { p: F(0, -bh * 0.8), dir: up, face: up, s: r * g.headS, sym: true },
     tail: { p: F(0, bh * 0.9), dir: up + PI, s: r * 0.3 },
     limbs, back,
@@ -459,9 +457,68 @@ crowns.mammalEar = (C, m, F0, s, g) => {
 // =====================================================================
 // TAIL TIPS (the bespoke tails are drawn as "tips" on a short stub so they lend faithfully)
 // =====================================================================
+// Overlapping pangolin scales along a path: each a blunt shingle pointing toward the path's end,
+// tilted to the outer side `o` (+1 / -1 relative to the heading) so the outline turns scalloped.
+function shingles(C, pts, hs, rad, o, n, kL, u0 = 0.06, u1 = 0.94) {
+  // one outline: a serrated band whose teeth rise gently and drop steeply (roof shingles)
+  const N = pts.length - 1, h = kL * 0.42, outer = [], inner = [];
+  const at = u => { const x = clamp(u, 0, 1) * N, i = Math.min(Math.floor(x), N - 1), f = x - i; return { p: lerp(pts[i], pts[i + 1], f), a: hs[i] + angDiff(hs[i + 1], hs[i]) * f }; };
+  for (let j = 0; j < n; j++) for (let v = 0; v <= 4; v++) {
+    const u = mix(u0, u1, (j + v / 4 * 0.94) / n), q = at(u), rr = rad(u);
+    outer.push(polar(q.p, q.a + o * PI / 2, rr * (0.86 + h * Math.pow(v / 4, 0.6))));
+  }
+  for (let i = 0; i <= 8; i++) { const u = mix(u0, u1, i / 8), q = at(u); inner.push(polar(q.p, q.a + o * PI / 2, -rad(u) * 0.2)); }
+  C.ink.poly(outer.concat(inner.reverse()));
+}
+// Pangolin tail: thick at the root, tapering, drooping to the ground, shingled along its top.
+tips.mammalScaleTail = (C, e, ang, s, g) => {
+  if (g.wrap && C.plan.wrap) return wrapTail(C, g, s);
+  const side = C.plan.view === 'side', n = 18, L = g.tl * s, tw = g.tw * s;
+  const rad = u => Math.max(tw * Math.pow(1 - u, 0.85) + 0.5, 0.6);
+  let h = ang, p = polar(e, ang + PI, s * 0.4); const pts = [p], hs = [h];
+  const turn = side ? (Math.cos(ang) < 0 ? -1 : 1) : 0, wv = side ? 0 : C.rng.range(-1, 1);
+  for (let i = 1; i <= n; i++) {
+    const u = i / n;
+    h += side ? turn * (u < 0.7 ? -(g.droop ?? 0.9) : 1.2) / n : wv * Math.cos(u * 4) / n;
+    p = polar(p, h, L / n);
+    if (side && p[1] > -rad(u) - 0.3) p = [p[0], -rad(u) - 0.3];
+    pts.push(p); hs.push(h);
+  }
+  for (let i = 0; i <= n; i++) hs[i] = angOf(pts[Math.max(i - 1, 0)], pts[Math.min(i + 1, n)]);
+  C.ink.poly(tube(pts, rad));
+  // side view: shingles on the upper edge; top view: both edges
+  const up = side ? (Math.cos(hs[n >> 1]) < 0 ? 1 : -1) : 0;
+  for (const o of side ? [up] : [-1, 1]) shingles(C, pts, hs, rad, o, g.ns ?? 7, 0.9, 0.05, 0.85);
+};
+// A tail wrapped around a curled-up body (C.plan.wrap): an arc from angle a0 to a1 around the
+// ball, standing off it by `gap` units so it reads as a separate band; its root grows out of the body.
+function wrapTail(C, g, s) {
+  const { ink } = C, W = C.plan.wrap, [a0, a1, gap, wk = 0.7] = g.wrap, n = 26, pw = (g.pw ?? 1) * s * wk;
+  const rad = g.pk ? profile(g.pk.map(([t, w]) => [t, w * pw])) : (u => Math.max(g.tw * s * wk * Math.pow(1 - u, 0.7) + 0.5, 0.6)), mx = g.pk ? Math.max(...g.pk.map(k => k[1])) * pw : g.tw * s * wk;
+  const pts = [], hs = [];
+  for (let i = 0; i <= n; i++) {
+    const u = i / n, a = mix(a0, a1, u), k = mix(0.55, 1, Math.min(u / 0.18, 1)) * (1 + (mx + gap) / W.ry);
+    let p = [W.c[0] + Math.cos(a) * W.rx * k, W.c[1] + Math.sin(a) * W.ry * k];
+    if (p[1] > -rad(u) - 0.3) p = [p[0], -rad(u) - 0.3];
+    pts.push(p);
+  }
+  for (let i = 0; i <= n; i++) hs.push(angOf(pts[Math.max(i - 1, 0)], pts[Math.min(i + 1, n)]));
+  ink.poly(tube(pts, rad));
+  const out = Math.sign(a1 - a0); // outer side of the band
+  if (g.tip === 'mammalScaleTail') return shingles(C, pts, hs, rad, -out, g.ns ?? 8, 0.9, 0.2, 0.9);
+  const nf = g.fluff ?? 0;
+  for (let i = 0; i < nf + 1; i++) {
+    const u = mix(0.3, 0.9, i / nf), k = Math.round(u * n), rr = rad(u);
+    ink.poly(leaf(polar(pts[k], hs[k] - out * PI / 2, rr * 0.55), hs[k] - out * 0.65, rr * 0.95, rr * 0.6, 0, 0.35));
+  }
+  for (const da of [-0.45, 0.1]) ink.poly(leaf(pts[n - 1], hs[n] + da, rad(1) * 1.6, rad(1) * 0.85, 0, 0.35));
+}
 tips.mammalBrush = (C, e, ang, s, g, curl) => {
-  const { ink, rng } = C, side = C.plan.view === 'side', n = 20, L = g.pl * s, pw = g.pw * s;
-  const rad = profile(g.pk.map(([t, w]) => [t, w * pw]));
+  if (g.wrap && C.plan.wrap) return wrapTail(C, g, s);
+  const { ink, rng } = C, side = C.plan.view === 'side', n = g.bands ? 36 : 20, L = g.pl * s, pw = g.pw * s;
+  const rad0 = profile(g.pk.map(([t, w]) => [t, w * pw]));
+  // ringed tails (raccoon, red panda): narrow pinches between the rings
+  const rad = g.bands ? (u => rad0(u) * (u < 0.15 ? 1 : 1 - 0.3 * Math.pow(Math.max(0, Math.cos(2 * PI * (u * g.bands + 0.5))), 6))) : rad0;
   const rise = side && g.ptarget != null ? angDiff(g.ptarget, ang) : 0, cs = side ? 1 : (rng.chance(0.5) ? 1 : -1);
   let h = ang, p = e; const pts = [p], hs = [h];
   for (let i = 1; i <= n; i++) {
@@ -504,6 +561,14 @@ dorsals.mammalQuills = (C, plan, st, sd, si, g) => {
     ink.poly([polar(b, a + PI / 2, w), polar(b, a, len), polar(b, a - PI / 2, w)]);
   }
 };
+dorsals.mammalScales = (C, plan, st, sd, si, g) => {
+  if (plan.view === 'side' && !plan.rooted && si > 0) return;
+  const pts = [], hs = [], N = 16, R = plan.r * (g.k ?? 0.42);
+  for (let i = 0; i <= N; i++) { const k = samp(st, i / N); pts.push(polar(k.p, k.dir, -R * 0.72)); }
+  for (let i = 0; i <= N; i++) hs.push(angOf(pts[Math.min(i + 1, N)], pts[Math.max(i - 1, 0)])); // toward the rump
+  const o = Math.sign(angDiff(samp(st, 0.5).dir, hs[N >> 1])) || 1; // outward side of that heading
+  shingles(C, pts, hs, () => R, o, g.n, g.kL ?? 1.4, 0.04, 0.98);
+};
 dorsals.mammalShell = (C, plan, st, sd, si, g) => {
   if (plan.view === 'side' && !plan.rooted && si > 0) return;
   const r = plan.r, n = 24, out = [], inn = [], bands = g.bands ?? 0;
@@ -512,6 +577,29 @@ dorsals.mammalShell = (C, plan, st, sd, si, g) => {
     out.push(polar(k.p, k.dir, r * (g.h * (0.75 + 0.25 * Math.sin(PI * u)) - notch * 0.1))); inn.push(polar(k.p, k.dir, -r * 0.35));
   }
   C.ink.poly(out.concat(inn.reverse()));
+};
+// Bat wing lent to other bodies (the bat's own chassis draws its own wings, so this skips it).
+dorsals.mammalBatWing = (C, plan, st, sd, si, g) => {
+  if (plan.mBat) return;
+  const side = plan.view === 'side' && !plan.rooted;
+  if (side && si > 0) return;
+  const { ink } = C, r = Math.min(plan.r, 10), k = samp(st, g.at ?? 0.7), s = r * g.size;
+  const base = polar(k.p, k.dir, -plan.r * 0.3);
+  const wings = side ? [[1, 0.88, -0.35], [0, 1, 0]] : [[0, 1, 0]];
+  for (const [far, ks, da] of wings) {
+    // local frame: x along the arm (outward), y toward the trailing edge (backward / down)
+    const a0 = side ? -PI / 2 - 0.55 + da : k.dir + sd * 0.15;
+    const back = side ? 1 : -sd, F = frame(base, a0, s * ks, back);
+    const E = [0.38, -0.1], W = [0.72, -0.12], nf = g.nf ?? 4, tipsP = [];
+    for (let i = 0; i < nf; i++) { const a = 0.15 + i * (g.fan ?? 1.45) / (nf - 1), len = 0.62 * (1 - 0.15 * i); tipsP.push(polar(W, a, len)); }
+    const sc = g.scallop ?? 0.45, root = [0.02, 0.4];
+    const mem = [[0, -0.08], E, W, tipsP[0]];
+    for (let i = 0; i < nf - 1; i++) { const m = lerp(lerp(tipsP[i], tipsP[i + 1], 0.5), W, sc); mem.push(lerp(tipsP[i], m, 0.55), m, lerp(tipsP[i + 1], m, 0.55), tipsP[i + 1]); }
+    const m = lerp(lerp(tipsP[nf - 1], root, 0.5), [0.2, 0.05], sc); mem.push(lerp(tipsP[nf - 1], m, 0.55), m, lerp(root, m, 0.55), root);
+    ink.poly(mem.map(p => F(p[0], p[1])));
+    ink.poly(tube(spline([F(0, -0.04), F(E[0], E[1]), F(W[0], W[1])], 4), profile([[0, r * 0.22], [1, r * 0.11]])));
+    if (far) continue;
+  }
 };
 dorsals.mammalBabies = (C, plan, st, sd, si, g) => {
   if (si > 0) return;
@@ -598,11 +686,11 @@ const species = [
   sp('dormouse', 2.5, r => {
     const B = { r: r.range(8.5, 10), len: r.range(17, 21), clr: 0.2, headS: 0.84, arch: 0.55 };
     const pose = r.wpick([[3, 'ball'], [1.5, 'hold'], [1, 'climb'], [0.8, 'walk']]);
-    const ch = { ball: () => ball(r, B, { tailA: PI + 1.15 }), hold: () => sit(r, B, 'hold', { item: r.pick(['nut', 'acorn', 'berry']), tailA: PI + 0.1 }), walk: () => walk(r, B), climb: () => ({ type: 'mammalClimb', r: B.r * 0.8, len: B.r * 1.5, stalkH: r.range(56, 68), stalkR: r.range(1.5, 2), bendX: r.range(-0.05, 0.2), top: 'leaf', at: r.range(0.45, 0.6), turn: r.range(0.4, 0.9), face: -r.range(0, 0.5), headS: 0.84 }) }[pose]();
+    const ch = { ball: () => ball(r, B, { tailA: PI + 1.15, headX: 0.72, headY: r.range(0.05, 0.25), face: r.range(0.5, 0.8), headS: 0.62 }), hold: () => sit(r, B, 'hold', { item: r.pick(['nut', 'acorn', 'berry']), tailA: PI + 0.1 }), walk: () => walk(r, B), climb: () => ({ type: 'mammalClimb', r: B.r * 0.8, len: B.r * 1.5, stalkH: r.range(56, 68), stalkR: r.range(1.5, 2), bendX: r.range(-0.05, 0.2), top: 'leaf', at: r.range(0.45, 0.6), turn: r.range(0.4, 0.9), face: -r.range(0, 0.5), headS: 0.84 }) }[pose]();
     return {
       chassis: ch, head: head({ snoutLen: r.range(1.05, 1.25), tipR: 0.26, nose: 0.13, eyeR: 0.2, whiskers: pose !== 'ball' && r.chance(0.4) ? 2 : 0 }),
       crown: ear('round', r.range(0.75, 0.95), r.range(0.8, 1), { lean: pose === 'ball' ? 0.5 : 0.15 }),
-      tail: tBrush({ pk: CLUB, pl: pose === 'ball' ? r.range(5.6, 6.6) : r.range(4.5, 5.5), pw: r.range(0.85, 1.05), ptarget: pose === 'ball' ? -0.5 : (pose === 'climb' ? PI / 2 : PI + 0.3), precurve: pose === 'ball' ? 1.5 : r.range(-0.3, 0.8), fluff: 3 }),
+      tail: tBrush({ pk: CLUB, pl: r.range(4.5, 5.5), pw: r.range(0.85, 1.05), ptarget: pose === 'climb' ? PI / 2 : PI + 0.3, precurve: r.range(-0.3, 0.8), fluff: 3, wrap: [r.range(2.2, 2.5), 2 * PI - r.range(0.2, 0.5), r.range(1.5, 1.8), r.range(0.6, 0.7)] }),
       surface: { eyes: pose === 'ball' ? 'none' : 'dot' },
     };
   }),
@@ -614,17 +702,6 @@ const species = [
       chassis: ch, head: head({ snoutLen: r.range(0.8, 1), tipR: r.range(0.4, 0.48), mid: 0.5, droop: 0.2, eyeR: 0.12, whiskers: r.chance(0.4) ? 2 : 0, whiskerL: 0.7 }),
       crown: ear('round', r.range(0.45, 0.6), r.range(0.6, 0.75), { lean: 0.4 }),
       tail: tThin(r, r.range(2.5, 3.6), { w0: 0.2, wave: 0.5, curl: r.range(0.2, 0.8) }),
-    };
-  }),
-
-  sp('lemming', 1.5, r => {
-    const B = { r: r.range(10.5, 12.5), len: r.range(13, 17), clr: 0.06, headS: 0.8, arch: 0.6, neckW: 0.95, chest: 1, rump: 0.95, footL: 0.45, neckAng: 0.1, neckLen: -0.1, legW: 0.28 };
-    return {
-      chassis: r.chance(0.75) ? walk(r, B, { gait: r.pick(['stand', 'walk']) }) : stand(r, B, { standH: B.len * 0.8 }),
-      head: head({ snoutLen: 0.72, tipR: 0.5, mid: 0.5, droop: 0.22, eyeR: 0.12, eyeX: 0.5 }),
-      crown: r.chance(0.5) ? ear('round', 0.35, 0.55, { lean: 0.5 }) : none(),
-      tail: r.chance(0.5) ? tScut({ tipS: 0.35 }) : none(),
-      dorsal: r.chance(0.5) ? { type: 'fur', n: r.int(7, 10), len: 0.3 } : none(),
     };
   }),
 
@@ -739,17 +816,6 @@ const species = [
     };
   }),
 
-  sp('tenrec', 1.3, r => {
-    const B = { r: r.range(9, 10.5), len: r.range(17, 21), clr: 0.2, headS: 0.74, arch: 0.5, neckW: 0.85, footL: 0.5, neckAng: 0.1, neckLen: 0.15 };
-    return {
-      chassis: r.chance(0.7) ? walk(r, B, { b0: 0.3, b1: 0.86 }) : sniff(r, B, { b0: 0.3, b1: 0.86, pitch: 0.15 }),
-      head: head({ skull: 0.9, snoutLen: r.range(2.0, 2.4), tipR: 0.12, mid: 0.62, droop: 0.04, nose: 0.14, eyeR: 0.11 }),
-      crown: ear('round', 0.55, 0.6, { lean: 0.5 }),
-      dorsal: { type: 'mammalQuills', n: r.int(7, 10), len: r.range(0.5, 0.8), wid: 0.16, lean: -0.1 }, // streaked tenrec's nuchal crest
-      tail: none(),
-    };
-  }),
-
   sp('red squirrel', 4, r => {
     const B = { r: r.range(8.5, 10), len: r.range(20, 24), clr: 0.35, headS: r.range(0.76, 0.84), arch: 0.55, footL: 1, sitFoot: 1.05, haunch: 1, sitH: r.range(15, 18) };
     const pose = r.wpick([[4, 'hold'], [1.5, 'run'], [1.2, 'stand'], [1, 'walk'], [0.8, 'groom']]);
@@ -816,17 +882,6 @@ const species = [
     };
   }),
 
-  sp('guinea pig', 1.8, r => {
-    const B = { r: r.range(10.5, 12), len: r.range(20, 25), clr: 0.07, headS: 0.84, arch: 0.35, neckW: 1, chest: 1.02, rump: 0.98, footL: 0.4, neckAng: 0.05, neckLen: -0.1, legW: 0.26 };
-    const rough = r.chance(0.4);
-    return {
-      chassis: walk(r, B, { gait: r.pick(['stand', 'walk']) }),
-      head: head({ skullL: 1.05, snoutLen: 0.95, tipR: 0.55, mid: 0.45, droop: 0.12, eyeR: 0.14, eyeX: 0.45, carry: r.chance(0.25) ? 'sprig' : null }),
-      crown: ear('round', 0.6, 0.9, { lean: 1.2, farLean: -0.3 }), tail: none(),
-      dorsal: rough ? { type: 'fur', n: r.int(8, 12), len: r.range(0.3, 0.45) } : none(),
-    };
-  }),
-
   sp('chinchilla', 1.5, r => {
     const B = { r: r.range(10.5, 12), len: r.range(15, 18), clr: 0.12, headS: 0.8, arch: 0.65, neckW: 0.9, rump: 1, footL: 0.9, sitH: 13, sitFoot: 1 };
     const pose = r.wpick([[2, 'sit'], [2, 'walk'], [1, 'hold']]);
@@ -834,7 +889,7 @@ const species = [
     return {
       chassis: ch, head: head({ snoutLen: 0.95, tipR: 0.4, mid: 0.5, eyeR: 0.18, whiskers: r.chance(0.6) ? 2 : 0 }),
       crown: ear('round', r.range(1.35, 1.6), r.range(1.2, 1.4), { lean: 0.05 }),
-      tail: tBrush({ pk: CLUB, pl: r.range(3.8, 4.6), pw: r.range(0.9, 1.05), ptarget: -PI / 2 - 0.4, precurve: r.range(-1.8, -1), fluff: 3 }),
+      tail: tBrush({ pk: CLUB, pl: r.range(3.8, 4.6), pw: r.range(0.85, 1), ptarget: -PI / 2 - 0.4, precurve: r.range(-1.8, -1), fluff: 1 }),
     };
   }),
 
@@ -851,27 +906,26 @@ const species = [
   }),
 
   sp('bat', 3.5, r => {
-    const crawl = r.chance(0.2), rr = r.range(8, 9.5), bigEar = r.chance(0.35);
-    const B = { r: rr * 0.85, len: rr * 1.7, clr: 0.5, headS: 0.85, arch: 0.4, footL: 0.4, haunch: 0.7, legW: 0.24, fore: 'wing', neckAng: 0.4 };
-    const ch = crawl ? walk(r, B, { gait: 'walk', pitch: r.range(0.1, 0.3), face: r.range(-0.3, 0.1) })
-      : { type: 'mammalBat', r: rr, arm: r.range(1.3, 1.7), finger: r.range(2.5, 3.4), elev: r.range(0.0, 0.85), droop: r.range(0.35, 0.75), fan: r.range(1.0, 1.35), skew: r.range(-0.12, 0.12), bank: r.range(-0.22, 0.22), tailM: r.range(-0.1, 0.3), headS: 0.62 };
+    const rr = r.range(8, 9.5), bigEar = r.chance(0.35);
     return {
-      chassis: ch, head: head({ snoutLen: r.range(0.6, 0.8), tipR: 0.34, mid: 0.5, droop: 0.1, eyeR: 0.13, eyeX: 0.3, nose: 0.14, earY: 0.6 }),
-      crown: bigEar ? ear('long', r.range(2.2, 2.9), 1.1, { lean: crawl ? -0.2 : -0.75 }) : ear('point', r.range(1.25, 1.7), r.range(0.9, 1.1), { lean: crawl ? -0.2 : -0.7 }),
-      dorsal: { type: 'wings', size: r.range(3, 4), fingers: 4, fan: r.range(1.1, 1.5), at: 0.7, mLend: true }, // only ever seen when lent
+      chassis: { type: 'mammalBat', r: rr, arm: r.range(1.15, 1.45), finger: r.range(2.1, 2.7), elev: r.wpick([[3, r.range(0.05, 0.5)], [1.5, r.range(0.7, 1.05)], [1, r.range(-0.35, -0.1)]]), droop: r.range(-0.05, 0.25), fan: r.range(1.6, 1.9), nf: 4, scallop: r.range(0.4, 0.55), skew: r.range(-0.1, 0.1), bank: r.range(-0.2, 0.2), tailM: r.range(-0.1, 0.2), headS: 0.62 },
+      head: head({ snoutLen: r.range(0.6, 0.8), tipR: 0.34, mid: 0.5, droop: 0.1, eyeR: 0.13, eyeX: 0.3, nose: 0.14, earY: 0.6 }),
+      crown: bigEar ? ear('long', r.range(2.2, 2.9), 1.1, { lean: -0.75 }) : ear('point', r.range(1.25, 1.7), r.range(0.9, 1.1), { lean: -0.7 }),
+      dorsal: { type: 'mammalBatWing', size: r.range(2.6, 3.2), nf: 4, fan: r.range(1.3, 1.6), scallop: r.range(0.4, 0.55), at: 0.72 }, // only drawn when lent
       tail: none(),
     };
   }),
 
   sp('pangolin', 2, r => {
     const rolled = r.chance(0.25), rr = r.range(9, 10.5);
-    const B = { r: rr, len: r.range(22, 27), clr: 0.3, headS: 0.52, arch: 0.75, neckW: 0.62, chest: 0.88, rump: 0.95, footL: 0.5, neckAng: -0.25, neckLen: 0.5, legW: 0.36, tailA: PI - 0.1 };
-    const ch = rolled ? ball(r, B, { r: rr * 1.25, wide: 1.05, headS: 0.4, headX: 0.5, headY: 0.55, face: 0.5, b0: 0.5, b1: -0.1, paws: false, tailA: PI - 0.3 })
-      : walk(r, B, { face: r.range(0.15, 0.4), b0: 0.0, b1: 0.86, gait: r.pick(['walk', 'stand']) });
+    const B = { r: rr, len: r.range(20, 25), clr: 0.3, headS: 0.52, arch: r.range(0.8, 1.1), neckW: 0.62, chest: 0.88, rump: 0.95, footL: 0.5, neckAng: -0.25, neckLen: 0.5, legW: 0.36, tailA: PI - 0.1 };
+    const ch = rolled ? ball(r, B, { r: rr * 1.15, wide: 1.05, headS: 0.4, headX: 0.55, headY: 0.4, face: 0.9, b0: 0.6, b1: -0.25, paws: false, tailA: PI + 0.8 })
+      : walk(r, B, { face: r.range(0.15, 0.45), b0: 0.0, b1: 0.84, gait: r.pick(['walk', 'stand']), pitch: r.range(-0.12, 0.02) });
     return {
-      chassis: ch, head: head({ skull: 0.9, snoutLen: r.range(2.0, 2.4), tipR: 0.16, mid: 0.55, droop: 0.05, eyeR: 0.14, eyeX: 0.6 }),
-      dorsal: { type: 'mammalQuills', n: rolled ? r.int(11, 13) : r.int(9, 12), len: r.range(0.2, 0.3), wid: r.range(0.4, 0.5), lean: r.range(0.75, 1) },
-      tail: rolled ? { len: 7, w0: 1.1, mid: 0.3, w1: 0.3, curl: 2.2, wave: 0, up: false, tip: 'point' } : { len: r.range(7.5, 9.5), w0: 1.25, mid: 0.2, w1: 0.2, curl: r.range(0.2, 0.7), wave: 0.4, freq: 0.6, up: false, tip: 'point' },
+      chassis: ch, head: head({ skull: 0.9, snoutLen: r.range(1.9, 2.3), tipR: 0.16, mid: 0.55, droop: 0.05, eyeR: 0.14, eyeX: 0.6 }),
+      crown: none(),
+      dorsal: { type: 'mammalScales', n: rolled ? r.int(8, 10) : r.int(6, 8), k: r.range(0.55, 0.65) },
+      tail: { len: 0.3, w0: 1.1, mid: 0.5, w1: 1, curl: 0, wave: 0, tip: 'mammalScaleTail', tl: r.range(3.6, 4.4), tw: r.range(1.05, 1.25), droop: r.range(0.6, 1.1), ns: r.int(5, 7), wrap: [2.4, 2 * PI - 0.45, 1.7, 0.75] },
     };
   }),
 
@@ -992,11 +1046,11 @@ const species = [
   sp('raccoon', 2, r => {
     const B = { r: r.range(10, 11.5), len: r.range(19, 23), clr: 0.4, headS: 0.72, arch: r.range(0.7, 1.1), neckW: 0.8, footL: 0.7, neckAng: 0.0, neckLen: 0.2, legW: 0.34, standH: 22, sitH: 16, upShoulder: 0.8, upNeck: 0.72, tailA: PI - 0.1 };
     const pose = r.wpick([[3, 'walk'], [1.5, 'stand'], [1.5, 'hold']]);
-    const ch = { walk: () => walk(r, B, { arch: B.arch, face: r.range(0, 0.25) }), stand: () => stand(r, B, { lean: r.range(0.05, 0.25) }), hold: () => sit(r, B, 'hold', { item: r.pick(['nut', 'berry', 'shell']) }) }[pose]();
+    const ch = { walk: () => walk(r, B, { arch: r.range(1.0, 1.4), pitch: -r.range(0.08, 0.2), neckAng: -0.1, face: r.range(0.1, 0.35) }), stand: () => stand(r, B, { lean: r.range(0.05, 0.25) }), hold: () => sit(r, B, 'hold', { item: r.pick(['nut', 'berry', 'shell']) }) }[pose]();
     return {
       chassis: ch, head: head({ skullL: 1.08, snoutLen: r.range(1.2, 1.4), tipR: 0.22, mid: 0.45, droop: 0.12, nose: 0.15, eyeR: 0.13, cheek: 0.55 }),
       crown: ear('point', r.range(0.85, 1.05), 0.8, { lean: 0 }),
-      tail: tBrush({ pk: [[0, 0.4], [0.4, 0.7], [0.85, 0.62], [1, 0.3]], pl: r.range(5, 6.2), pw: 0.9, ptarget: PI - r.range(0.05, 0.3), precurve: r.range(0.2, 1.2), fluff: 3 }),
+      tail: tBrush({ pk: [[0, 0.45], [0.4, 0.75], [0.85, 0.7], [1, 0.4]], pl: r.range(5, 6.2), pw: 0.95, ptarget: PI - r.range(0.05, 0.3), precurve: r.range(0.2, 1.2), fluff: 0, bands: 5 }),
     };
   }),
 
@@ -1007,19 +1061,18 @@ const species = [
       chassis: stand2 ? stand(r, B, { lean: r.range(0, 0.15), arms: 'hang' }) : walk(r, B),
       head: head({ skullL: 1.05, snoutLen: 0.9, tipR: 0.34, mid: 0.4, droop: 0.15, nose: 0.14, eyeR: 0.13, cheek: 0.7 }),
       crown: ear('point', r.range(1, 1.2), 1, { lean: 0.05 }),
-      tail: tBrush({ pk: [[0, 0.45], [0.35, 0.8], [0.85, 0.75], [1, 0.4]], pl: r.range(6.5, 8), pw: 1.05, ptarget: PI - r.range(0, 0.25), precurve: r.range(0.1, 0.9), fluff: 3 }),
+      tail: tBrush({ pk: [[0, 0.45], [0.35, 0.8], [0.85, 0.75], [1, 0.4]], pl: r.range(6.5, 8), pw: 1.05, ptarget: PI - r.range(0, 0.25), precurve: r.range(0.1, 0.9), fluff: 0, bands: r.pick([4, 5]) }),
     };
   }),
 
   sp('fennec fox', 2.5, r => {
     const B = { r: r.range(8, 9.2), len: r.range(21, 25), clr: r.range(0.8, 1.05), headS: 0.82, arch: 0.3, neckW: 0.68, chest: 0.9, rump: 0.9, footL: 0.6, neckAng: 0.75, neckLen: 0.45, legW: 0.26, sitH: 18, sitFoot: 0.8, upShoulder: 0.7, upNeck: 0.58, haunch: 0.95 };
-    const pose = r.wpick([[3, 'sit'], [2.5, 'walk'], [1.5, 'ball']]);
-    const ch = { sit: () => sit(r, B, 'down', { lean: r.range(0.3, 0.45), armX: 0.1, tailA: PI + 0.1 }), walk: () => walk(r, B, { gait: r.pick(['walk', 'trot', 'stand']), tailA: PI - 0.35 }), ball: () => ball(r, B, { tailA: PI + 0.4, headS: 0.6, wide: 1.25 }) }[pose]();
+    const pose = r.wpick([[3, 'sit'], [2.5, 'walk'], [1, 'sniff']]);
+    const ch = { sit: () => sit(r, B, 'down', { lean: r.range(0.3, 0.45), armX: 0.1, tailA: PI + 0.1 }), walk: () => walk(r, B, { gait: r.pick(['walk', 'trot', 'stand']), tailA: PI - 0.35 }), sniff: () => sniff(r, B, { pitch: r.range(0.05, 0.15), neckAng: 0.2, face: r.range(0.5, 0.8), tailA: PI - 0.2 }) }[pose]();
     return {
       chassis: ch, head: head({ snoutLen: r.range(1.45, 1.7), tipR: 0.14, mid: 0.68, droop: 0.1, nose: 0.15, eyeR: 0.14, eyeX: 0.35, earX: -0.25 }),
-      crown: ear('point', r.range(2.5, 3.2), r.range(1.4, 1.7), { lean: pose === 'ball' ? 0.5 : r.range(-0.15, 0.2), farLean: -0.3 }),
-      tail: tBrush({ pk: FOX, pl: pose === 'ball' ? 7 : r.range(5.5, 6.8), pw: r.range(0.95, 1.1), ptarget: pose === 'ball' ? 0.1 : (pose === 'sit' ? PI - 0.1 : PI - r.range(0.2, 0.6)), precurve: pose === 'ball' ? 0.6 : r.range(0.2, 1), fluff: 2 }),
-      surface: { eyes: pose === 'ball' ? 'none' : 'dot' },
+      crown: ear('point', r.range(2.5, 3.2), r.range(1.4, 1.7), { lean: r.range(-0.15, 0.2), farLean: -0.3 }),
+      tail: tBrush({ pk: FOX, pl: r.range(5.5, 6.8), pw: r.range(0.95, 1.1), ptarget: pose === 'sit' ? PI - 0.1 : PI - r.range(0.2, 0.6), precurve: r.range(0.2, 1), fluff: 2 }),
     };
   }),
 ];
