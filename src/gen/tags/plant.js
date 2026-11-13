@@ -60,16 +60,24 @@ function superE(c, rx, ry, rot = 0, e = 2.6, n = 32) {
   for (let i = 0; i < n; i++) { const a = i / n * TAU, ca = Math.cos(a), sa = Math.sin(a), x = Math.sign(ca) * Math.abs(ca) ** q * rx, y = Math.sign(sa) * Math.abs(sa) ** q * ry; out.push([c[0] + x * cs - y * sn, c[1] + x * sn + y * cs]); }
   return out;
 }
-const thin = (ink, pts, w = MINW) => ink.poly(tube(pts, Math.max(w, MINW) / 2));
-// Pinnate frond along a sampled rachis.
+const thin = (ink, pts, w = MINW) => ink.poly(pts.length === 2 ? spike(pts[0], pts[1], Math.max(w, MINW) / 2, Math.max(w, MINW) / 2) : tube(pts, Math.max(w, MINW) / 2));
+// cheap shapes for small repeated details (keeps the polygon union fast)
+function kite(p, a, len, wid, fat = 0.4) { const m = polar(p, a, len * fat); return [p, polar(m, a + PI / 2, wid / 2), polar(p, a, len), polar(m, a - PI / 2, wid / 2)]; }
+function spike(b, tip, w0, w1 = hair * 0.8) { const a = angOf(b, tip); return [polar(b, a + PI / 2, w0), polar(tip, a + PI / 2, w1), polar(tip, a, w1), polar(tip, a - PI / 2, w1), polar(b, a - PI / 2, w0), polar(b, a + PI, w0 * 0.7)]; }
+// Pinnate frond along a sampled rachis, drawn as ONE toothed outline (fast to union).
 function frond(ink, pts, pl, pw, n, o = {}) {
-  ink.poly(tube(pts, P([[0, o.rw ?? 0.6], [1, 0.32]])));
-  const t0 = o.t0 ?? 0.14, env = P(o.env ?? [[0, 0.35], [0.22, 1], [0.6, 0.72], [1, 0.14]]);
+  const rw = o.rw ?? 0.6;
+  ink.poly(tube(pts, P([[0, rw], [1, 0.32]])));
+  const t0 = o.t0 ?? 0.14, env = P(o.env ?? [[0, 0.35], [0.22, 1], [0.6, 0.72], [1, 0.14]]), an = o.ang ?? 1.15, side = { '-1': [], '1': [] };
   for (let i = 0; i < n; i++) {
-    const t = mix(t0, 0.97, i / (n - 1)), { p, ang } = pathAt(pts, t), e = env(i / (n - 1));
-    for (const sd of [-1, 1]) ink.poly(leaf(p, ang + sd * (o.ang ?? 1.15), pl * e, pw * mix(0.65, 1, e), -sd * 0.1, 0.4));
+    const t = mix(t0, 0.97, i / (n - 1)), { p, ang } = pathAt(pts, t), e = env(i / (n - 1)), w = pw * mix(0.65, 1, e) * 1.1, L = pl * e;
+    for (const sd of [-1, 1]) {
+      const a = ang + sd * an, m = polar(p, a, L * 0.38), arr = side[sd];
+      arr.push(polar(polar(p, ang, -w * 0.45), ang + sd * PI / 2, rw * 0.5), polar(m, a + sd * PI / 2, w / 2), polar(p, a, L), polar(m, a - sd * PI / 2, w / 2), polar(polar(p, ang, w * 0.45), ang + sd * PI / 2, rw * 0.5));
+    }
   }
-  ink.poly(leaf(last(pts), endAng(pts), pl * 0.3, pw * 0.6, 0, 0.4));
+  const e = last(pts), ea = endAng(pts);
+  ink.poly(side['-1'].concat([polar(e, ea, pl * 0.3)], side['1'].reverse()));
 }
 const usock = (p, dir, s, face = 0) => ({ p, dir, face, s, sym: false, radial: true });
 
@@ -525,7 +533,7 @@ head('plantSpire', (C, sock, g) => {
   for (let i = 0; i < n; i++) {
     const u = mix(g.t0 ?? 0.12, 0.96, i / (n - 1)), { p, ang } = pathAt(pts, u), k = mix(1, 0.4, u) * s;
     if (g.kind === 'lupin') for (const sd of [-1, 1]) ink.poly(leaf(p, ang + sd * 0.95, 0.95 * k, 0.6 * k, -sd * 0.3, 0.55));
-    else if (g.kind === 'torch') { const d = mix(2.5, 0.5, u ** 1.5); for (const sd of [-1, 1]) ink.poly(leaf(p, ang + sd * d, 1.0 * k + 0.2 * s, 0.34 * s, 0, 0.5)); }
+    else if (g.kind === 'torch') { const d = mix(2.5, 0.5, u ** 1.5); for (const sd of [-1, 1]) ink.poly(kite(p, ang + sd * d, 1.0 * k + 0.2 * s, 0.4 * s, 0.5)); }
     else if (g.kind === 'mast') { if (i % 2 === 0 || true) { const sd = i % 2 ? 1 : -1, e = polar(polar(p, ang + sd * 1.35, 1.5 * k), ang, 0.5 * k); ink.poly(tube(spline([p, polar(p, ang + sd * 1.4, 1.1 * k), e], 4), Math.max(0.09 * s, hair))); ink.oval(e, 0.3 * k + 0.1 * s, 0.75 * k, ang); } }
     else if (i < n - 1) heads.plantBell(C, usock(polar(p, ang + fs * PI / 2, 0.25 * s), ang + fs * mix(2.3, 1.9, u) + rng.range(-0.1, 0.1), 0.42 * k + 0.1 * s, fs), { kind: 'foxglove', fs });
   }
@@ -551,8 +559,8 @@ class Pen {
   poly(pts, layer = 'k') { const f = this.floor, dy = this.dy; this.ink.poly(pts.map(p => [p[0], Math.min(p[1], f) - dy]), layer); return this; }
   tube(ctrl, rad, layer = 'k', per = 8) { return this.poly(tube(spline(ctrl, per), rad), layer); }
   line(ctrl, w, layer = 'k', per = 6) { const r = Math.max(w, MINW) / 2; return this.poly(tube(spline(ctrl, per), P([[0, r], [0.7, r * 0.9], [1, Math.max(r * 0.55, MINW / 2.4)]])), layer); }
-  dot(c, r, layer = 'k') { return this.poly(ellipse(c, r, r, 0, 18), layer); }
-  oval(c, rx, ry, rot = 0, layer = 'k') { return this.poly(ellipse(c, rx, ry, rot), layer); }
+  dot(c, r, layer = 'k') { return this.poly(ellipse(c, r, r, 0, r < 1.2 ? 8 : 18), layer); }
+  oval(c, rx, ry, rot = 0, layer = 'k') { return this.poly(ellipse(c, rx, ry, rot, Math.max(rx, ry) < 1.5 ? 10 : 28), layer); }
   root(fn) { const f = this.floor; this.floor = 1.3; fn(); this.floor = f; }
 }
 function stripOf(path, rad, t0, t1, n, sd) {
@@ -655,7 +663,7 @@ function drawStem(Cp, p, a0, st, keepHead) {
       K.poly(tube(floorPts(arcPath(q.p, a, len, sd * (J.curl ?? 0.5), 8, 1.6), 0.4), P([[0, hair * 1.15], [1, hair * 0.85]])));
     }
   }
-  if (st.prickles) for (let i = 0; i < st.prickles; i++) { const t = rng.range(0.08, 0.85), q = pathAt(pts, t), sd = rng.sign(); K.poly(leaf(polar(q.p, q.ang + sd * PI / 2, rad(t) * 0.6), q.ang + sd * 1.1 + 0.4 * (sd > 0 ? -1 : 1) * 0, rad(t) * 1.2 + 0.6, rad(t) * 0.9 + 0.3, 0, 0.2)); }
+  if (st.prickles) for (let i = 0; i < st.prickles; i++) { const t = rng.range(0.08, 0.85), q = pathAt(pts, t), sd = rng.sign(); K.poly(kite(polar(q.p, q.ang + sd * PI / 2, rad(t) * 0.6), q.ang + sd * 1.1, rad(t) * 1.2 + 0.6, rad(t) * 0.9 + 0.4, 0.2)); }
   const B = st.branch;
   if (B) for (let i = 0; i < B.n; i++) {
     const u = B.n > 1 ? i / (B.n - 1) : 0.5, t = mix(B.t0 ?? 0.4, B.t1 ?? 0.8, u), q = pathAt(pts, t), sd = (i % 2 ? 1 : -1) * (B.sd ?? 1);
@@ -687,7 +695,9 @@ const SUB = {
 // 'stems': the workhorse. A substrate, a basal rosette, and stems; stems[0] is the main stem.
 FORMS.stems = (Cp, g) => {
   if (g.sub) SUB[g.sub.kind](Cp, g.sub);
-  if (g.base) Cp.ink.poly(superE([g.base.x ?? 0, 0], g.base.w, g.base.h, 0, 2.2));
+  const sx = g.stems.map(st => st.x ?? 0).concat((g.basal ?? []).map(b => b.x ?? 0)), sx0 = Math.min(0, ...sx), sx1 = Math.max(0, ...sx);
+  const base = g.base ?? (sx1 - sx0 > 2.5 ? { x: (sx0 + sx1) / 2, w: (sx1 - sx0) / 2 + 2, h: 1.6 } : null); // a low mound of soil joins a clump
+  if (base) Cp.ink.poly(superE([base.x ?? 0, 0], base.w, base.h, 0, 2.2));
   for (const B of g.basal ?? []) drawBasal(Cp, B);
   let main = null, mp = null, mst = null;
   g.stems.forEach((st, i) => {
@@ -724,7 +734,7 @@ U.jag = (C, p, a, s, o) => {
     top.push(F(x, -w)); bot.push(F(x + (o.spiny ? 0 : L / n * 0.1), w * (o.flat ?? 1)));
   }
   C.ink.poly(top.concat(bot.reverse()));
-  if (o.spiny) for (let i = 1; i < n; i++) for (const sd of [-1, 1]) { const t = (i - 0.15) / n; C.ink.poly(leaf(F(L * t, sd * W * 0.6), a + sd * 1.2 - 0.3, W * 0.9, W * 0.25, 0, 0.2)); }
+  if (o.spiny) for (let i = 1; i < n; i++) for (const sd of [-1, 1]) { const t = (i - 0.15) / n; C.ink.poly(kite(F(L * t, sd * W * 0.6), a + sd * 1.2 - 0.3, W * 0.9, W * 0.3, 0.2)); }
 };
 // Venus flytrap leaf: winged petiole, then the trap
 U.flytrap = (C, p, a, s, o) => {
@@ -748,12 +758,15 @@ U.pod = (C, p, a, s, o) => {
   C.ink.poly(tube(pts, P([[0, 0.05 * s], [0.12, 0.13 * s], [0.9, 0.12 * s], [1, 0.03 * s]])));
   for (let i = 0; i < n; i++) { const q = pathAt(pts, mix(0.2, 0.85, i / (n - 1))); C.ink.dot(polar(q.p, q.ang + sg * PI / 2, s * 0.03), s * 0.115); }
 };
-// succulent sword leaf with toothed margins and a terminal spine (agave, aloe)
+// succulent sword leaf with toothed margins and a terminal spine (agave, aloe), one outline
 U.sword = (C, p, a, s, o) => {
-  const L = s * (o.len ?? 1), W = s * (o.wid ?? 0.22), sg = Math.cos(a) >= 0 ? 1 : -1, pts = arcPath(p, a, L, sg * (o.curve ?? 0.25), 12);
-  C.ink.poly(tube(pts, P([[0, W * 0.8], [0.25, W], [0.7, W * 0.6], [1, hair]])));
-  if (o.teeth) for (let i = 1; i < o.teeth; i++) { const t = i / o.teeth, q = pathAt(pts, t), w = W * (t < 0.25 ? 0.8 + t * 0.8 : 1 - (t - 0.25) * 0.55); for (const sd of [-1, 1]) C.ink.poly(leaf(polar(q.p, q.ang + sd * PI / 2, w * 0.85), q.ang + sd * 1.0, W * 0.5 + 0.4, W * 0.3 + 0.2, 0, 0.2)); }
-  C.ink.poly(leaf(polar(last(pts), endAng(pts), -0.3), endAng(pts), W * 1.1 + 0.8, 0.9, 0, 0.2));
+  const L = s * (o.len ?? 1), W = s * (o.wid ?? 0.22), sg = Math.cos(a) >= 0 ? 1 : -1, pts = arcPath(p, a, L, sg * (o.curve ?? 0.25), 12), n = pts.length - 1;
+  const wf = P([[0, W * 0.8], [0.25, W], [0.7, W * 0.6], [1, 0.3]]), nt = o.teeth ?? 0, sides = [[], []];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, q = pathAt(pts, t), w = wf(t);
+    sides.forEach((arr, k) => { const sd = k ? 1 : -1; arr.push(polar(q.p, q.ang + sd * PI / 2, w)); if (nt && i > 0 && i < n && i % Math.max(1, Math.round(n / nt)) === 0) arr.push(polar(polar(q.p, q.ang + sd * PI / 2, w + W * 0.45 + 0.4), q.ang, W * 0.2 + 0.2), polar(polar(q.p, q.ang + sd * PI / 2, w), q.ang, W * 0.35 + 0.3)); });
+  }
+  C.ink.poly(sides[0].concat([polar(last(pts), endAng(pts), W * 1.1 + 0.8)], sides[1].reverse()));
 };
 // plump succulent leaf, pointed (echeveria) or rounded (sedum, pearls)
 U.fat = (C, p, a, s, o) => { const L = s * (o.len ?? 1), W = s * (o.wid ?? 0.4); C.ink.poly(tube(arcPath(p, a, L, (o.curve ?? 0.2) * (Math.cos(a) >= 0 ? -1 : 1), 10), P([[0, W * 0.45], [0.55, W], [0.85, W * 0.85], [1, o.point ? 0.1 : W * 0.6]]))); };
@@ -767,7 +780,7 @@ function blobPts(c, rx, ry, rng, amp = 0.08, f = 3, n = 40) {
   for (let i = 0; i < n; i++) { const t = i / n * TAU, k = 1 + amp * (Math.sin(t * f + a) + 0.5 * Math.sin(t * (2 * f + 1) + b)) / 1.5; out.push([c[0] + Math.cos(t) * rx * k, c[1] + Math.sin(t) * ry * k]); }
   return out;
 }
-const hairTube = (K, pts, w0, w1 = hair * 0.9) => K.poly(tube(pts, P([[0, Math.max(w0, hair)], [1, w1]])));
+const hairTube = (K, pts, w0, w1 = hair * 0.9) => K.poly(pts.length === 2 ? spike(pts[0], pts[1], Math.max(w0, hair), w1) : tube(pts, P([[0, Math.max(w0, hair)], [1, w1]])));
 // fine root hairs sticking out of a body outline
 function rootHairs(Cp, path, rad, n, len) {
   const rng = Cp.rng;
@@ -897,6 +910,7 @@ FORMS.cactus = (Cp, g) => {
       if (i === 0) { main = { pts: spline([[c[0], 0], c, [c[0], c[1] - b.r]], 4), rad: () => b.r * 0.8 }; headP = [c[0], c[1] - b.r * b.tall]; }
     });
   } else { // columns
+    if (g.cols.length > 1) { const xs = g.cols.map(c => c.x), a = Math.min(...xs), b = Math.max(...xs); K.poly(superE([(a + b) / 2, 0], (b - a) / 2 + R, 1.8, 0, 2.2)); }
     g.cols.forEach((cd, i) => {
       const col = column(Cp, [cd.x, 0.3], UP + cd.lean, cd.h, cd.R, { ribs: g.ribs, arc: cd.arc });
       areoles(Cp, col.pts, col.rad, { ...spine, len: cd.h, down: g.hairy ? 1.2 : 0, sl: g.hairy ? g.sl * 1.6 : spine.sl });
@@ -936,7 +950,8 @@ FORMS.pear = (Cp, g) => {
 // Lithops: pairs of fat cleft lobes among pebbles, perhaps a daisy from a cleft.
 FORMS.lithops = (Cp, g) => {
   const K = Cp.ink, rng = Cp.rng;
-  if (g.pebbles) SUB.pebbles(Cp, { x: 0, w: g.span * 0.6, n: g.pebbles });
+  if (g.pebbles) SUB.pebbles(Cp, { x: 0, w: g.span * 0.4, n: g.pebbles });
+  K.poly(superE([0, 0], g.span / 2 - 1, 1.4, 0, 2.2));
   let first = null;
   for (const st of g.stones) {
     const pts = [], W = st.w, H = st.h, cl = st.cleft;
@@ -996,7 +1011,7 @@ FORMS.tree = (Cp, g) => {
   } else { // monkey-puzzle
     trunk = stemPts([0, 0.3], UP + g.lean, H, 0, 0, 10); trad = P([[0, R * 1.1], [0.1, R], [1, R * 0.5]]);
     K.poly(tube(trunk, trad)); roots(2, 0.8);
-    const rope = (pts, w) => { K.poly(tube(pts, P([[0, w], [1, w * 0.8]]))); for (let i = 1; i < pts.length; i++) for (const s2 of [-1, 1]) K.poly(leaf(polar(pts[i], endAng(pts.slice(0, i + 1)) + s2 * PI / 2, w * 0.7), endAng(pts.slice(0, i + 1)) + s2 * 1.1, w * 1.3, w * 0.8, 0, 0.25)); };
+    const rope = (pts, w) => { K.poly(tube(pts, P([[0, w], [1, w * 0.8]]))); for (let i = 1; i < pts.length; i++) { const a = angOf(pts[i - 1], pts[i]); for (const s2 of [-1, 1]) K.poly(kite(polar(pts[i], a + s2 * PI / 2, w * 0.6), a + s2 * 1.1, w * 1.3, w * 0.9, 0.3)); } };
     for (let i = 0; i < g.tiers; i++) {
       const t = mix(g.t0, 0.92, i / (g.tiers - 1)), q = pathAt(trunk, t), len = mix(H * 0.42, H * 0.12, (i / (g.tiers - 1)) ** 0.8) * rng.range(0.9, 1.1);
       for (const s2 of [-1, 1]) rope(arcPath(q.p, (s2 > 0 ? 0 : PI) + s2 * rng.range(0.05, 0.25), len, -s2 * rng.range(1.3, 1.9), 10, 1.8), R * 0.42);
@@ -1269,9 +1284,9 @@ const species = [
     return build(r, { form: 'stems', R: 6, r: 4, stems, basal }, { head: { type: 'plantFiddle', len: 7, turns: 1.6, w: 0.35 }, headSize: 0.8, orn: { type: 'plantFiddle', len: 6, turns: 1.6, w: 0.3 }, tipS: 0.6, crownS: 0.55, row: { type: 'plantFiddle', len: 5, turns: 1.4, w: 0.3 }, rowS: 0.4, spiral: true });
   } },
   { name: 'shuttlecock fern', w: 1.8, genes: r => {
-    const n = r.int(5, 7);
+    const n = r.int(4, 6);
     return build(r, { form: 'stems', R: 6, r: 4, keepHead: false, base: { w: 3.2, h: 3 }, stems: r.chance(0.6) ? [{ x: 0, lean: r.range(-0.1, 0.1), h: 0.4, w: 1, head: { type: 'plantFiddle', len: 8, turns: 1.6, w: 0.4, nubs: true, fs: r.sign() }, hs: 2.2 }] : [],
-      basal: [{ n, spread: r.range(1.3, 1.7), s: r.range(32, 40), inner: 0.8, wx: 3, y: 1.5, spec: { u: 'frond', len: 1, pl: 0.19, pw: 0.07, n: 10, grav: r.range(0.45, 0.8) } }] },
+      basal: [{ n, spread: r.range(1.3, 1.7), s: r.range(32, 40), inner: 0.8, wx: 3, y: 1.5, spec: { u: 'frond', len: 1, pl: 0.19, pw: 0.08, n: 8, grav: r.range(0.45, 0.8) } }] },
       { head: { type: 'plantFiddle', len: 7, turns: 1.6, w: 0.35 }, headSize: 0.8, orn: { u: 'frond', len: 1, pl: 0.3, pw: 0.12, n: 6, grav: 0.6 }, tipS: 2.2, crownS: 2, row: { u: 'frond', len: 1, pl: 0.3, pw: 0.12, n: 6, grav: 0.6 }, rowS: 1.6 });
   } },
   { name: 'liverwort umbrellas', w: 1.4, genes: r => {
@@ -1319,7 +1334,7 @@ const species = [
     const R = r.range(3.2, 4), h = r.range(34, 44), na = r.wpick([[1, 0], [3, 1], [3, 2], [1, 3]]), arms = [];
     const s0 = r.sign(); for (let i = 0; i < na; i++) arms.push({ t: r.range(0.3, 0.6), sd: i % 2 ? -s0 : s0, k: r.range(0.72, 0.85), out: R * r.range(1.9, 2.6), up: h * r.range(0.25, 0.42) * (i === 2 ? 0.7 : 1), flower: r.chance(0.3) });
     const form = { form: 'cactus', kind: 'cols', R, ribs: 0, gap: 3.2, sl: 1.2, cols: [{ x: 0, lean: r.range(-0.05, 0.05), h, R, arms, flowers: r.chance(0.4) ? r.int(1, 3) : 0 }] };
-    if (r.chance(0.3)) form.cols.push({ x: r.sign() * r.range(10, 14), lean: r.range(-0.1, 0.1), h: r.range(8, 13), R: R * 0.85 });
+    if (r.chance(0.3)) form.cols.push({ x: r.sign() * r.range(9, 12), lean: r.range(-0.1, 0.1), h: r.range(8, 13), R: R * 0.85 });
     return build(r, form, { head: { type: 'plantBloom', petals: 5, spread: 1.7, pl: 1.2, pw: 0.6, disc: 0.4, calyx: true }, headSize: 1.1, orn: { type: 'plantBloom', petals: 5, spread: 1.7, pl: 1.2, pw: 0.6, disc: 0.4 }, tipS: 0.8, crownS: 0.8, row: { u: 'thorn', len: 1, hook: 0 }, rowS: 0.45, rowN: 7 });
   } },
   { name: 'barrel cactus', w: 1.6, genes: r => {
