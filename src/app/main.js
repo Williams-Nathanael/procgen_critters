@@ -3,6 +3,7 @@ import * as pdfjs from 'pdfjs-dist';
 import { PDFDocument } from 'pdf-lib';
 import { TAGS, TAG_NAMES } from '../gen/tags/index.js';
 import { ringsToPath } from '../gen/core.js';
+import { makeCritter } from '../gen/critter.js';
 import { DEFAULTS, placeBorder, bandOutline, borderPolyline } from '../place.js';
 import { exportPdf } from '../export.js';
 
@@ -249,6 +250,24 @@ function seg(options, get, set) {
   return el('div', { class: 'seg' }, options.map(([v, label]) => el('button', { class: get() === v ? 'on' : '', onclick: () => { if (selected()) pushHistory(); set(v); changed(); } }, label)));
 }
 
+// A few sample critters for the current tag selection, so you can see what a mix gives
+// before drawing anything. Click to shuffle.
+function sampleStrip(st) {
+  const box = el('div', { class: 'samples', title: 'Samples of what these tags produce. Click for more.' });
+  const fill = () => {
+    let h = '';
+    for (let i = 0; i < 8; i++) {
+      let c; try { c = makeCritter(st.tags, (state.sampleSeed ?? 7) * 100 + i, { detail: st.detail, chaos: st.chaos, plump: st.plump }); } catch { continue; }
+      const b = c.bbox, m = Math.max(b.w, b.h) * 0.06;
+      h += `<svg viewBox="${(b.x0 - m).toFixed(1)} ${(b.y0 - m).toFixed(1)} ${(b.w + 2 * m).toFixed(1)} ${(b.h + 2 * m).toFixed(1)}"><title>${Object.values(c.species || {}).join(' + ')}</title><path d="${ringsToPath(c.rings, null, 1)}"/></svg>`;
+    }
+    box.innerHTML = h;
+  };
+  box.addEventListener('click', () => { state.sampleSeed = Math.floor(Math.random() * 1e6); fill(); });
+  fill();
+  return box;
+}
+
 function describe(b) {
   const kind = { free: b.closed ? 'Loop' : 'Scribble', line: 'Line', rect: 'Box', ellipse: 'Oval' }[b.kind];
   const where = (b.scope ?? 'page') === 'page' ? `p.${b.page}` : `${b.scope} pages`;
@@ -267,6 +286,7 @@ function drawPanel() {
     onclick: () => { if (b) pushHistory(); const i = st.tags.indexOf(t); if (i >= 0) st.tags.splice(i, 1); else st.tags.push(t); changed(); } }, TAGS[t].short || TAGS[t].label))));
   if (st.tags.length > 1) kids.push(el('p', { class: 'note' }, 'Stacked: each critter takes its body from one of these and borrows features from the others, differently each time.'));
   if (!st.tags.length) kids.push(el('p', { class: 'note' }, 'Pick at least one tag.'));
+  else kids.push(sampleStrip(st));
 
   kids.push(el('h3', {}, 'Side of the line'));
   kids.push(seg(closed ? [['left', 'Outside'], ['right', 'Inside'], ['both', 'Both']] : [['left', 'One side'], ['right', 'Other side'], ['both', 'Both']], () => st.side, v => { st.side = v; }));
