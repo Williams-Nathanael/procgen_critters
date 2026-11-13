@@ -29,7 +29,39 @@ Signature features to lend: wings, horns and ears, knotted or barbed tails, the 
 with dog-like head, dorsal spikes. Default eyes: a small white dot.
 
 ## State
-- 28 species, WIP from an interrupted run, unreviewed. Branch `wip/dragon-species`.
-- First look (main session, 2026-11-13): good medieval variety (ouroboros, amphisbaena,
-  coiled wyrm, hydra, cockatrice). Many winged species share one wing shape and read alike
-  at print size; basilisk, lindworm, prow wyrm and draco constellation look thin and plain.
+Updated 2026-11-13 (species-builder run on main, continuing the interrupted WIP; review rounds
+done). Sheets: `out/roads/03-dragon-species.png`, `out/roads/03-dragon-mixes.png`.
+
+- **27 species** (was 28 unreviewed; draco constellation cut).
+- **Strong**: heraldic dragon passant (paw raised, heraldic wing), dragon rampant, dragon
+  sejant (folded wing), saint george dragon (pug, round wing), saint margaret dragon,
+  regardant dragonet, amphisbaena, hydra, ouroboros, coiled wyrm, interlace beast, urnes
+  ribbon beast, tarasque, sea serpent, basilisk (new: crowned serpent reared on cock's legs),
+  lindworm (now stout, usually tied in a loop, two strong forelegs), prow wyrm (new: a
+  longship with a stern post ending in a spiral and a maned prow neck).
+- **Weak, by name**: foliate wyvern (leafy wing reads as a lump at print size), cockatrice
+  (feather wing and comb merge into one ruffled mass), fire salamander (long and low, small
+  at print size; flame tail tip now reads more as a spade), long (mane teeth still sparse;
+  slowest species, ~20 ms), bestiary draco / wyvern / heraldic passant are still close
+  cousins (winged two- or four-leggers) and differ mainly by wing kind and legs.
+- **Wings rewritten**: every wing is one outline polygon (no finger tubes). Presets, each a
+  distinct silhouette: `heraldic` (5 ribs, hooked leading tip), `batw` (3-4 fingers hanging
+  down-back, deep scallops), `roundw` (Uccello fan), `folded` (cloak along the back),
+  `stub`, `feather` (feather ends along a convex trailing curve), `leafy` (few broad lobes,
+  hooked tip). Species pick by kind (draco feather, sejant folded, St George round, rampant
+  and passant heraldic, foliate wyvern leafy...). In side view the arm angle is mostly
+  absolute (up, leaning back) so a pitched body does not bury the fingers. The far wing is a
+  smaller copy rotated slightly forward. Lent wings use `min(r, 8)` as their scale so big
+  foreign bodies (Jansson shaggy mop) do not get giant wings.
+- **Speed**: dragon alone ~10 ms mean (max ~17 ms) on the shared laptop under load, was
+  ~17 ms. Done by cutting vertices, not features: single-outline talons (feet were a third
+  of all vertices), single-outline ridges, dragon-own ears/horns (`dragonEar`,
+  `dragonHorn`), a cheap 12-vertex leaf `lf`, 16/12-vertex ovals and dots, fewer serpent
+  and neck samples. `Ink.finish` (soften pass) is still >half the cost; see report.
+- **Decisions**: draco constellation cut (thin loop serpent, overlapped lindworm/sea serpent
+  and not iconic). Knot tails kept as the medieval looped tail (bigger loop now); a true
+  over-under knot is not readable in silhouette. `serpent` chassis gained `stern` (rising
+  tail end) for the prow wyrm.
+- **Next**: give the feather/leafy wing a clearer gap from the body; a winged amphiptere;
+  biting-own-tail and St George pinned-under-spear poses; more distinct heads (beaked eagle,
+  horse-headed).
