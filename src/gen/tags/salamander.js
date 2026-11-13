@@ -95,6 +95,8 @@ chassis.salamanderTop = (C, g) => {
   ink.poly(tube(path, rad));
 
   const limbs = [], obst = [];
+  const e = pathAt(path, 1), b = pathAt(path, 0);
+  const face = e.ang + (P.headTurn ?? 0), hs = rad(1) / 0.74 * (g.headS ?? 1);
   const bendMid = clamp(kap(0.5) / 3, -1, 1), gait = g.gait ?? 0.4;
   const want = g.limbs ?? 'four', ls = r * (g.limbS ?? 1.1);
   const pairs = [];
@@ -105,13 +107,14 @@ chassis.salamanderTop = (C, g) => {
     for (const sd of [-1, 1]) {
       // on the concave flank the fore limb reaches back and the hind limb forward (the salamander trot)
       const tl = tilt + gait * bendMid * sd * (role === 'fore' ? 1 : -1) + rng.range(-0.12, 0.12);
-      const sock = { p: polar(p, ang + sd * PI / 2, rad(t) * 0.5), dir: ang + sd * (PI / 2 + tl), s: ls, role, fwd: ang, side: sd };
+      let dir = ang + sd * (PI / 2 + tl);
+      // a forelimb never reaches along a turned head (it would trap a white sliver against it)
+      if (role === 'fore' && sd * angDiff(dir, face) < 1.2) dir = face + sd * 1.2;
+      const sock = { p: polar(p, ang + sd * PI / 2, rad(t) * 0.5), dir, s: ls, role, fwd: ang, side: sd };
       limbs.push(sock);
       obst.push({ p: polar(sock.p, sock.dir, ls * 1.5), r: ls * 0.9, from: role === 'hind' ? 0.3 : 0 });
     }
   }
-  const e = pathAt(path, 1), b = pathAt(path, 0);
-  const face = e.ang + (P.headTurn ?? 0), hs = rad(1) / 0.74 * (g.headS ?? 1);
   obst.push({ p: polar(e.p, face, hs * 0.9), r: hs * 1.15 });
   return {
     view: 'top', r, path, rad,
@@ -128,7 +131,7 @@ chassis.salamanderTop = (C, g) => {
 chassis.salamanderSide = (C, g) => {
   const { ink, rng } = C, r = g.r * C.plump, L = g.len, P = g.pose ?? {};
   const swim = !!P.swim;
-  const belly = g.belly ?? 1, lift = swim ? 0 : clamp(C.lift, 0.05, 1.3) * r * (P.liftK ?? 2.4);
+  const belly = g.belly ?? 1, lift = swim ? 0 : clamp(C.lift, 0.05, 1.3) * r * (P.liftK ?? 2.9);
   const y0 = swim ? -r * (P.depth ?? 2.1) : -(lift + r * 0.9);
   const hip = [-L / 2, y0 - (P.hipRise ?? 0) * r], sh = [L / 2, y0 - (P.rise ?? 0) * r];
   let mid = add(lerp(hip, sh, 0.5), [0, ((P.sag ?? 0) - (P.arch ?? 0.08)) * r]);
@@ -435,6 +438,10 @@ const gills = (r, o = {}) => ({ type: 'salamanderGills', pair: true, len: r.rang
 const pick = (r, pairs) => r.wpick(pairs);
 const isTop = k => !['walkS', 'alert', 'tall', 'unken', 'swim', 'tailcurl'].includes(k);
 
+// Seen from the side a sprawling leg shows only its lower part: shorter, nearly straight legs
+// angled fore-forward / hind-back read as walking; long bent ones merge into blocks.
+const sideLegs = (L, top, d) => top ? L : { ...L, len: L.len * (d.sideLegK ?? 0.7), w: L.w * 0.78, stance: d.sideStance ?? 0.8 };
+
 // One generic assembler: d describes the species; kind is the chosen pose.
 function make(r, d, kinds) {
   const kind = pick(r, kinds), top = isTop(kind);
@@ -447,7 +454,7 @@ function make(r, d, kinds) {
     : { type: 'salamanderSide', len: len * (d.sideLenK ?? 0.92), r: R * (d.sideR ?? 0.95), pose, belly: d.belly, neckW: d.sideNeckW, prof: d.sideProf, headS: d.headS, limbs: d.limbs, limbS: d.sideLimbS, neckLen: d.neckLen, backT0: d.backT0s, backT1: d.backT1s };
   const T = { len: tl(d.tail, top ? len * (d.topLenK ?? 1.18) : len, R, k0), ...(d.T ?? {}) };
   return {
-    chassis: ch, head: d.head, limbs: d.limbsG ?? legs(r), tail: tailG(r, pose, T),
+    chassis: ch, head: d.head, limbs: sideLegs(d.limbsG ?? legs(r), top, d), tail: tailG(r, pose, T),
     dorsal: (top ? d.dorsalTop : d.dorsalSide) ?? d.dorsal ?? none(), crown: d.crown ?? none(),
     surface: { eyes: 'none', spots: d.spots ?? 0, stripe: d.stripe ?? false },
   };
@@ -477,7 +484,7 @@ const species = [
 
   { name: 'mole salamander', w: 2, genes: r => make(r, {
     r: r.range(8, 9), len: r.range(37, 43), belly: 1.1, neckW: 0.88, tail: r.range(0.5, 0.62),
-    head: headG(r, { len: r.range(1.1, 1.2), wid: r.range(0.96, 1.02), p: 2.3, eye: 0.17, neckW: 0.85 }),
+    head: headG(r, { len: r.range(1.25, 1.35), wid: r.range(0.92, 0.98), p: 2.0, eye: 0.17, neckW: 0.88 }),
     limbsG: legs(r, { w: 0.56, len: r.range(1.8, 2.0), toeLen: 0.5 }), T: { fin: 0.15, keys: [[0, 1], [0.5, 0.7], [1, 0.14]], curlK: 0.6 },
   }, [[3, 'walk'], [1, 'curl'], [2, 'walkS'], [1, 'alert']]) },
 
@@ -514,7 +521,7 @@ const species = [
     head: headG(r, { len: r.range(1.3, 1.42), wid: r.range(1.08, 1.16), p: 2.3, eye: r.range(0.25, 0.3), eyeIn: 0.45 }),
     limbsG: legs(r, { len: r.range(2.4, 2.7), w: 0.42, toeLen: 0.6, lift: 0.4 }),
     T: { w0: 1, keys: [[0, 0.8], [0.16, 1.3], [0.5, 1.05], [1, 0.1]] },
-  }, [[3, 'tall'], [1.5, 'walkS'], [2, 'walk'], [1.5, 'curl'], [1, 'look']]) },
+  }, [[3, 'tall'], [1.5, 'walkS'], [2.5, 'walk'], [1.2, 'look'], [0.8, 'coil']]) },
 
   { name: 'arboreal salamander', w: 2.5, genes: r => make(r, {
     r: r.range(5.4, 6.1), len: r.range(35, 40), belly: 1.02, neckW: 0.7, tail: r.range(0.9, 1.1), gait: 0.6,
@@ -582,7 +589,7 @@ const species = [
     limbsG: legs(r, { len: r.range(1.9, 2.2), w: 0.34, toeLen: 0.5, toesF: 3, toesH: 2, bend: 0.6 }),
     T: { fin: 0.6, topK: 0.7, keys: [[0, 1], [0.5, 0.85], [1, 0.12]], curlK: 0.4 },
     crown: gills(r, { style: 'ray', len: r.range(1.7, 2.1), w: 0.17, bend: 0.5, fan: [-0.45, 0.25, 0.9] }),
-  }, [[3, 'eel'], [2, 'ess'], [1.5, 'curl'], [1, 'eelcoil']]) },
+  }, [[3, 'eel'], [2, 'ess']]) },
 
   { name: 'siren', w: 3, genes: r => make(r, {
     r: r.range(4.8, 5.6), len: r.range(76, 92), neckW: 0.82, tail: r.range(0.3, 0.38), limbs: 'fore', tF: 0.92, limbS: 0.9,
@@ -594,12 +601,12 @@ const species = [
   }, [[3, 'eel'], [2, 'eelcoil'], [1, 'ess']]) },
 
   { name: 'amphiuma', w: 2, genes: r => make(r, {
-    r: r.range(4.6, 5.2), len: r.range(84, 100), neckW: 0.8, tail: r.range(0.22, 0.28), tF: 0.9, tH: 0.03, limbS: 0.8,
+    r: r.range(3.9, 4.5), len: r.range(84, 100), neckW: 0.8, tail: r.range(0.22, 0.28), tF: 0.9, tH: 0.03, limbS: 0.8,
     prof: [[0, 0.7], [0.3, 1], [0.7, 1], [1, 0.8]],
     head: headG(r, { len: r.range(1.9, 2.2), wid: r.range(0.94, 1.0), p: 1.7, jawX: 0.3, eye: 0 }),
     limbsG: legs(r, { len: r.range(1.0, 1.25), w: 0.3, toeLen: 0.36, toesF: r.int(2, 3), toesH: r.int(2, 3), bend: 0.5 }),
     T: { keys: [[0, 1], [0.5, 0.66], [1, 0.06]], curlK: 0.5 },
-  }, [[3, 'eel'], [2.5, 'eelcoil']]) },
+  }, [[3.5, 'eel'], [1.5, 'eelcoil']]) },
 
   { name: 'blind cave salamander', w: 2, genes: r => make(r, {
     r: r.range(3.8, 4.4), len: r.range(32, 38), neckW: 0.66, tail: r.range(0.7, 0.85), gait: 0.5, limbS: 1.2,
@@ -640,7 +647,7 @@ const species = [
   { name: 'red eft', w: 4, genes: r => make(r, {
     r: r.range(4.9, 5.5), len: r.range(30, 34), belly: 1.04, neckW: 0.84, tail: r.range(0.85, 1), limbS: 1.15, sideLimbS: 1.1, headS: 1.05,
     head: headG(r, { len: r.range(1.2, 1.3), wid: r.range(0.96, 1.02), p: 2.4, eye: 0.22 }),
-    limbsG: legs(r, { len: r.range(2.2, 2.5), w: 0.4, toeLen: 0.58, lift: 0.5 }),
+    limbsG: legs(r, { len: r.range(2.2, 2.5), w: 0.4, toeLen: 0.58, lift: 0.36 }),
     T: { topK: 0.62, fin: 0.14, keys: [[0, 1], [0.5, 0.56], [1, 0.07]] },
   }, [[3, 'alert'], [2, 'walkS'], [3, 'walk'], [1.5, 'look'], [1.5, 'curl']]) },
 
@@ -650,11 +657,11 @@ const species = [
     limbsG: legs(r, { len: r.range(2.2, 2.5), w: 0.46, toeLen: 0.6 }),
     T: { fin: 0.3, finB: 0.2, topK: 0.7, keys: [[0, 1], [0.5, 0.6], [1, 0.08]] },
     dorsal: { type: 'salamanderWarts', n: r.int(9, 13), size: r.range(0.1, 0.14) },
-  }, [[2.5, 'unken'], [2, 'walkS'], [2.5, 'walk'], [1, 'curl']]) },
+  }, [[1.8, 'unken'], [2, 'walkS'], [3, 'walk'], [1, 'curl']]) },
 
   { name: 'ribbed newt', w: 3, genes: r => make(r, {
     r: r.range(6.4, 7.2), len: r.range(42, 48), belly: 1.06, neckW: 0.84, tail: r.range(0.85, 1), sideR: 0.82,
-    head: headG(r, { len: r.range(1.2, 1.3), wid: r.range(1.16, 1.24), p: 2.9, eye: 0.13, eyeIn: 0.35, top: 0.5, jaw: 0.48 }),
+    head: headG(r, { len: r.range(1.2, 1.3), wid: r.range(1.0, 1.06), p: 2.4, eye: 0.13, eyeIn: 0.35, top: 0.5, jaw: 0.48 }),
     limbsG: legs(r, { len: r.range(2.0, 2.2), w: 0.46, toeLen: 0.6 }),
     T: { fin: 0.5, finB: 0.35, finBase: 0.6, topK: 0.62, keys: [[0, 1], [0.5, 0.62], [1, 0.07]] },
     dorsalTop: { type: 'salamanderWarts', n: r.int(7, 9), size: r.range(0.12, 0.15), out: 0.3 },
