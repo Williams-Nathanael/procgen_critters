@@ -355,7 +355,7 @@ chassis.arthropodBody = (C, g) => {
     .map(st => st.map(q => ({ p: tp(q.p), dir: q.dir + rot, t: q.t })));
   const h = pl.head, t = pl.tail;
   return {
-    view: pl.view, r: pl.r, path, rad, back,
+    view: pl.view, r: pl.r, path, rad, back, ...(pl.rooted ? { rooted: true } : {}),
     head: { p: tp(h.p), dir: h.dir + rot, face: (h.face ?? h.dir) + rot, s: h.s, sym: !sideV, arthroBare: !!h.bare, arthroW: h.W },
     tail: { p: tp(t.p), dir: t.dir + rot, s: t.s },
     limbs: socks.map(s => ({ p: tp(s.p), dir: s.dir + rot, s: s.s, role: s.role, side: s.side ?? 1, far: s.far, fwd: sideV ? 0 : rot, ...(sideV && s.role !== 'arm' ? { ground: 0 } : {}) })),
@@ -680,6 +680,218 @@ FORMS.insect = (K, g) => {
   return { view: 'side', r: Math.max(ty, ay), path: bpath, rad: brad, b0: g.b0 ?? 0.4, b1: g.b1 ?? 0.95, head: { p: hp, dir: hdir, face, s: g.hs }, tail: { p: apath[apath.length - 1], dir: ah + bendA, s: Math.max(ay * 0.4, 2) } };
 };
 
+// Caterpillars and millipedes in side view: a chain of ring segments on the ground (or arched,
+// for a looper; or coiled up in a spiral). Legs per segment: 'true' jointed legs, 'pro' stubby
+// prolegs, 'milli' a fringe of tiny legs. Optional tail horn and hair tufts.
+FORMS.worm = (K, g) => {
+  const { k, rng } = K, r = g.r * K.pl, n = g.n;
+  let path;
+  if (g.coil) { // spiral, head in the middle; sits on the ground
+    const turns = g.coil, R0 = r * (1.05 + turns * 2.05), c = [0, -R0 - r], pts = [];
+    for (let i = 0; i <= 60; i++) { const u = i / 60, th = PI * 0.5 + u * turns * TAU, rr = R0 - u * turns * r * 2.05; pts.push(polar(c, th, rr)); }
+    path = pts;
+  } else {
+    const L = n * g.sl, y0 = -(g.legH + r), x0 = -L / 2, x1 = L / 2, A = g.arch ?? 0;
+    path = A ? spline([[x0 + L * 0.2, y0], [x0 + L * 0.32, y0 - A * 0.55], [x0 + L * 0.38, y0 - A * 0.92], [0, y0 - A * 1.08], [x1 - L * 0.38, y0 - A * 0.92], [x1 - L * 0.32, y0 - A * 0.55], [x1 - L * 0.2, y0]], 8) : spline([[x0, y0], [0, y0 - (g.hump ?? 0)], [x1, y0]], 10);
+  }
+  const rad = t => r * (g.env ? g.env(t) : 1);
+  const bs = beads(k, path, n, rad, g.ov ?? 0.66);
+  const hb = bs[n - 1];
+  bs.forEach((b, i) => {
+    const kind = g.leg ? g.leg(i, n) : null; if (!kind || g.coil) return;
+    const belly = polar(b.p, b.ang + PI / 2, b.w * 0.6);
+    if (belly[1] < -b.w * 1.9 - (g.legH ?? 0)) return; // raised part of a looper
+    if (kind === 'pro') { const top = b.seg * 0.38, bot = b.seg * 0.22; k.poly(spline([[belly[0] - top, belly[1] - 1], [belly[0] + top, belly[1] - 1], [belly[0] + bot, -0.9], [belly[0] + bot * 0.6, -0.3], [belly[0] - bot * 0.6, -0.3], [belly[0] - bot, -0.9], [belly[0] - top, belly[1] - 1]], 3)); }
+    else if (kind === 'true') K.limb(belly, PI / 2, r, i === n - 2 ? 'fore' : null, 1, () => jleg(k, [belly, [belly[0] + b.seg * 0.45, belly[1] * 0.4], [belly[0] + b.seg * 0.6, -0.5]], Math.max(r * 0.32, MA * 1.1), MA));
+    else if (kind === 'milli') K.limb(belly, PI / 2, r, null, 1, () => jleg(k, [belly, [belly[0] + b.seg * 0.3, belly[1] * 0.45], [belly[0] + b.seg * 0.05, -0.4]], MA * 1.1, MA));
+  });
+  if (!g.coil) for (const [i, role] of [[1, 'hind'], [n >> 1, 'mid']]) { const b = bs[i]; if (!g.leg || g.leg(i, n) !== 'true') K.limb(polar(b.p, b.ang + PI / 2, b.w * 0.6), PI / 2, r, K.nat ? null : role, 1, null); }
+  // head capsule
+  const ha = hb.ang + (g.coil ? 0 : (g.headDown ?? 0.5)), hc = polar(hb.p, ha, hb.seg * 0.55);
+  if (!g.coil) oval(k, hc, r * (g.headL ?? 0.75), r * (g.headW ?? 0.8), ha);
+  if (g.horn) { const b = bs[1], base = polar(b.p, b.ang - PI / 2, b.w * 0.7); tb(k, [base, polar(base, -PI / 2 - 0.5, g.horn * 0.55), polar(base, -PI / 2 - 1.0, g.horn)], profile([[0, r * 0.3], [1, 0.3]])); }
+  if (g.hair) bs.forEach((b, i) => {
+    const tuft = (g.pencil && (i === 1 || i === n - 2)) ? 2.2 : 1;
+    for (let j = 0; j < (g.hairN ?? 3); j++) { const a = b.ang - PI / 2 + (j - ((g.hairN ?? 3) - 1) / 2) * 0.42 + rng.range(-0.12, 0.12); lf(k, polar(b.p, a, b.w * 0.75), a, g.hair * tuft * rng.range(0.75, 1.15), Math.max(MA * 1.3, r * 0.18), 0, 0.2); }
+  });
+  if (g.spikes) bs.forEach((b, i) => { if (i > 0 && i < n - 1) { const a = b.ang - PI / 2; lf(k, polar(b.p, a, b.w * 0.75), a, g.spikes, Math.max(r * 0.35, MA * 1.3), 0, 0.3); } });
+  const back = g.coil ? null : [strip(path, rad, 0.08, 0.9, 12, -1)];
+  const t0 = pathAt(path, 0);
+  return { view: 'side', r, path, rad, back, head: { p: hc, dir: ha, face: g.coil ? ha : 0.3, s: r * 0.9, bare: true, W: 0.7 }, tail: { p: t0.p, dir: t0.ang + PI, s: r * 0.7 } };
+};
+
+// Pill bug rolled into a ball: a circle whose plates step the outline.
+FORMS.pillball = (K, g) => {
+  const { k } = K, R = g.R * K.pl, n = g.n, c = [0, -R], a0 = g.a0 ?? 0.55, span = (TAU - 0.5) / n, st = g.step ?? 0.07, pts = [];
+  for (let j = 0; j < n; j++) for (let m = 0; m <= 4; m++) { const a = a0 + 0.25 + (j + m / 4.6) * span, rr = R * (1 + st * (m / 4) - (m === 0 ? st * 0.3 : 0)); pts.push(polar(c, a, rr)); }
+  k.poly(pts);
+  oval(k, polar(c, a0, R * 0.8), R * 0.32, R * 0.24, a0 + PI / 2); // tucked head
+  const hp = polar(c, a0 + 0.05, R * 0.95);
+  return { view: 'side', r: R, path: [polar(c, PI, R * 0.5), polar(c, 0, R * 0.5)], rad: () => R * 0.5, back: [[0.1, 0.3, 0.5, 0.7, 0.9].map((t, i) => { const a = PI + 0.3 + t * (PI - 0.6); return { p: polar(c, a, R * 0.9), dir: a, t }; })], head: { p: hp, dir: a0, face: 0.2, s: R * 0.35, bare: true, W: 0.6 }, tail: { p: polar(c, a0 + 0.3 + TAU - 0.6, R * 0.9), dir: a0 - 0.3, s: R * 0.3 } };
+};
+
+// Hermit crab in side view: a stepped spiral shell, the crab's front end out of the aperture.
+FORMS.hermit = (K, g) => {
+  const { k } = K, S = g.S * K.pl, lift = g.lift, c = [-S * 0.25, -(S + lift)];
+  oval(k, c, S * (g.bodyX ?? 1.05), S, g.tilt ?? -0.15);
+  let p = c, rr = S, a = PI + (g.spireA ?? 0.75);
+  for (let i = 0; i < g.whorls; i++) { const q = polar(p, a, rr * 0.72), r2 = rr * (g.shrink ?? 0.6); oval(k, q, r2 * 1.1, r2, a + PI / 2 - 0.2); p = q; rr = r2; a -= g.twist ?? 0.12; }
+  if (g.spire) lf(k, p, a, rr * g.spire, rr * 1.4, 0, 0.35);
+  // the crab: carapace front, eye stalks, legs, claw
+  const cc = add(c, [S * 0.95, S * 0.35]), cr = S * 0.42;
+  oval(k, cc, cr, cr * 0.8, -0.2);
+  for (let i = 0; i < 2; i++) { const hip = add(cc, [-cr * 0.4 + i * cr * 0.5, cr * 0.5]), fx = hip[0] + (i ? 1 : 0.4) * S * 0.7; K.limb(hip, PI / 2, S * 0.5, i ? 'fore' : 'mid', 1, () => sleg(k, hip, fx, S * 1.3, S * 0.2, -1, { toe: 0.1, split: 0.45 }), false); }
+  K.limb(add(cc, [cr * 0.3, cr * 0.2]), 0.5, S * 0.55, 'arm', 1, () => {
+    const big = g.claw * S, a1 = arm(k, add(cc, [cr * 0.5, cr * 0.3]), [[0.9, big * 0.55], [-0.3, big * 0.45]], S * 0.3);
+    chela(k, a1.p, -0.15, big * 0.75, { flip: 1, fat: 0.45, finger: 0.8 });
+  });
+  const hp = add(cc, [cr * 0.7, -cr * 0.3]);
+  return { view: 'side', r: S, path: [polar(c, PI, S * 0.6), polar(c, 0, S * 0.6)], rad: () => S * 0.8, back: [[0, 1, 2, 3, 4].map(i => { const a = -PI * 0.9 + i * 0.35; return { p: polar(c, a, S * 0.85), dir: a, t: i / 4 }; })], head: { p: hp, dir: -0.3, face: 0, s: cr * 0.8, bare: true, W: 0.7 }, tail: { p: polar(c, PI * 0.85, S * 0.8), dir: PI * 0.85, s: S * 0.3 } };
+};
+
+// Horseshoe crab and triops from above: a domed shield, a hinged or segmented hind body, a spike or two tails.
+FORMS.shield = (K, g) => {
+  const { k, rng } = K, Lp = g.Lp, Wp = g.Wp * K.pl;
+  let tailP, tailS;
+  if (g.kind === 'horseshoe') {
+    sym(k, [[Lp, 0], [Lp * 0.88, Wp * 0.5], [Lp * 0.5, Wp * 0.9], [0, Wp], [-Lp * 0.4, Wp * 0.96], [-Lp * 0.62, Wp * 0.86], [-Lp * 0.38, Wp * 0.62], [-Lp * 0.28, 0]], 6);
+    const Lo = g.Lo, Wo = Wp * 0.62, x0 = -Lp * 0.25;
+    symP(k, [[x0, 0], [x0, Wo], [x0 - Lo * 0.85, Wo * 0.42], [x0 - Lo, 0]]);
+    for (const sd of [-1, 1]) for (let i = 0; i < 6; i++) { const u = (i + 0.5) / 6, p = lerp([x0, sd * Wo], [x0 - Lo * 0.85, sd * Wo * 0.42], u); lf(k, polar(p, sd * PI / 2, -0.8), sd * (PI / 2 + 0.6), g.spine * (i % 2 ? 0.6 : 1), Math.max(g.spine * 0.4, MA * 1.2), 0, 0.3); }
+    const tp = [x0 - Lo * 0.9, 0]; tb(k, [tp, polar(tp, PI + g.tBend * 0.5, g.T * 0.5), polar(tp, PI + g.tBend, g.T)], profile([[0, Wo * 0.2], [1, 0.4]]));
+    tailP = [x0 - Lo, 0]; tailS = Wo * 0.3;
+  } else { // triops
+    const C = Lp, Wc = Wp;
+    sym(k, [[C * 0.5, 0], [C * 0.45, Wc * 0.6], [C * 0.1, Wc], [-C * 0.3, Wc * 0.9], [-C * 0.5, Wc * 0.5], [-C * 0.36, Wc * 0.18], [-C * 0.3, 0]], 6);
+    for (const sd of [-1, 1]) for (let i = 0; i < 5; i++) { const p = [-C * (0.05 + i * 0.08), sd * Wc * (0.92 - i * 0.05)]; lf(k, p, sd * (PI / 2 + 0.7 + i * 0.12), Wc * 0.28, Math.max(Wc * 0.09, MA * 1.1), 0, 0.4); }
+    const A = g.A, ap = axis(-C * 0.15, -C * 0.15 - A).reverse();
+    beads(k, ap, g.n, t => Wc * mix(0.12, 0.3, t), 0.7);
+    const e = [-C * 0.15 - A, 0];
+    for (const sd of [-1, 1]) whip(k, e, PI + sd * g.splay, g.T, sd * 0.15, Math.max(Wc * 0.1, MA * 1.2), MA);
+    tailP = e; tailS = Wc * 0.15;
+  }
+  for (const [x, role] of [[0.6, 'fore'], [0.15, 'mid'], [-0.25, 'hind']]) for (const sd of [-1, 1]) K.limb([Lp * x, sd * Wp * 0.75], sd * (PI / 2 + x * -0.6), Wp * 0.4, role, sd, null);
+  return { view: 'top', r: Wp * 0.8, path: axis(tailP[0], Lp), rad: t => Wp * 0.7, head: { p: [Lp * 0.8, 0], dir: 0, s: Wp * 0.35, bare: true, W: 0.9 }, tail: { p: tailP, dir: PI, s: tailS } };
+};
+
+// Anomalocaris and Opabinia from above: lobed swimming flaps down both sides, a tail fan of
+// blades; frontal grasping arms (anomalocaris) or a clawed proboscis and five eyes (opabinia).
+FORMS.radiodont = (K, g) => {
+  const { k } = K, L = g.L, W = g.W * K.pl, n = g.n, x1 = L / 2, x0 = -L / 2;
+  const env = u => Math.sin(PI * clamp(0.08 + u * 0.92, 0, 1)) ** 0.6; // u: 0 tail .. 1 head
+  sym(k, [[x1, 0], [x1 - L * 0.05, W * 0.55], [x1 - L * 0.2, W * 0.7], [0, W * 0.75], [x0 + L * 0.2, W * 0.45], [x0, W * 0.2], [x0, 0]], 6);
+  for (const sd of [-1, 1]) for (let i = 0; i < n; i++) {
+    const u = (i + 0.5) / n, x = mix(x1 - L * 0.2, x0 + L * 0.12, u), f = g.flap * mix(1, 0.5, u * u) * (0.8 + 0.2 * env(1 - u));
+    oval(k, [x - f * 0.35, sd * (W * 0.45 + f * 0.55)], f * 0.85, f * 0.36, sd * (PI / 2 + 0.55 + u * 0.4));
+  }
+  for (const sd of [-1, 1]) for (let j = 0; j < g.blades; j++) lf(k, [x0 + L * 0.02, sd * W * 0.12], PI - sd * (0.35 + j * 0.32), g.blade * (1 - j * 0.12), g.blade * 0.36, 0, 0.45);
+  if (g.kind === 'anomalocaris') {
+    for (const sd of [-1, 1]) { // stalked eyes and the segmented frontal arms curling inward
+      const sb = [x1 - L * 0.08, sd * W * 0.5], se = polar(sb, sd * 1.2, W * 0.45); bar(k, [sb, se], Math.max(W * 0.12, MA * 0.8)); dot(k, se, W * 0.22);
+      const pts = arcPts([x1 - L * 0.02, sd * W * 0.25], sd * 0.1, g.arm, -sd * g.armCurl, 8);
+      pts.forEach((q, i) => { if (i) { oval(k, lerp(pts[i - 1], q, 0.5), dist(pts[i - 1], q) * 0.62, Math.max(W * mix(0.26, 0.12, i / 8), 1.1), angOf(pts[i - 1], q)); if (i > 1 && i < 8) lf(k, q, angOf(pts[i - 1], q) - sd * 1.45, W * 0.35, Math.max(W * 0.08, MA * 1.1), 0, 0.3); } });
+    }
+  } else { // opabinia
+    const pb = [x1, 0], pe = polar(pb, 0, g.prob); bar(k, [pb, pe], tap(W * 0.18, Math.max(W * 0.1, MA * 0.7)));
+    for (const sd of [-1, 1]) lf(k, pe, sd * 0.5, W * 0.45, Math.max(W * 0.14, MA * 1.2), -sd * 0.2, 0.35);
+    for (const [a, l] of [[-0.9, 0.55], [-0.45, 0.7], [0, 0.6], [0.45, 0.7], [0.9, 0.55]]) { const sb = [x1 - L * 0.07, a * W * 0.3], se = polar(sb, a * 1.1, W * l * 1.2); bar(k, [sb, se], Math.max(W * 0.1, MA * 0.8)); dot(k, se, W * 0.24); }
+  }
+  for (const [u, role] of [[0.2, 'fore'], [0.5, 'mid'], [0.8, 'hind']]) for (const sd of [-1, 1]) K.limb([mix(x1 - L * 0.2, x0 + L * 0.1, u), sd * W * 0.6], sd * (PI / 2 + (u - 0.5)), W * 0.6, role, sd, null);
+  return { view: 'top', r: W, path: axis(x0, x1), rad: t => W * 0.6, head: { p: [x1, 0], dir: 0, s: W * 0.5, bare: true, W: 0.5 }, tail: { p: [x0, 0], dir: PI, s: W * 0.3 } };
+};
+
+// Hallucigenia in side view: a slender tube on tentacle legs, a row of tall spines along its back.
+FORMS.hallu = (K, g) => {
+  const { k, rng } = K, r = g.r * K.pl, L = g.L, y0 = -(g.legH + r);
+  const path = spline([[-L / 2, y0 + r * 1.2], [-L * 0.35, y0], [0, y0 - g.hump], [L * 0.38, y0], [L / 2, y0 + r * 0.4]], 10);
+  k.poly(tube(path, profile([[0, r * 0.5], [0.15, r], [0.85, r], [1, r * 0.9]])));
+  const e = pathAt(path, 1); dot(k, polar(e.p, e.ang, r * 0.4), r * (g.headR ?? 1.5));
+  for (let i = 0; i < g.n; i++) {
+    const t = mix(0.2, 0.8, i / (g.n - 1)), q = pathAt(path, t);
+    for (const far of [true, false]) {
+      const a = q.ang - PI / 2 + (far ? 0.3 : -0.1) - 0.15 + rng.range(-0.05, 0.05);
+      lf(k, polar(q.p, a, r * 0.5), a, g.spine * (far ? 0.85 : 1) * rng.range(0.92, 1.08), Math.max(r * 0.75, MA * 1.4), 0, 0.15);
+    }
+  }
+  for (let i = 0; i < g.legs; i++) {
+    const t = mix(0.15, 0.82, i / (g.legs - 1)), q = pathAt(path, t), b = polar(q.p, q.ang + PI / 2, r * 0.6), f = [b[0] + rng.range(-0.8, 0.8) + 1.0, -0.6];
+    K.limb(b, PI / 2, r * 2.5, i === 0 ? 'hind' : i === g.legs - 1 ? 'fore' : null, 1, () => { tb(k, [b, add(lerp(b, f, 0.5), [-1.2, 0]), f], tap(Math.max(r * 0.38, MA * 0.62), MA * 0.5)); lf(k, f, 0.25, 1.6, MA * 1.1, 0, 0.3); });
+  }
+  return { view: 'side', r, path, rad: () => r, back: [strip(path, () => r, 0.2, 0.8, 10, -1)], head: { p: polar(e.p, e.ang, r * 0.8), dir: e.ang, face: 0.2, s: r * 1.2, bare: true, W: 0.6 }, tail: { p: pathAt(path, 0).p, dir: pathAt(path, 0).ang + PI, s: r * 0.7 } };
+};
+
+// Eurypterid (sea scorpion) from above: rounded prosoma with small legs and a pair of swimming
+// paddles, a broad segmented body narrowing to a spike or paddle telson.
+FORMS.eurypterid = (K, g) => {
+  const { k } = K, Lp = g.Lp, Wp = g.Wp * K.pl, n = g.n, sl = g.sl;
+  sym(k, [[Lp * 0.5, 0], [Lp * 0.45, Wp * 0.7], [Lp * 0.15, Wp], [-Lp * 0.5, Wp * 0.95], [-Lp * 0.55, 0]], 6);
+  const pts = [[-Lp * 0.45, 0]]; for (let i = 1; i <= n; i++) pts.push([-Lp * 0.45 - i * sl * (i > g.pre ? 0.9 : 1), 0]);
+  const env = i => (i < g.pre ? mix(1.0, 1.2, Math.sin(PI * i / g.pre)) : mix(0.55, 0.32, (i - g.pre) / Math.max(n - g.pre - 1, 1))) * Wp;
+  for (let i = 0; i < n; i++) { const c = lerp(pts[i], pts[i + 1], 0.5), w = env(i); oval(k, c, sl * 0.62, w, 0); for (const sd of [-1, 1]) k.poly([[c[0] + sl * 0.4, sd * w * 0.7], [c[0] - sl * 0.55, sd * w * 1.02], [c[0] - sl * 0.2, sd * w * 0.6]]); }
+  const e = pts[n];
+  if (g.telson === 'paddle') lf(k, polar(e, 0, sl * 0.5), PI, g.tel, Wp * 0.75, 0, 0.5); else { bar(k, [polar(e, 0, sl * 0.5), polar(e, PI, g.tel)], tap(Wp * 0.18, 0.4)); }
+  for (const sd of [-1, 1]) {
+    for (let i = 0; i < 3; i++) { const base = [Lp * (0.25 - i * 0.22), sd * Wp * 0.85], a0 = sd * (0.9 + i * 0.35); K.limb(base, a0, Wp * 0.5, i === 0 ? 'fore' : i === 2 ? 'mid' : null, sd, () => tleg(k, base, a0, -sd * 0.4, g.legL * (1 + i * 0.1), g.legW, [0.4, 0.33, 0.27])); }
+    const pb = [-Lp * 0.35, sd * Wp * 0.85];
+    K.limb(pb, sd * 2.1, Wp * 0.6, 'hind', sd, () => { const pts2 = tleg(k, pb, sd * 1.75, sd * 0.35, g.pad * 1.5, g.legW * 1.5, [0.45, 0.35]); lf(k, pts2[2], angOf(pts2[1], pts2[2]), g.pad, g.pad * 0.5, 0, 0.5); });
+    if (g.claws) { const a = arm(k, [Lp * 0.48, sd * Wp * 0.35], [[sd * 0.35, g.claws * 0.9], [-sd * 0.1, g.claws * 0.7]], Wp * 0.3); chela(k, a.p, -sd * 0.2, g.claws * 0.8, { flip: sd, fat: 0.3, finger: 1.4 }); }
+  }
+  return { view: 'top', r: Wp, path: axis(e[0], Lp * 0.5), rad: () => Wp * 0.8, head: { p: [Lp * 0.42, 0], dir: 0, s: Wp * 0.4, bare: true, W: 0.6 }, tail: { p: e, dir: PI, s: Wp * 0.3 } };
+};
+
+// Copepod from above: a teardrop prosome, slender urosome with furcal setae, egg sacs.
+// (The great sweeping first antennae are the crown.)
+FORMS.copepod = (K, g) => {
+  const { k } = K, P = g.P, W = g.W * K.pl, xb = -P * 0.5;
+  sym(k, [[P * 0.5, 0], [P * 0.42, W * 0.65], [P * 0.15, W], [-P * 0.12, W * 0.95], [-P * 0.18, W * 0.82], [-P * 0.3, W * 0.78], [-P * 0.36, W * 0.62], [-P * 0.46, W * 0.52], [xb, W * 0.28], [xb, 0]], 6);
+  const up = axis(xb + 1, xb - g.U).reverse(); beads(k, up, g.un, t => W * mix(0.16, 0.27, t), 0.7);
+  const e = [xb - g.U, 0];
+  for (const sd of [-1, 1]) { const f = polar(e, PI + sd * 0.25, W * 0.35); bar(k, [e, f], Math.max(W * 0.08, MA * 0.7)); for (const da of [-0.12, 0.12]) whip(k, f, PI + sd * (0.3 + da * 3), g.set, sd * 0.2, MA * 1.1, MA * 0.8); }
+  if (g.eggs) for (const sd of [-1, 1]) oval(k, [xb - g.U * 0.45, sd * W * 0.55], g.U * 0.42, W * 0.36, sd * -0.25);
+  const hp = [P * 0.45, 0];
+  for (const [x, role] of [[0.2, 'fore'], [-0.1, 'mid'], [-0.35, 'hind']]) for (const sd of [-1, 1]) K.limb([P * x, sd * W * 0.7], sd * (PI / 2 + x * -1), W * 0.4, role, sd, null);
+  return { view: 'top', r: W, path: axis(e[0], P * 0.5), rad: () => W * 0.7, head: { p: hp, dir: 0, s: W * 0.5, bare: true, W: 0.9 }, tail: { p: e, dir: PI, s: W * 0.2 } };
+};
+
+// Water flea (Daphnia) in side view: a bean carapace with a tail spine, a beaked head.
+FORMS.daphnia = (K, g) => {
+  const { k } = K, R = g.R * K.pl, c = [0, -R * 1.02 - (g.lift ?? 0.4)];
+  oval(k, c, R * 0.82, R, g.tilt ?? 0.25);
+  const hc = add(c, [R * 0.55, -R * 0.62]); oval(k, hc, R * 0.45, R * 0.4, 0.4);
+  k.poly([add(hc, [R * 0.15, R * 0.15]), add(hc, [R * 0.55, R * 0.6]), add(hc, [R * 0.05, R * 0.45])]); // rostrum
+  const sp = polar(c, PI * 1.15 + (g.tilt ?? 0.25), R * 0.82); lf(k, sp, PI * 1.12 + (g.spA ?? 0), g.spine, R * 0.22, 0, 0.3);
+  return { view: 'side', r: R, path: [add(c, [-R * 0.6, 0]), add(c, [R * 0.6, 0])], rad: () => R * 0.7, back: [[0, 1, 2, 3].map(i => { const a = -PI * 0.8 + i * 0.3; return { p: polar(c, a, R * 0.85), dir: a, t: i / 3 }; })], head: { p: add(hc, [-R * 0.1, -R * 0.3]), dir: -1.4, face: -0.6, s: R * 0.45, bare: true, W: 0.5 }, tail: { p: sp, dir: PI * 1.1, s: R * 0.2 } };
+};
+
+// Barnacles in side view, rooted: goose barnacles on flexible stalks, or a cluster of acorn cones.
+FORMS.barnacle = (K, g) => {
+  const { k, rng } = K;
+  let head = null, mainR = 4;
+  if (g.kind === 'goose') {
+    const n = g.count;
+    for (let i = 0; i < n; i++) {
+      const main = i === 0, s = main ? 1 : rng.range(0.6, 0.75), base = [main ? 0 : (i === 1 ? 1 : -1) * rng.range(2, 3), 0.3], h = g.h * s, lean = (main ? rng.range(-0.25, 0.25) : (base[0] > 0 ? 0.35 : -0.35)) + rng.range(-0.1, 0.1);
+      const top = polar(base, -PI / 2 + lean, h), w = g.w * s;
+      tb(k, [base, polar(polar(base, -PI / 2 + lean * 0.5, h * 0.5), lean > 0 ? 0 : PI, w * 0.3), top], profile([[0, w * 0.8], [0.5, w * 0.62], [1, w * 0.7]]));
+      const ca = -PI / 2 + lean * 1.3, cap = g.cap * s;
+      oval(k, polar(top, ca, cap * 0.38), cap * 0.5, cap * 0.33, ca); lf(k, polar(top, ca, cap * 0.3), ca + 0.08, cap * 0.75, cap * 0.5, 0, 0.4);
+      if (main) { head = { p: polar(top, ca, cap * 0.92), dir: ca + 0.2, face: ca + 0.2, s: cap * 0.32, bare: true, W: 0.3 }; mainR = cap * 0.3; }
+    }
+  } else { // acorn barnacles: toothed volcano cones
+    const n = g.count; let x = -(n - 1) * g.cone * 0.55;
+    for (let i = 0; i < n; i++) {
+      const s = i === 0 ? 1 : rng.range(0.55, 0.85), R = g.cone * s, H = R * rng.range(0.8, 1.1), cx = x + rng.range(-1, 1), tw = R * 0.42;
+      const pts = [[cx - R, 0.3], [cx + R, 0.3]];
+      for (let j = 0; j <= 6; j++) { const u = j / 6, xx = mix(cx + tw, cx - tw, u); pts.push([xx, -H + (j % 2 ? R * 0.12 : 0)]); }
+      k.poly(spline([[cx - R, 0.3], [cx + R, 0.3], [cx + R * 0.75, -H * 0.4], [cx + tw * 1.05, -H], [cx + tw * 0.4, -H * 1.08], [cx - tw * 0.4, -H * 1.08], [cx - tw * 1.05, -H], [cx - R * 0.75, -H * 0.4], [cx - R, 0.3]], 4));
+      for (let j = -1; j <= 1; j++) k.poly([[cx + j * tw * 0.7 - R * 0.12, -H * 0.97], [cx + j * tw * 0.75, -H * 1.22], [cx + j * tw * 0.7 + R * 0.12, -H * 0.97]]);
+      if (i === 0) { head = { p: [cx, -H * 1.05], dir: -PI / 2, face: -PI / 2 + 0.3, s: R * 0.3, bare: true, W: 0.3 }; mainR = R * 0.3; }
+      x += g.cone * rng.range(0.95, 1.15);
+    }
+  }
+  return { view: 'side', rooted: true, r: mainR * 2, path: [[-3, -3], [3, -3]], rad: () => 2, back: [[{ p: [-2, -3], dir: -PI / 2, t: 0 }, { p: [2, -3], dir: -PI / 2, t: 1 }]], head, tail: { p: [-2, -1], dir: PI, s: 2 } };
+};
+
 //@@FORMS
 
 // ---------------------------------------------------------------------------
@@ -796,6 +1008,44 @@ const species = [
   { name: 'stick insect', w: 1.5, genes: r => { const L = r.range(26, 32); return G({ form: 'insect', legH: r.range(4, 6), tx: r.range(9, 11), ty: 1.5, ax: L, ay: 1.6, aTilt: r.range(-0.02, 0.08), aProf: [[0, 1.5], [0.85, 1.4], [1, 0.8]], hs: 2.2, hDir: 0, face: 0.15,
       legs: [{ x: 0.95, ka: r.range(-0.4, -0.1), f: r.range(9, 12), tx: r.range(5, 8), w: 1.15 }, { x: 0, ka: r.range(-0.1, 0.3), f: r.range(8, 10), tx: 4, w: 1.15 }, { x: -0.9, ka: PI - r.range(-0.1, 0.3), f: r.range(9, 11), tx: 5, w: 1.15 }] },
     { head: HEAD({ len: 1.2, wid: 0.8, antGap: 0.4, splaySide: 0.3 }), limbs: LEND(r, { len: 4, w: 0.2 }), crown: ANT(r.range(4, 9), r.range(0.1, 0.4), { w: 0.18 }) }); } },
+  { name: 'mantis shrimp', w: 2, genes: r => { const rc = r.range(3.8, 4.4); return G({ form: 'shrimp', rc, Lc: rc * r.range(1.9, 2.3), n: 6, sl: rc * r.range(1.2, 1.4), T: r.range(0.2, 0.6), hump: r.range(0.0, 0.15), re: 0.85, a0: 1.0, plDeep: 1.05, segOv: 0.7, fan: rc * r.range(0.95, 1.15), fanSpread: 0.6, fanSpines: true, legH: rc * r.range(0.7, 0.9), legL: rc * 1.7, legW: 1.5, legs: 3, leg0: 0.55, leg1: 0.95, legFw: 0.2, raptor: r.range(1.7, 2.1), scale: rc * 1.0, tilt: r.range(0, 0.06) },
+    { head: HEAD({ stalk: r.range(0.9, 1.2), stalkR: 0.48 }), limbs: CLAWED(r, { clawS: 1.1 }), crown: ANT(r.range(3, 4.5), r.range(0.6, 1.2), { w: 0.22, splaySide: 0.5 }), tail: none() }); } },
+  { name: 'sandhopper', w: 1.5, genes: r => { const rc = r.range(3.2, 3.8); return G({ form: 'shrimp', rc, Lc: rc * 1.1, n: 10, sl: rc * r.range(0.72, 0.85), T: r.range(2.6, 3.4), hump: r.range(0.35, 0.6), hang: 1.6, re: 0.55, a0: 1.0, plDeep: 1.5, segOv: 0.7, fan: rc * 0.55, fanSpread: 0.7, legH: rc * r.range(1.3, 1.7), legL: rc * 2.6, legW: 1.3, legs: 6, leg0: 0.3, leg1: 1.6, legFw: 0.5, legBk: 0.6, tilt: r.range(-0.1, 0.05) },
+    { head: HEAD({ eye: 0.32 }), limbs: LEND(r, { len: 2.2, w: 0.2 }), crown: ANT(r.range(3.5, 5), r.range(0.6, 1.2), { w: 0.22, splaySide: r.range(0.3, 0.7) }) }); } },
+  { name: 'inchworm', w: 1.5, genes: r => { const rr = r.range(2.6, 3.1), n = 12; return G({ form: 'worm', r: rr, n, sl: rr * 1.15, legH: 0.6, arch: rr * r.range(3.2, 4.2), ov: 0.85, headDown: 0.9, leg: (i, n) => (i >= n - 4 && i <= n - 2 ? 'true' : i <= 1 ? 'pro' : null) },
+    { head: HEAD(), limbs: LEND(r, { len: 1.6 }), crown: none() }); } },
+  { name: 'hornworm', w: 1.5, genes: r => { const rr = r.range(3.6, 4.2), n = 12; return G({ form: 'worm', r: rr, n, sl: rr * 1.15, legH: 1.2, hump: rr * r.range(0.5, 1.5), ov: 0.72, env: t => 0.8 + 0.2 * Math.sin(PI * clamp(t * 1.2, 0, 1)), headL: 0.8, headW: 0.85, headDown: 0.7, horn: rr * r.range(2.2, 3), leg: (i, n) => (i >= n - 4 && i <= n - 2 ? 'true' : (i === 0 || (i >= 3 && i <= 6)) ? 'pro' : null) },
+    { head: HEAD(), limbs: LEND(r, { len: 1.6 }), crown: none(), tail: TAIL('horn', { len: 2.4 }) }); } },
+  { name: 'hairy caterpillar', w: 1.5, genes: r => { const rr = r.range(3.0, 3.5), n = 11; return G({ form: 'worm', r: rr, n, sl: rr * 1.15, legH: 1.0, hump: rr * r.range(0, 1.2), ov: 0.72, headDown: 0.8, hair: rr * r.range(0.9, 1.3), hairN: 5, pencil: r.chance(0.5), leg: (i, n) => (i >= n - 4 && i <= n - 2 ? 'true' : (i === 0 || (i >= 3 && i <= 6)) ? 'pro' : null) },
+    { head: HEAD(), limbs: LEND(r, { len: 1.6 }), crown: none() }); } },
+  { name: 'millipede', w: 2, genes: r => { const rr = r.range(3, 3.5), n = r.int(15, 19); return G({ form: 'worm', r: rr, n, sl: rr * 1.0, legH: r.range(2.6, 3.2), hump: rr * r.range(0, 1.5), ov: 0.62, env: t => (t < 0.06 ? 0.75 : 1), headL: 0.7, headW: 0.85, headDown: 0.6, leg: (i, n) => (i > 0 && i < n - 1 ? 'milli' : null) },
+    { head: HEAD(), limbs: LEND(r, { len: 1.6 }), crown: ANT(r.range(2.4, 3.2), r.range(0.4, 0.9), { style: 'bead', n: 6, w: 0.3, splaySide: 0.2 }) }); } },
+  { name: 'coiled millipede', w: 1.2, genes: r => { const rr = r.range(2.6, 3), n = r.int(28, 34); return G({ form: 'worm', r: rr, n, sl: rr, coil: r.range(1.4, 1.75), ov: 0.78, env: t => (t > 0.9 ? 0.85 : 1) },
+    { head: HEAD(), limbs: LEND(r, { len: 1.6 }), crown: ANT(1.6, 0.6, { style: 'bead', n: 4, w: 0.3 }) }); } },
+  { name: 'pill bug', w: 1, genes: r => G({ form: 'pillball', R: r.range(8.5, 10.5), n: r.int(8, 10), step: r.range(0.09, 0.13), a0: r.range(0.35, 0.7) },
+    { head: HEAD(), limbs: LEND(r, { len: 1.4 }), crown: r.chance(0.6) ? ANT(r.range(2.4, 3.2), 0.4, { style: 'elbow', elbow: 0.9, w: 0.3, splaySide: 0.1 }) : none() }) },
+  { name: 'hermit crab', w: 2.5, genes: r => G({ form: 'hermit', S: r.range(8, 9.5), lift: r.range(0.3, 1.2), whorls: r.int(2, 3), shrink: r.range(0.52, 0.66), spireA: r.range(0.55, 0.95), twist: r.range(0.05, 0.25), spire: r.chance(0.4) ? r.range(1.2, 2) : 0, bodyX: r.range(0.95, 1.15), tilt: r.range(-0.3, 0.1), claw: r.range(0.9, 1.25) },
+    { head: HEAD({ stalk: r.range(0.9, 1.3), stalkR: 0.32 }), limbs: CLAWED(r), crown: ANT(r.range(5, 7), r.range(0.3, 0.9), { w: 0.2, splaySide: 0.4 }) }) },
+  { name: 'horseshoe crab', w: 2, genes: r => { const Wp = r.range(14, 16); return G({ form: 'shield', kind: 'horseshoe', rot: r.pick([0, UP, UP]), Lp: Wp * r.range(0.85, 1), Wp, Lo: Wp * r.range(0.7, 0.85), spine: r.range(1.8, 2.6), T: Wp * r.range(1.3, 1.7), tBend: r.range(-0.25, 0.25) },
+    { head: HEAD(), limbs: LEND(r), crown: none() }); } },
+  { name: 'triops', w: 1.5, genes: r => { const Wp = r.range(10, 12); return G({ form: 'shield', kind: 'triops', rot: r.pick([0, UP]), Lp: Wp * r.range(1.9, 2.2), Wp, A: Wp * r.range(1.1, 1.4), n: 9, T: Wp * r.range(1.1, 1.5), splay: r.range(0.15, 0.35) },
+    { head: HEAD(), limbs: LEND(r), crown: none(), tail: TAIL('cerci', { n: 2, len: 4, splay: 0.3, fw: 0.3 }) }); } },
+  { name: 'anomalocaris', w: 2.5, genes: r => { const W = r.range(6, 7); return G({ form: 'radiodont', kind: 'anomalocaris', rot: r.pick([0, 0, UP]), L: W * r.range(5.5, 6.5), W, n: r.int(10, 12), flap: W * r.range(1.15, 1.35), blades: 3, blade: W * r.range(1.2, 1.5), arm: W * r.range(2.2, 2.7), armCurl: r.range(1.6, 2.2) },
+    { head: HEAD(), limbs: LEND(r), crown: none(), tail: none() }); } },
+  { name: 'opabinia', w: 1.5, genes: r => { const W = r.range(5, 5.8); return G({ form: 'radiodont', kind: 'opabinia', rot: r.pick([0, 0, UP]), L: W * r.range(5.5, 6.5), W, n: r.int(11, 13), flap: W * r.range(0.95, 1.15), blades: 3, blade: W * r.range(1.3, 1.6), prob: W * r.range(1.8, 2.4) },
+    { head: HEAD(), limbs: LEND(r), crown: none(), tail: none() }); } },
+  { name: 'hallucigenia', w: 1.5, genes: r => G({ form: 'hallu', r: r.range(1.4, 1.7), L: r.range(30, 36), legH: r.range(8, 10), hump: r.range(0.5, 2.5), n: 7, spine: r.range(9, 12), legs: 7, headR: r.range(1.3, 1.7) },
+    { head: HEAD(), limbs: LEND(r), crown: none() }) },
+  { name: 'eurypterid', w: 2, genes: r => { const pt = r.chance(0.35), Wp = r.range(8, 9.5); return G({ form: 'eurypterid', rot: r.pick([0, UP]), Lp: Wp * r.range(1.3, 1.5), Wp, n: 12, pre: 7, sl: Wp * r.range(0.36, 0.42), telson: pt ? 'paddle' : 'spike', tel: Wp * (pt ? 1.0 : r.range(1.1, 1.4)), legL: Wp * 0.9, legW: 1.6, pad: Wp * r.range(0.75, 0.95), claws: pt ? Wp * r.range(0.9, 1.1) : 0 },
+    { head: HEAD(), limbs: CLAWED(r), crown: none(), tail: TAIL('telson', { len: 2.5, fw: 0.4 }) }); } },
+  { name: 'copepod', w: 1.5, genes: r => { const W = r.range(5.5, 6.5); return G({ form: 'copepod', rot: r.pick([UP, UP, 0]), P: W * r.range(2.6, 3), W, U: W * r.range(1.4, 1.7), un: 5, set: W * r.range(1.1, 1.5), eggs: r.chance(0.55) },
+    { head: HEAD(), limbs: LEND(r), crown: ANT(r.range(7, 9.5), r.range(0.25, 0.5), { w: 0.3, splay: r.range(1.3, 1.5), antGap: 0.5 }) }); } },
+  { name: 'water flea', w: 1.2, genes: r => G({ form: 'daphnia', R: r.range(8, 9.5), tilt: r.range(0.1, 0.35), spine: r.range(6, 9), spA: r.range(-0.3, 0.1), lift: 0.4 },
+    { head: HEAD({ eye: 0 }), limbs: LEND(r), crown: { type: 'arthropodBranch', len: r.range(3.2, 3.8), pair: false } }) },
+  { name: 'goose barnacle', w: 1.2, genes: r => G({ form: 'barnacle', kind: 'goose', count: r.wpick([[2, 1], [2, 2], [1, 3]]), h: r.range(9, 12), w: r.range(3, 3.8), cap: r.range(11, 13.5) },
+    { head: HEAD({ splaySide: 0 }), limbs: { type: 'none' }, crown: { type: 'arthropodCirri', n: 6, len: r.range(3, 3.8), spread: 1.3, curl: r.range(1.6, 2.4), hand: r.sign() } }) },
+  { name: 'acorn barnacles', w: 0.7, genes: r => G({ form: 'barnacle', kind: 'acorn', count: r.int(2, 4), cone: r.range(6, 7.5) },
+    { head: HEAD({ splaySide: 0 }), limbs: { type: 'none' }, crown: { type: 'arthropodCirri', n: 6, len: r.range(3.6, 4.6), spread: 1.2, curl: r.range(1.6, 2.4), hand: r.sign() } }) },
   //@@SPECIES
 ];
 
