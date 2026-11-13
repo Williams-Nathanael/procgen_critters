@@ -70,13 +70,16 @@ function arcStrip(c, rx, ry, a0, a1, n = 8) {
   for (let i = 0; i < n; i++) { const a = mix(a0, a1, i / (n - 1)); out.push({ p: [c[0] + Math.cos(a) * rx * 0.9, c[1] + Math.sin(a) * ry * 0.9], dir: a, t: i / (n - 1) }); }
   return out;
 }
-function fuzzEdge(C, B, len) {
+// fur along both flanks; `down` (0..1) turns the strands from bristling outward to hanging
+// like a shaggy thatch, `nj` strands per side
+function fuzzEdge(C, B, len, down = 0, nj = 11) {
   const { ink, rng } = C, c = B.c(0.5);
-  for (const sd of [-1, 1]) for (let j = 0; j < 15; j++) {
-    const t = mix(0.1, 0.995, j / 14), p = B.at(t, sd, 0.9);
-    ink.poly(leaf(p, angOf(c, p) + rng.range(-0.3, 0.3), len * rng.range(0.75, 1.3), len * 0.62, rng.range(-0.2, 0.2), 0.3));
+  for (const sd of [-1, 1]) for (let j = 0; j < nj; j++) {
+    const t = mix(down ? 0.06 : 0.1, 0.97, j / (nj - 1)), p = B.at(t, sd, 0.9), ao = angOf(c, p);
+    const a = ao + (((PI / 2 + sd * 0.35 - ao + 3 * PI) % (2 * PI)) - PI) * down * (0.55 + 0.45 * t);
+    ink.poly(leaf(p, a + rng.range(-0.2, 0.2), len * rng.range(0.8, 1.3) * (down ? 0.75 + 0.6 * t : 1), len * 0.62, rng.range(-0.15, 0.15), 0.3));
   }
-  ink.poly(leaf(B.c(0.95), -PI / 2 + rng.range(-0.2, 0.2), len * 1.3, len * 0.62, 0, 0.3));
+  ink.poly(leaf(B.c(0.95), -PI / 2 + rng.range(-0.25, 0.25), len * 1.3, len * 0.62, 0, 0.3));
 }
 // frontal pair of big eyes on a body at height t
 function frontEyes(B, t, k = 1, shift = 0.07) {
@@ -242,7 +245,7 @@ chassis.janssonFolk = (C, g) => {
   const { ink, rng } = C, w = g.w * C.plump, h = g.hk * w, lift = Math.min(C.lift, 1.4) * w * (g.liftK ?? 0.6), lean = g.lean ?? 0;
   const B = body({ y0: -lift, h, w, keys: SHAPES[g.shape] ?? SHAPES.lump, lean, tb: g.tb ?? 0.3, tt: g.tt ?? 0.4 });
   ink.poly(B.pts);
-  if (g.fuzz) fuzzEdge(C, B, g.fuzz * w);
+  if (g.fuzz) fuzzEdge(C, B, g.fuzz * w, g.shag ?? 0, g.shag ? 13 : 11);
   const jan = {}; let head, yTop;
   if (g.face === 'side') {
     const p = B.c(g.neckT ?? 0.9), hs = w * (g.headS ?? 0.8);
@@ -348,17 +351,22 @@ chassis.janssonPeeper = (C, g) => {
   let hc, hr, tail, limbs = [], back, r, mountT = null;
   const hands = (pts, q) => { for (const p of pts) ink.oval(p, q * 0.3, q * 0.22); };
   if (g.kind === 'stone') {
-    const sw = g.sw * k, sh = g.sh;
-    const top = spline([[-sw, 0], [-sw * 0.97, -sh * 0.55], [-sw * rng.range(0.3, 0.6), -sh], [sw * rng.range(0.2, 0.6), -sh * rng.range(0.78, 0.95)], [sw * 0.98, -sh * 0.4], [sw * 1.02, 0]], 6);
-    ink.poly(top.map(p => [p[0], Math.min(p[1], 0)]));
-    if (rng.chance(0.5)) dome(ink, sw * rng.range(1, 1.3), 0, sw * rng.range(0.3, 0.5), sh * rng.range(0.2, 0.35));
-    hr = g.hr * k; hc = [-sw * 0.8 - hr * rng.range(0, 0.3), -(sh * rng.range(0.72, 0.9) + hr * 0.6)];
+    // a faceted rock (straight edges read as stone, not as a soft body); the creature is behind
+    // it: only the top of its head, its two hands gripping the top edge, and a tail out the back
+    const sw = g.sw * k, sh = g.sh, ys = [rng.range(0.45, 0.65), rng.range(0.9, 1), rng.range(0.85, 1), rng.range(0.45, 0.7)];
+    const xs = [-sw * rng.range(0.92, 1.0), -sw * rng.range(0.5, 0.7), sw * rng.range(0.1, 0.4), sw * rng.range(0.8, 0.95)];
+    const rock = [[-sw, 0], ...xs.map((x, i) => [x, -sh * ys[i]]), [sw * 1.02, 0]];
+    ink.poly(rock);
+    if (rng.chance(0.6)) { const px = sw * rng.range(1.05, 1.25), pw = sw * rng.range(0.25, 0.4), ph = sh * rng.range(0.15, 0.3); ink.poly([[px - pw, 0], [px - pw * 0.7, -ph], [px + pw * 0.4, -ph * rng.range(0.8, 1.1)], [px + pw, 0]]); }
+    // top edge between facet points 1 and 2 is where it peeps over
+    const ea = [xs[1], -sh * ys[1]], eb = [xs[2], -sh * ys[2]], u = rng.range(0.3, 0.6), edge = x => mix(ea[1], eb[1], (x - ea[0]) / (eb[0] - ea[0] || 1));
+    hr = g.hr * k; const hx = mix(ea[0], eb[0], u); hc = [hx, edge(hx) - hr * rng.range(0.45, 0.65)];
     ink.dot(hc, hr);
-    ink.poly(tube(spline([hc, [hc[0] - hr * 0.25, -hr * 1.4], [hc[0] - hr * 0.35, -hr * 0.2]], 5), profile([[0, hr * 0.85], [0.6, hr * 1.05], [1, hr * 0.9]])).map(p => [p[0], Math.min(p[1], 0)]));
-    dome(ink, hc[0] - hr * 0.9, 0, hr * 0.42, hr * 0.28);
-    hands([[hc[0] + hr * 1.15, hc[1] + hr * 0.75], [hc[0] + hr * 1.8, hc[1] + hr * 0.6]], hr);
-    eyes.push(...[-1, 1].map(sd => ({ p: [hc[0] + hr * 0.08 + sd * hr * 0.42, hc[1] - hr * 0.1], r: hr * 0.34 / 1.5 })));
-    tail = { p: [hc[0] - hr * 1.1, -hr * 0.6], dir: PI + rng.range(0, 0.5), s: hr * 0.6 };
+    ink.poly(tube(polyline([hc, [hx, edge(hx) + hr * 0.4]], 2), hr * 0.95));
+    const hx1 = hx + hr * 1.25, hx2 = hx + hr * 1.95;
+    hands([[hx1, edge(hx1) - hr * 0.08], [hx2, edge(hx2) - hr * 0.08]], hr);
+    eyes.push(...[-1, 1].map(sd => ({ p: [hc[0] + hr * 0.12 + sd * hr * 0.42, hc[1] - hr * 0.05], r: hr * 0.34 / 1.5 })));
+    tail = { p: [-sw * 0.85, -sh * 0.3], dir: PI + rng.range(0.1, 0.5), s: hr * 0.6 };
     back = arcStrip([0, 0], sw, sh, PI * 1.25, PI * 1.8, 7); r = sw;
   } else if (g.kind === 'burrow') {
     hr = g.hr * k; hc = [0, -hr * 0.45];
@@ -654,8 +662,15 @@ heads.janssonHead = (C, sock, g) => {
   if (g.fuzz) for (let i = 0; i < 16; i++) { const a = fa + PI * 0.35 + i / 15 * PI * 1.5; ink.poly(leaf(polar(c, a, R * 0.85), a + rng.range(-0.3, 0.3), R * g.fuzz * rng.range(0.8, 1.3), R * g.fuzz * 0.6, 0, 0.3)); }
   const dr = sym ? 0 : 1;
   if (kind === 'soft') {
-    const L = g.len ?? 0.9;
-    ink.poly(tube(spline([F(0.2, 0.1 * dr), F(0.3 + L * 0.6, (0.14 + g.droop * L * 0.3) * dr), F(0.3 + L, (0.2 + g.droop * L) * dr)], 6), profile([[0, R * 0.78], [0.55, R * mix(0.78, g.tipR, 0.7)], [1, R * g.tipR]])));
+    // a small BUTTON snout only (short, narrow, slightly upturned). Deliberately never a broad,
+    // head-sized rounded muzzle: that, on a pear body with a tufted tail, is a famous character.
+    const L = Math.min(g.len ?? 0.5, 0.62), tr = Math.min(g.tipR ?? 0.36, 0.4);
+    ink.poly(tube(spline([F(0.45, 0.12 * dr), F(0.75 + L * 0.6, 0.12 * dr), F(0.8 + L, (0.06 - 0.1 * L) * dr)], 5), profile([[0, R * 0.5], [0.5, R * 0.38], [1, R * tr]])));
+  } else if (kind === 'bulb') {
+    // troll nose: a short bridge ending in a big round potato knob that hangs a little
+    const L = g.blen ?? 0.7, nr = R * (g.bulbR ?? 0.55), tip = F(0.75 + L * 0.6, 0.3 * dr + (g.droop ?? 0.2) * L * 0.5 * dr);
+    ink.poly(tube(spline([F(0.3, 0.05 * dr), lerp(F(0.3, 0.05 * dr), tip, 0.55), tip], 4), profile([[0, R * 0.42], [1, nr * 0.8]])));
+    ink.dot(tip, nr);
   } else if (kind === 'long') {
     const L = g.nlen ?? 2, b = (g.droop ?? 0) * dr;
     ink.poly(tube(spline([F(0.4, 0.15 * dr), F(0.5 + L * 0.5, (0.15 + b * L * 0.15) * dr), F(0.5 + L, 0.15 * dr + b * L * 0.55)], 6), profile([[0, R * 0.5], [0.3, R * 0.27], [1, Math.max(R * 0.15, 0.75)]])));
@@ -700,10 +715,12 @@ feet.janssonBird = (C, p, ang, s, g, k) => {
 };
 // tassel: a plump brush with a bound neck and a couple of flyaway hairs
 tips.janssonTassel = (C, e, ang, s, g) => {
-  const q = s * (g.tipS ?? 0.8);
-  C.ink.poly(leaf(e, ang, q * 2.5, q * 1.25, 0, 0.6));
-  for (const d of [-0.5, 0.5]) C.ink.poly(leaf(polar(e, ang, q * 0.5), ang + d, q * 1.9, q * 0.6, d * 0.2, 0.5));
-  C.ink.dot(e, Math.max(q * 0.3, 0.8));
+  const { ink, rng } = C, q = s * (g.tipS ?? 0.8);
+  // a brush: bound neck, a plump body, and a ragged end of a few strands (not a tulip)
+  ink.oval(polar(e, ang, q * 0.15), q * 0.32, q * 0.5, ang);
+  ink.poly(leaf(polar(e, ang, q * 0.1), ang, q * 2.0, q * 1.05, 0, 0.5));
+  const n = rng.int(3, 4);
+  for (let i = 0; i < n; i++) { const d = (i / (n - 1) - 0.5) * 0.55 + rng.range(-0.06, 0.06); ink.poly(leaf(polar(e, ang, q * 0.6), ang + d, q * rng.range(1.8, 2.4), q * 0.5, d * 0.25, 0.35)); }
 };
 // three soft feathers
 tips.janssonFan = (C, e, ang, s, g) => { const q = s * (g.tipS ?? 1); for (const d of [-0.42, 0, 0.42]) C.ink.poly(leaf(polar(e, ang, -q * 0.3), ang + d, q * (d ? 2.1 : 2.5), q * 0.85, d * 0.15, 0.6)); };
@@ -759,12 +776,12 @@ dorsals.janssonProp = (C, plan, st, sd, si, g, at) => {
 // GENES
 // =====================================================================
 const hd = (r, o = {}) => ({
-  type: 'janssonHead', kind: 'face', alt: r.wpick([[2, 'soft'], [2, 'long'], [1.6, 'round'], [0.5, 'beak']]),
-  R: r.range(0.95, 1.1), len: r.range(0.6, 1.0), nlen: r.range(1.3, 2.4), blen: r.range(0.6, 1.1), droop: r.range(-0.15, 0.4), tipR: r.range(0.44, 0.58),
+  type: 'janssonHead', kind: 'face', alt: r.wpick([[1.5, 'soft'], [2, 'long'], [1.8, 'round'], [0.5, 'beak'], [0.9, 'bulb']]),
+  R: r.range(0.95, 1.1), len: r.range(0.35, 0.6), nlen: r.range(1.3, 2.4), blen: r.range(0.5, 0.9), bulbR: r.range(0.42, 0.58), droop: r.range(-0.15, 0.4), tipR: r.range(0.3, 0.4),
   nose: r.chance(0.45) ? r.range(0.15, 0.6) : 0, knob: r.chance(0.2), eyeR: r.range(0.24, 0.29), two: r.chance(0.3), ...o,
 });
 const limbsFolk = (r, o = {}) => ({ len: r.range(0.75, 1.0), w: r.range(0.3, 0.38), taper: 0.85, bend: r.range(0.3, 0.9), foot: 'janssonPad', lift: r.range(0.18, 0.34), stance: 0.2, arm: 1.0, ...o });
-const tassel = (r, o = {}) => ({ len: r.range(4.5, 7.5), w0: 0.17, mid: 0.5, w1: 0.12, curl: r.range(0.8, 2.2), wave: r.range(0.6, 1.8), tip: 'janssonTassel', tipS: r.range(0.6, 0.85), up: r.chance(0.6), ...o });
+const tassel = (r, o = {}) => ({ len: r.range(3.2, 5.2), w0: 0.22, mid: 0.5, w1: 0.14, curl: r.range(1.0, 2.4), wave: r.range(0.5, 1.5), tip: 'janssonTassel', tipS: r.range(0.65, 0.85), up: r.chance(0.75), ...o });
 const tailAny = r => r.wpick([[3, tassel(r)], [1.4, none()], [0.8, { len: r.range(3.5, 6), w0: 0.2, mid: 0.5, w1: 0.1, curl: r.range(1, 2.4), wave: 1, tip: 'point', up: true }], [0.6, { len: r.range(2, 3.5), w0: 0.18, mid: 0.5, w1: 0.14, curl: 0.8, wave: 0.6, tip: 'pom', tipS: 0.75 }]]);
 const hair = (r, o = {}) => ({ type: 'janssonHair', n: r.int(1, 3), len: r.range(0.9, 1.6), spread: r.range(0.3, 0.7), curl: r.range(0.3, 1.2), bead: r.chance(0.25), ...o });
 const earsPoint = r => ({ type: 'ears', len: r.range(1.0, 1.5), wid: r.range(0.55, 0.75), lean: 0, fat: 0.38, pair: true });
