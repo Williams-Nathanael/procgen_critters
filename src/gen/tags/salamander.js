@@ -282,8 +282,9 @@ function toesFoot(C, p, ang, s, g, k, n, web) {
     const v = n > 1 ? i / (n - 1) - 0.5 : 0;
     const a = ang + v * spread, len = tl * (0.72 + 0.28 * Math.cos(v * PI * 0.95));
     const tip = polar(p, a, len); tipsP.push(tip);
-    ink.poly(tube(polyline([p, tip], 3), tw));
-    ink.dot(tip, Math.max(tw * 1.32, MINW * 0.62));
+    // one polygon per toe: a slim digit ending in a round pad (cheaper than tube + dot)
+    const tr = Math.max(tw * 1.32, MINW * 0.62);
+    ink.poly(tube(polyline([lerp(p, tip, 0.1), tip], 2), [tw, tw * 1.05, tr]));
   }
   if (web && n > 1) ink.poly([p, ...tipsP.map(t => lerp(p, t, web))]);
   ink.dot(p, s * (g.palm ?? 0.17) * k);
@@ -535,14 +536,14 @@ const species = [
     r: r.range(7.2, 8.2), len: r.range(44, 52), belly: 1.06, neckW: 0.9, tail: r.range(0.62, 0.75),
     head: headG(r, { len: r.range(1.25, 1.4), wid: r.range(0.98, 1.04), p: 2.2, eye: 0.19, neckW: 0.8, paro: r.range(0.9, 1.1), top: 0.66 }),
     limbsG: legs(r, { w: 0.58, toeLen: 0.55 }), T: { keys: [[0, 1], [0.5, 0.66], [0.9, 0.3], [1, 0.16]] },
-    spots: r.int(5, 9),
+    spots: r.int(4, 7),
   }, [[3, 'walk'], [1.2, 'curl'], [1, 'look'], [1.6, 'walkS'], [0.8, 'alert']]) },
 
   { name: 'spotted salamander', w: 4, genes: r => make(r, {
     r: r.range(6.4, 7.2), len: r.range(42, 49), belly: 1.08, neckW: 0.86, tail: r.range(0.8, 0.95),
     head: headG(r, { len: r.range(1.2, 1.3), wid: r.range(0.98, 1.04), p: 2.5, eye: 0.2 }),
     limbsG: legs(r, { w: 0.55 }), T: { fin: 0.12, topK: 0.82, keys: [[0, 1], [0.5, 0.7], [1, 0.1]] },
-    spots: r.int(6, 10),
+    spots: r.int(5, 8),
   }, [[3, 'walk'], [1.5, 'ess'], [1, 'curl'], [1, 'look'], [1.5, 'walkS']]) },
 
   { name: 'tiger salamander', w: 4, genes: r => make(r, {
