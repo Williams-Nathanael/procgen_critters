@@ -26,4 +26,43 @@ Signature features to lend: the long expressive tail, splayed limbs with rounded
 external gills, newt crest. Default eyes: none.
 
 ## State
-- 29 species, WIP from an interrupted run, unreviewed. Branch `wip/salamander-species`.
+
+Updated 2026-11-13 (review run on main; sheets `out/roads/03-salamander-species.png`,
+`out/roads/03-salamander-mixes.png`).
+
+**29 species**, all kept: fire, spotted, tiger, mole; red-backed, slender, long-tailed, cave,
+ensatina, arboreal, web-footed, spectacled; giant salamander, hellbender; mudpuppy, axolotl,
+olm, siren, amphiuma, blind cave salamander; great crested, smooth, palmate newt, red eft,
+rough-skinned, ribbed, crocodile newt; salamander larva, newt larva. Two bespoke chassis
+(`salamanderTop` on a free centreline with walk / ess / curl / ring / coil / look / eel poses,
+`salamanderSide` with walk / alert / tall / unken / tail-curl / swim), own head, feet, whole-tail
+tip, gills crown, crest and warts dorsals.
+
+**Strong:** fire, spotted, tiger, red-backed, long-tailed, cave, arboreal, spectacled (top-view
+coils), hellbender, giant salamander, axolotl (side and top gills), great crested and smooth
+newt (side view with crest), red eft, blind cave salamander, slender (coils and rings).
+
+**Weak:** amphiuma (a plain thick eel; only its tiny legs say salamander), siren (bushy gills
+read as a lump from above), rough-skinned newt unken pose (a big C tail, a little scorpion-like;
+weighted down), newt larva (busy at print size), web-footed (close to arboreal), ensatina
+'tall' pose (raised tail still a bit lizard/squirrel), mole salamander top view (stubby).
+
+**Decisions this run:**
+- Top-view trunks lengthened (path x1.18 and longer species `len`) and the head narrowed to
+  just under trunk width (`wid` x0.84, length x1.22): the first WIP read as toads with ball
+  heads. Necks widened on stocky species to stop the bulb-head look.
+- Side view: belly lifted (`liftK` 2.9), legs shorter, thinner and nearly straight
+  (`sideLegs`), near/far leg of a pair spaced a foot-length apart; long bent legs merged into
+  blocks. Swimming newts fold their legs back, near side only.
+- Gills: explicit side-view fan (three rami rising from the top-rear of the head), longer rami,
+  webbed crotches; forelimbs are steered out of the gill zone.
+- No trapped white: top-view limbs are steered (`clearDir`) clear of body, head, gills and tail
+  base; the tail avoids predicted feet and straightens when it cannot clear. About 8% of
+  critters still enclose one small gap (mostly hind leg against a curled tail), down from ~40%.
+- Lent tails on other chassis are capped at 3.2 x the host's body radius.
+- Defensive poses toned down: unken tail thinner and lower, ensatina tail tip droops,
+  spectacled tail curl smaller. Ensatina/olm/larva 'curl' poses dropped (made folded blobs).
+- Toes are single polygons; fire/spotted spots reduced. Generation p50 about 8 ms, p99 about
+  17 ms at detail 0.6; most of the time is in the shared `Ink.finish` (offset/union).
+- Review renders used a private mirror (other tags at git HEAD) because another worker's
+  uncommitted `plant.js` briefly broke the shared import.
