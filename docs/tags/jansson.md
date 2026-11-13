@@ -40,5 +40,28 @@ Signature features to lend: big round ringed eyes, a soft rounded snout or long 
 tasselled tail, tufts and single hairs, small props, the upright pear body.
 
 ## State
-- 36 species, WIP from an interrupted run, unreviewed. Branch `wip/jansson-species`.
-- Review must include a check that no species resembles a named Jansson character.
+- **38 species** (2026-11-13; was 36 unreviewed WIP). Sheets: `out/roads/03-jansson-species.png`,
+  `out/roads/03-jansson-mixes.png`. All load, nothing below the line, slowest mean ~15 ms (loop runner).
+- **Word-creatures (12, ~37% of weight)**: comma crawler, ampersand knot, crook stemling, minim
+  caterpillar, loop runner, query hook, pilcrow strider, asterisk mite (new: stands on its two lower
+  spokes), at-snail (new: the @ outer stroke runs on as a snail foot), bracket peeper (new: a head
+  peeping between ( ), [ ] or { } held like curtains), swash inchworm, cursive procession. Pen strokes
+  swell and thin like a broad nib; ball terminals are the heads. Strongest: ampersand, at-snail,
+  minim, loop runner, query hook, pilcrow, bracket peeper.
+- **Folk (26)**: shy lump, shaggy mop, pear sitter, back-turned sitter, tall wanderer, long-nose
+  scuttler, stilt-legs, hunched troll, farm sprite, scarf creature, bird folk, lantern / umbrella /
+  suitcase / angler / flag bearers, huddle, stack, tail-holding procession, stone / burrow peeper,
+  pot dweller, grass lurker, drift bells, snail folk, curled sleeper. Strongest: umbrella walker,
+  stilt-legs, long-nose scuttler, bird folk, stack, burrow peeper, snail folk, farm sprite.
+- **Weak**: tail-holding procession and comma trains (wide, so each member is tiny at print size;
+  weights lowered), huddle (members merge at print), scarf creature (scarf still reads a bit as an
+  arm/tail), curled sleeper (plain), crook stemling (letterform less obvious), suitcase case small.
+- **Copyright review (done, all 38)**: decisions: the 'soft' snout is now only a small button, never a
+  broad head-sized muzzle; a profile head with a snout or bulb nose never gets ears (guard in `std`);
+  pear sitter / angler never take the bulb nose; back-turned sitter has no round ears; tall
+  wanderer's cone never has a brim; drift bells are wide hooked bells with a scalloped hem, at most
+  two, never tall columns; the old soot-sprite-like fuzzball became the shaggy mop (hanging thatch,
+  feet, tufts); suitcase bearers are always single. Nisse renamed "farm sprite" (generic folklore tomte).
+- Cut: serif scuttlers (read as boxes/teeth). Old WIP branch `wip/jansson-species` is superseded.
+- Stacking checked both ways: lent heads (ringed eyes, button/long/bulb noses) and brush tassels sit
+  well on other chassis; foreign parts on glyph chassis attach at the ball head and back arc.
