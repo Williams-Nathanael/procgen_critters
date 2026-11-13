@@ -27,4 +27,37 @@ cottontail), whiskered pointed snouts, hedgehog and porcupine spines, bat wings.
 eyes: a small white dot.
 
 ## State
-- 41 species, WIP from an interrupted run, unreviewed. Branch `wip/mammal-species`.
+Updated 2026-11-13 (species-builder run on main, continuing the interrupted WIP; four review
+rounds plus stacking checks). Sheets: `out/roads/03-mammal-species.png`,
+`out/roads/03-mammal-mixes.png`.
+
+- **38 species** (was 41 unreviewed; lemming, guinea pig and tenrec cut as muddy blobs that
+  duplicated vole / hamster / hedgehog at print size). Mean ~7 ms per critter.
+- **Strong**: house, wood and harvest mice (stalk climber), jerboa, kangaroo rat, rat,
+  elephant shrew, mole and star-nosed mole (molehill), hedgehog (walking and rolled), red
+  squirrel, chipmunk, flying squirrel / sugar glider, rabbit, hare, stoat (periscope), bat
+  (rewritten: one clean outline per wing, wrist high, four finger tips joined by curved
+  scallops; spread, raised-V and downstroke poses), porcupine, skunk, prairie dog, beaver,
+  bushbaby, fennec fox, raccoon (now hunched with ringed tail), opossum (babies bigger).
+- **Weak, by name**: pangolin (shingled saw-tooth back and tail read as "armoured", not
+  clearly pangolin; rolled form is a busy curl), otter (float pose is a long low log at
+  print size), badger (generic low wedge), pika and hamster walking (potato blobs, rely on
+  ears and sprig), red panda (close cousin of raccoon), tarsier (one pose only).
+- **Poses**: walk/stand/trot, sniff nose-up, scurry, leap/lope, stretch (play-bow, house
+  mouse), sit holding food, groom, standing sentinel/periscope, curled asleep (dormouse
+  with its tail wrapped round as a separate band), rolled (hedgehog, pangolin), climbing a
+  stalk, gliding, flying, floating, surfacing from a molehill, carrying in the mouth.
+- **New shapes this run**: `mammalBat` wings; `mammalBatWing` dorsal (lent bat wing, side
+  and top view, skipped on the bat's own chassis via `plan.mBat`; scaled by
+  `clamp(plan.r, 6.5, 10)`); `mammalScales` dorsal and `mammalScaleTail` tip (pangolin,
+  one serrated outline each); wrapped tails (`wrap: [a0, a1, gap, widthK]` on brush and
+  scale tails; used only when the chassis exposes `plan.wrap`, i.e. `mammalBall`); ringed
+  tails (`bands` on `mammalBrush`).
+- **Decisions**: crawling bat cut (never read as a bat; flight only). Curled fennec cut
+  (read as a rabbit loaf); fennec gained a sniffing pose instead. Lent mammal ears get a
+  minimum size (`!C.mHead`: set by `mammalHead`) and, on a single top mount of a rooted
+  thing (mushroom cap), splay as a pair. Default standing height lowered (mice standing
+  were too tall).
+- **Next**: a distinct pangolin (bipedal ground pangolin walk, bigger rounded scales);
+  otter swimming/porpoising pose; badger digging; tarsier and red panda second poses;
+  marmot as its own species; lemming back only with a distinct pose.

@@ -648,7 +648,7 @@ const sit = (r, B, arms, o = {}) => ({
   headS: B.headS, arms, legW: B.legW ?? 0.3, footL: B.sitFoot ?? 0.9, hunch: r.range(0.08, 0.2), face: r.range(-0.05, 0.2), ...o,
 });
 const stand = (r, B, o = {}) => ({
-  type: 'mammalUp', r: B.r * 0.92, h: (B.standH ?? B.len * 1.05) * r.range(0.92, 1.1), lean: r.range(0.02, 0.2), haunch: B.standHaunch ?? 0.98, shoulder: B.upShoulder ?? 0.74, neckW: B.upNeck ?? 0.62,
+  type: 'mammalUp', r: B.r * 0.92, h: (B.standH ?? B.len * 0.88) * r.range(0.92, 1.08), lean: r.range(0.02, 0.2), haunch: B.standHaunch ?? 0.98, shoulder: B.upShoulder ?? 0.74, neckW: B.upNeck ?? 0.62,
   headS: B.headS / 0.92, arms: 'hang', legW: B.legW ?? 0.3, footL: B.sitFoot ?? 0.8, hunch: r.range(-0.05, 0.1), face: r.range(-0.25, 0.1), thigh: 0.7, ...o,
 });
 const ball = (r, B, o = {}) => ({ type: 'mammalBall', r: B.r * 1.25, wide: r.range(1.08, 1.22), headS: B.headS / 1.25 * 0.95, ...o });
@@ -660,8 +660,8 @@ const sp = (name, w, fn) => ({ name, w, genes: r => { const G = fn(r); G.limbs ?
 const species = [
   sp('house mouse', 4, r => {
     const B = { r: r.range(8.5, 10.5), len: r.range(20, 26), clr: r.range(0.18, 0.3), headS: r.range(0.74, 0.84), arch: 0.5 };
-    const pose = r.wpick([[3, 'walk'], [1.5, 'sniff'], [1.5, 'groom'], [1, 'stand'], [1, 'scurry'], [0.8, 'hold']]);
-    const ch = { walk: () => walk(r, B), sniff: () => sniff(r, B), scurry: () => scurry(r, B), groom: () => sit(r, B, 'groom', { face: 0.35 }), hold: () => sit(r, B, 'hold', { item: r.pick(['seed', 'berry', 'nut']) }), stand: () => stand(r, B) }[pose]();
+    const pose = r.wpick([[3, 'walk'], [1.5, 'sniff'], [1.5, 'groom'], [1, 'stand'], [1, 'scurry'], [0.8, 'hold'], [0.8, 'stretch']]);
+    const ch = { walk: () => walk(r, B), sniff: () => sniff(r, B), stretch: () => stretch(r, B), scurry: () => scurry(r, B), groom: () => sit(r, B, 'groom', { face: 0.35 }), hold: () => sit(r, B, 'hold', { item: r.pick(['seed', 'berry', 'nut']) }), stand: () => stand(r, B) }[pose]();
     return {
       chassis: ch, head: head({ snoutLen: r.range(1.35, 1.7), tipR: r.range(0.17, 0.24), nose: 0.14, whiskers: r.chance(0.6) ? 2 : 0 }),
       crown: ear('round', r.range(0.95, 1.25), r.range(0.95, 1.2), { lean: r.range(-0.1, 0.25) }),
@@ -1010,7 +1010,7 @@ const species = [
   sp('otter', 2.5, r => {
     const rr = r.range(7.5, 8.8);
     const B = { r: rr, len: r.range(28, 34), clr: 0.3, headS: 0.8, arch: r.range(0.5, 1.1), neckW: 0.8, neckLen: 0.5, neckAng: r.range(0.3, 0.7), footL: 0.7, legW: 0.36, standH: r.range(30, 36), upShoulder: 0.84, upNeck: 0.76, standHaunch: 1.08, tailA: PI - 0.15 };
-    const pose = r.wpick([[3, 'float'], [2, 'stand'], [1.5, 'walk']]);
+    const pose = r.wpick([[2, 'float'], [2, 'stand'], [2, 'walk']]);
     const ch = { float: () => ({ type: 'mammalFloat', r: rr * 1.05, len: r.range(26, 32), raise: r.range(0.5, 0.95), face: -r.range(0.2, 0.6), item: r.pick(['shell', 'nut', 'shell']), headS: 0.76 }), stand: () => stand(r, B, { lean: r.range(0, 0.2), tailA: PI - 0.1 }), walk: () => walk(r, B) }[pose]();
     return {
       chassis: ch, head: head({ skullL: 1.1, skullH: 0.92, snoutLen: r.range(0.85, 1), tipR: 0.46, mid: 0.5, droop: 0.1, eyeR: 0.13, eyeX: 0.5, nose: 0.13, whiskers: r.chance(0.5) ? 2 : 0, whiskerL: 0.75 }),
