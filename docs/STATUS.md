@@ -58,3 +58,6 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
 - `npm run test:ui` needs the test server on port 4188 (`npm run serve:test`).
 - Worktree isolation branches from the stale `origin/main`; workers run in the main checkout.
 - Placement got slower with the richer species (node e2e: ~2.7 s for 57 critters). See M5.
+  Fungus worker measured: `Ink.finish` (core.js) costs ~10 ms per 1000 vertices of overlapping
+  shapes; some salamander/dragon-bodied mixes take 55-100 ms per critter. Suggested fix: union
+  in batches, skip the soften pass for small simple shapes, cache per seed.

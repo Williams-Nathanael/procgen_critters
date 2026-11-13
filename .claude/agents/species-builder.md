@@ -23,6 +23,9 @@ work: keep what is good, do not start over.
   checkout at the same time. If a shared-code limitation blocks you, work around it inside
   your file (register your own `<tag>`-prefixed chassis/heads/feet/tips/crowns/dorsals, or
   copy and adapt a shared function) and mention it in your report.
+- Your tag file must load at all times: other workers' sheets import every tag, so a
+  half-written file breaks them all. Draft big rewrites in `out/tmp/<tag>-draft.js` and
+  copy it over only once it renders.
 - All randomness through the provided rng. A critter must generate in well under 20 ms.
 - Do not ask questions; make the call and record it in the State section.
 - **Commit after every review round**, only your own paths:
