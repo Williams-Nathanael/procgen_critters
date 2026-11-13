@@ -25,4 +25,40 @@ eyes, toe pads, inflated throat, tadpole tail. Default eyes: a small dot only wh
 helps; most should read without.
 
 ## State
-- 37 species, WIP from an interrupted run, unreviewed. Branch `wip/amphibian-species`.
+2026-11-13, after review rounds 1-4. **35 species** (was 37 unreviewed). Sheets:
+`out/roads/03-amphibian-species.png`, `out/roads/03-amphibian-mixes.png`.
+
+Strong: common frog, tree frog, poison dart frog, calling frog (throat pouch), tongue-flicking
+frog, leaf-litter horned frog, frog on a lily pad, frog from the front, leaping frog, swimming
+frog, flying frog, climbing tree frog, Surinam toad, African clawed frog, tadpoles (all four),
+froglet, caecilian / coiled caecilian, walking toad.
+
+Weak, by name: **rain frog** (a ball with feet; real but low information), **spadefoot**
+(round toad told apart only by the big eye), **horned frog** (pacman; gape notch helps but it
+is still mostly a blob), **fire-bellied toad unken** (odd U at print size; weight 0.7),
+**hairy frog** (the fringe reads as a shaggy rump rather than flank hair), **midwife toad**
+(egg string is small at print size), **crested newt** (crest reads as lumps; weight 0.7).
+
+How it works / decisions:
+- All amphibian limbs are drawn by `feet.amphibianLeg` (gene `len: NaN` blanks the shared
+  `limb()`, which then calls the foot once per socket). Side-view sitting hind leg
+  (`sideHind`) is now a real folded Z: thigh forward and down to a knee that pokes out under
+  the belly, shin back to a heel under the rump, long foot forward along the line. Walking
+  species use `stride: true` (old two-bone leg). The sit chassis takes `seat` (belly height
+  above the line, in r) so the haunch shows; round species sit low (0.1-0.3), frogs 0.75-0.95.
+- Body tubes get round ellipse end caps (`bodyTube`): tube() caps were faceted on fat bodies.
+- Top-view `sit` pose: knee out at the side, shin back, foot forward-out past the knee.
+- Far fore arm sits behind the near one (no parallel-stick sliver).
+- Frog head `gape` opens the mouth (pacman). Midwife eggs: a bead string looping from the
+  hips to the heels. `amphibianPad` draws the sit chassis through a shifted ink and moves
+  the plan and the limbs' ground onto the pad.
+- Limbless species (tadpoles, caecilians) lend frog legs (`ownNone`) and `amphibianNone`
+  lends a plain frog head, so a mix never gets a headless or legless body from them.
+- Cut: glass frog (identical to frog from above in outline), newt from above (salamander
+  tag covers it), reed frog (muddy at print size), tomato frog (merged into rain frog).
+  Added: frog on a lily pad, hairy frog.
+- Newts kept to one low-weight side-view crested newt to stay clear of the salamander tag.
+- Speed: about 5-7 ms per critter (coiled caecilian about 9 ms), almost all in Ink.finish.
+
+Ideas not done: three-quarter view; Darwin's frog nose; Titicaca skin folds; star tips on
+Surinam fingers; a lily flower on the pad.
