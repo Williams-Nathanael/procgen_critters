@@ -16,21 +16,17 @@ with real pointer input, and export checked on a rotated, cropped page.
 signature slots; "Mix wildness" lets more slots wander). Critters sit on the line, never
 below it (rooted forms may poke a sliver of root).
 
-**Species libraries**: 7 tags hold 28-46 species each, written by Fable agents that were cut
-off by usage limits before finishing their review rounds, so all of it is **unreviewed**.
-Plant still has the 1-species first pass (its helper code is on `wip/plant-species`). On
-2026-11-13 Opus `species-builder` runs began, three at a time: fungus, plant, salamander
-first; then jansson, dragon, arthropod; then amphibian, mammal. Finished and pushed to
-GitHub at 78b944e: fungus 45, plant 47, salamander 29 species. Jansson and dragon were cut off
-by the Opus limit and resumed after its reset alongside arthropod; amphibian and mammal remain. A tag is finished when it has
-`out/roads/03-<tag>-species.png` and its State section says so; check `git log` and each
-`docs/tags/<tag>.md` to see how far the run got. WIP sheets: `out/roads/wip/`.
+**Species libraries (M1 done, 2026-11-13)**: all 8 tags reviewed by Opus `species-builder`
+runs: arthropod 64, plant 47, fungus 45, salamander 29, mammal 38, jansson 38, amphibian 35,
+dragon 27 species. Final sheets per tag: `out/roads/03-<tag>-species.png` and `-mixes.png`;
+strengths, weak species by name and decisions are in each `docs/tags/<tag>.md` State section.
+The interrupted Fable WIP is kept on `wip/<tag>-species` branches. Pushed to GitHub.
 
 ## Queue
 
 Each milestone is one overseer conversation. Acceptance criteria in brackets.
 
-1. **M1 Finish species libraries.** Whatever the 2026-11-13 Opus run did not finish: one
+1. **M1 Finish species libraries. DONE 2026-11-13.** (Kept for reference:) one
    `species-builder` per unfinished tag, at most 3 at a time. [each tag has
    `out/roads/03-<tag>-species.png` and `-mixes.png`; State section updated; no render errors
    in `npm run sheet -- out/tmp/all.png --n 8`]
@@ -52,6 +48,10 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    or `limbs` (headless/legless mixes; amphibian works around it); add both to that list.
    Fungus funnel caps (chanterelle etc.) put the crown mount in the hollow above the cap, so
    lent crowns float; that mount belongs on the cap surface (fungus tag fix).
+   Plant species such as baobab and radish put their tail socket off the body, so lent tails
+   float beside them (plant tag fix). `tail()` in `parts.js` reads `g.len` for its stub, so a
+   tail-tip gene using `len` for itself also draws a long rod (arthropod uses `tlen`);
+   rename the stub's field.
    [critic on a 28-pair sheet]
 5. **M5 Placement polish** (engineer). No identical species adjacent; spacing by actual
    critter width; corners of boxes and tight curves handled; "both sides" staggered;
@@ -71,4 +71,8 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
 - Placement got slower with the richer species (node e2e: ~2.7 s for 57 critters). See M5.
   Fungus worker measured: `Ink.finish` (core.js) costs ~10 ms per 1000 vertices of overlapping
   shapes; some salamander/dragon-bodied mixes take 55-100 ms per critter. Suggested fix: union
-  in batches, skip the soften pass for small simple shapes, cache per seed.
+  in batches, skip the soften pass for small simple shapes, cache per seed. Four workers
+  independently found the soften step (two round-join offsets) is 50-75% of generation
+  time; the arthropod worker suggests raising the `ClipperOffset` arc tolerance from 0.02*S
+  to ~0.08*S. Do this early in M4/M5: it speeds every tag. Slowest species now: centipede
+  15-20 ms, long (dragon) ~20 ms.
