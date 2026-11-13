@@ -59,7 +59,9 @@ function jleg(k, pts, w0, w1 = w0 * 0.5) {
   k.poly(tube(P, R));
 }
 // top-view leg: leaves `base` heading a0 and turns by `turn` at each joint
+let JR = null; // the chassis' rng while a form draws: per-leg pose jitter, so no two individuals stand alike
 function tleg(k, base, a0, turn, L, w, fr = [0.42, 0.33, 0.27]) {
+  if (JR) { a0 += JR.range(-0.12, 0.12); turn *= JR.range(0.8, 1.2); L *= JR.range(0.93, 1.07); }
   const pts = [base]; let a = a0, p = base;
   for (let i = 0; i < fr.length; i++) { if (i) a += turn * (i === 1 ? 0.75 : 1); p = polar(p, a, L * fr[i]); pts.push(p); }
   jleg(k, pts, w); return pts;
@@ -327,8 +329,8 @@ dorsals.arthropodWings = (C, plan, st, sd, si, g, at) => {
   const W = (pts, tilt, scl = 1, off = 0) => { const F = frame(polar(base, bk, off * sz), kk.dir + flip * tilt, sz * scl, flip); closed(k, pts.map(([x, y]) => F(x, y))); };
   switch (g.kind) {
     case 'dragonfly': if (sideV) { W(WING.drag, 0.55); W(WING.drag, 0.95, 0.95); } else { W(WING.drag, -0.1); W(WING.drag, 0.3, 0.94, 0.1); } break;
-    case 'butterfly': if (sideV) { W(WING.bfF, 0.45); W(g.tails ? WING.bfT : WING.bfH, 0.45, 0.9); } else { W(WING.bfF, 0.05); W(g.tails ? WING.bfT : WING.bfH, 0, 0.92, 0.02); } break;
-    case 'moth': if (sideV) { W(WING.moF, 0.75); } else { W(WING.moF, 0.3); W(WING.moH, 0.25, 0.95); } break;
+    case 'butterfly': if (sideV) { W(WING.bfF, 0.45); W(g.tails ? WING.bfT : WING.bfH, 0.45, 0.9); } else { W(WING.bfF, 0.05 + (g.ft ?? 0), g.fs ?? 1); W(g.tails ? WING.bfT : WING.bfH, g.ht ?? 0, 0.92 * (g.hs ?? 1), 0.02); } break;
+    case 'moth': if (sideV) { W(WING.moF, 0.75); } else { W(WING.moF, 0.3 + (g.ft ?? 0), g.fs ?? 1); W(WING.moH, 0.25 + (g.ht ?? 0), 0.95 * (g.hs ?? 1)); } break;
     case 'mayfly': if (sideV) { W(WING.may, 0.12); W(WING.may, 0.75, 0.42, 0.12); } else { W(WING.may, 0.1); W(WING.may, 0.75, 0.45, 0.1); } break;
     case 'fold': W(WING.fold, PI / 2 - (g.lift ?? 0.08)); break; // grasshopper tegmina, mantis wings, folded over the back
     case 'roof': W(WING.fly, sideV ? PI / 2 - 0.12 : 1.2); if (sideV) W(WING.fly, PI / 2 - 0.3, 0.85); break; // cicada / lacewing tent
@@ -349,10 +351,13 @@ chassis.arthropodBody = (C, g) => {
     // a leg: drawn by us when the limbs are our own, otherwise offered as a socket (role null: never a socket)
     limb(p, dir, s, role, side, draw, far) { if (nat) { if (draw) draw(); } else if (role) socks.push({ p, dir, s, role, side, far }); },
   };
-  const pl = FORMS[g.form](K, g), sideV = pl.view === 'side', tp = k.tf;
+  JR = C.rng; const pl = FORMS[g.form](K, g); JR = null;
+  const sideV = pl.view === 'side', tp = k.tf;
   const path = pl.path.map(tp), rad = pl.rad;
   const back = (pl.back ?? (sideV ? [strip(pl.path, rad, pl.b0 ?? 0.15, pl.b1 ?? 0.85, 12, -1)] : [strip(pl.path, rad, pl.b0 ?? 0.2, pl.b1 ?? 0.8, 8, -1), strip(pl.path, rad, pl.b0 ?? 0.2, pl.b1 ?? 0.8, 8, 1)]))
     .map(st => st.map(q => ({ p: tp(q.p), dir: q.dir + rot, t: q.t })));
+  // a butterfly whose dorsal slot went to another tag keeps its own wings
+  if (g.wings && root && root.dorsal !== g.wings) back.forEach((st, si) => { const n = st.length; dorsals.arthropodWings(C, { view: pl.view, r: pl.r, back }, st, si ? 1 : -1, si, g.wings, u => st[clamp(Math.round(u * (n - 1)), 0, n - 1)]); });
   const h = pl.head, t = pl.tail;
   return {
     view: pl.view, r: pl.r, path, rad, back, ...(pl.rooted ? { rooted: true } : {}),
@@ -435,7 +440,7 @@ FORMS.spider = (K, g) => {
   const back = aa > 0 ? axc - aa : -ca;
   for (const sd of [-1, 1]) for (let i = 0; i < 4; i++) {
     const a0 = sd * g.legA[i], base = polar([cx, 0], a0, Math.min(ca, cb) * 0.72);
-    K.limb(base, a0, cb * 0.9, i === 0 ? 'fore' : i === 3 ? 'hind' : null, sd, () => tleg(k, base, a0, sd * g.legT[i], g.legL[i], g.legW * (g.legWk ? g.legWk[i] : 1), g.legFr));
+    K.limb(base, a0, Math.max(cb * 0.9, g.legL[i] * 0.3), i === 0 ? 'fore' : i === 3 ? 'hind' : null, sd, () => tleg(k, base, a0, sd * g.legT[i], g.legL[i], g.legW * (g.legWk ? g.legWk[i] : 1), g.legFr));
   }
   return { view: 'top', r: Math.max(cb, ab * 0.8), path: axis(back, ca), rad: t => Math.max(ab, cb) * (0.6 + 0.4 * ovalT(t)), head: { p: [ca * 0.9, 0], dir: 0, s: cb * 0.72, bare: true, W: 0.5 }, tail: { p: [back + 1, 0], dir: PI, s: Math.max(ab, cb) * 0.35 }, b0: 0.1, b1: 0.6 };
 };
@@ -592,8 +597,8 @@ FORMS.shrimp = (K, g) => {
     K.limb(hip, PI / 2, rc * 0.9, i === 0 ? 'fore' : i === nl - 1 ? 'hind' : null, 1, () => sleg(k, hip, fx, g.legL * (far ? 0.92 : 1), g.legW * (far ? 0.85 : 1), mix(-1, 1, u) >= 0 ? 1 : -1, { toe: 0.08, split: 0.48 }), far);
   }
   if (g.raptor) { // mantis shrimp: folded smasher / spearer held under the head
-    const b = polar(Pc[1], PI / 2, R[1] * 0.6), w = g.raptor;
-    const m1 = polar(b, 1.25, w * 2.6), m2 = polar(m1, -0.35, w * 2.9);
+    const b = polar(Pc[1], PI / 2, R[1] * 0.4), w = g.raptor;
+    const m1 = polar(b, 1.0, w * 2.2), m2 = polar(m1, -0.55, w * 3.0);
     bar(k, [b, m1], tap(w * 0.5, w * 0.62)); dot(k, m1, w * 0.6);
     bar(k, [m1, m2], tap(w * 0.65, w * 0.5));
     tb(k, [m2, polar(m2, PI - 0.5, w * 1.6), polar(m2, PI - 0.15, w * 2.8)], tap(w * 0.4, 0.3));
@@ -905,6 +910,7 @@ const CLAWED = (r, o = {}) => LEND(r, { foreFoot: 'arthropodChela', clawS: r.ran
 function G(ch, o = {}) {
   const g = { chassis: { type: 'arthropodBody', ...ch }, head: o.head ?? HEAD(), limbs: o.limbs, tail: o.tail ?? none(), dorsal: o.dorsal ?? none(), crown: o.crown ?? none(), surface: { eyes: 'none' } };
   Object.defineProperty(g.chassis, 'root', { value: g, enumerable: false });
+  if (ch.form === 'flyer' && g.dorsal.type === 'arthropodWings') Object.defineProperty(g.chassis, 'wings', { value: g.dorsal, enumerable: false });
   return g;
 }
 const UP = -PI / 2;
@@ -966,13 +972,13 @@ const species = [
   { name: 'dragonfly', w: 3, genes: r => { const dam = r.chance(0.35); return G({ form: 'flyer', rot: UP, tx: dam ? 4 : 5, ty: dam ? 2.6 : 3.6, ab: dam ? r.range(27, 32) : r.range(24, 29), ar: dam ? 1.5 : 2.3, amid: 0.75, aend: dam ? 1.2 : 1.6, R: 7, hs: dam ? 2.6 : 3.4 },
     { head: HEAD({ len: 0.9, wid: 1.05, eye: dam ? 0.5 : 0.62, eyeX: 0.05 }), limbs: LEND(r), dorsal: WINGS('dragonfly', dam ? r.range(3.6, 4.2) : r.range(3.9, 4.6), { at: 0.6, inset: 0.1 }), tail: r.chance(0.5) ? TAIL('cerci', { n: 2, len: 1.6, splay: 0.4, fw: 0.5 }) : none() }); } },
   { name: 'butterfly', w: 3, genes: r => G({ form: 'flyer', rot: UP, tx: 4.2, ty: 2.8, ab: r.range(11, 14), ar: 2.4, amid: 0.9, aend: 1.1, R: 7, hs: 2.6 },
-    { head: HEAD({ len: 0.9, wid: 1, eye: 0.4 }), limbs: LEND(r), dorsal: WINGS('butterfly', r.range(3.2, 4), { at: 0.6, inset: 0.1, tails: r.chance(0.4) }), crown: ANT(r.range(3.6, 4.6), r.range(-0.5, 0.3), { club: true, w: 0.3 }) }) },
+    { head: HEAD({ len: 0.9, wid: 1, eye: 0.4 }), limbs: LEND(r), dorsal: WINGS('butterfly', r.range(3.2, 4), { at: 0.6, inset: 0.1, tails: r.chance(0.4), fs: r.range(0.88, 1.1), hs: r.range(0.8, 1.08), ft: r.range(-0.15, 0.2), ht: r.range(-0.1, 0.15) }), crown: ANT(r.range(3.6, 4.6), r.range(-0.5, 0.3), { club: true, w: 0.3 }) }) },
   { name: 'moth', w: 2, genes: r => G({ form: 'flyer', rot: UP, tx: 5.5, ty: 4.6, ab: r.range(10, 13), ar: 4.2, amid: 0.95, aend: 1.6, R: 7.5, hs: 3.4 },
-    { head: HEAD({ len: 0.8, wid: 1, eye: 0.35 }), limbs: LEND(r), dorsal: WINGS('moth', r.range(3.3, 3.9), { at: 0.65, inset: 0.3 }), crown: ANT(r.range(2.4, 3), r.range(0.2, 0.6), { style: 'feather', plume: r.range(0.26, 0.36) }) }) },
+    { head: HEAD({ len: 0.8, wid: 1, eye: 0.35 }), limbs: LEND(r), dorsal: WINGS('moth', r.range(3.3, 3.9), { at: 0.65, inset: 0.3, fs: r.range(0.9, 1.1), hs: r.range(0.75, 1.1), ft: r.range(-0.2, 0.25), ht: r.range(-0.1, 0.2) }), crown: ANT(r.range(2.4, 3), r.range(0.2, 0.6), { style: 'feather', plume: r.range(0.26, 0.36) }) }) },
   { name: 'crane fly', w: 1.5, genes: r => { const L = r.range(24, 30); return G({ form: 'flyer', rot: UP, tx: 4, ty: 3, ab: r.range(15, 19), ar: 1.9, amid: 0.9, aend: 1.3, R: 7, hs: 2.4, legL: [L, L * 1.1, L * 1.2], legW: 1.5, legA: [0.55, 1.75, 2.55], legFr: [0.36, 0.36, 0.3] },
     { head: HEAD({ len: 0.9, wid: 0.9, eye: 0.35 }), limbs: LEND(r, { len: 4.2, w: 0.18 }), dorsal: WINGS('fly', r.range(3.4, 4), { at: 0.6, inset: 0.1, sweep: r.range(1.0, 1.2) }), crown: ANT(1.6, 0.4) }); } },
   { name: 'fly', w: 1.5, genes: r => G({ form: 'flyer', rot: UP, tx: 5.5, ty: 4.6, ab: r.range(7, 9), ar: 4.6, amid: 1.05, aend: 2, R: 7, hs: 4, legL: [9, 9, 11], legW: 1.7, legFr: [0.5, 0.5] },
-    { head: HEAD({ len: 0.8, wid: 1.05, eye: 0.55, eyeX: 0.1 }), limbs: LEND(r, { len: 1.8 }), dorsal: WINGS('fly', r.range(2.6, 3.1), { at: 0.65, inset: 0.3 }), crown: ANT(1, 0.3) }) },
+    { head: HEAD({ len: 0.8, wid: 1.05, eye: 0.55, eyeX: 0.1 }), limbs: LEND(r, { len: 1.8 }), dorsal: WINGS('fly', r.range(2.6, 3.1), { at: 0.65, inset: 0.3, sweep: r.range(0.85, 1.2) }), crown: ANT(1, 0.3) }) },
   { name: 'shrimp', w: 3, genes: r => { const rc = r.range(4.2, 5); return G({ form: 'shrimp', rc, Lc: rc * r.range(3.2, 3.8), n: 6, sl: rc * r.range(1.1, 1.3), T: r.range(1.5, 2.3), bend: u => [0.02, 0.12, 0.3, 0.32, 0.18, 0.06][Math.round(u * 5)], hump: r.range(0.45, 0.7), hang: 1.05, re: 0.55, plDeep: 1.15, fan: rc * r.range(1.15, 1.4), rost: rc * r.range(1.6, 2.6), rostUp: r.range(0.05, 0.35), teeth: r.int(3, 6), scale: rc * r.range(1.2, 1.6), legH: rc * r.range(1.1, 1.5), legL: rc * r.range(2.2, 2.7), legW: 1.5, tilt: r.range(-0.05, 0.08) },
     { head: HEAD({ stalk: r.range(0.35, 0.55), stalkR: 0.32 }), limbs: LEND(r, { len: 2.4, w: 0.2 }), crown: ANT(r.range(10, 15), r.range(2.4, 2.9), { style: 'sweep', w: 0.2, splaySide: r.range(0.9, 1.25) }) }); } },
   { name: 'grasshopper', w: 3, genes: r => { const ty = r.range(3.3, 3.9), kat = r.chance(0.3); return G({ form: 'insect', legH: r.range(3, 4.5), tx: r.range(4.6, 5.4), ty, ax: r.range(17, 22), ay: ty * r.range(0.85, 1), aTilt: r.range(-0.12, 0.05), aSegs: 8, aEnd: 0.5, pron: 'saddle', hs: ty * 1.0, hDir: -0.2, face: r.range(0.9, 1.2),
@@ -1004,11 +1010,11 @@ const species = [
     { head: HEAD({ len: 0.75, wid: 1.15, eye: 0.5, eyeX: 0.1, antGap: 0.3, splaySide: 0.6 }), limbs: LEND(r), dorsal: WINGS('roof', r.range(4.2, 5), { at: 0.95, inset: 0.4 }), crown: ANT(1.4, 0.3) }); } },
   { name: 'treehopper', w: 1.5, genes: r => { const ty = r.range(2.8, 3.2), kind = r.pick(['thorn', 'crescent', 'sail', 'globes']); const sh = r.pick(['hump', 'thorn', 'thorn']); return G({ form: 'insect', legH: r.range(2.5, 3.2), tx: 3.6, ty, ax: 7, ay: ty * 0.85, aTilt: 0, aProf: [[0, 2.6], [0.5, 2.6], [1, 1.2]], pron: 'shield', pShape: sh, pH: sh === 'thorn' ? r.range(7, 11) : r.range(3, 5), pX: sh === 'thorn' ? r.range(-0.2, 0.6) : r.range(-0.4, 0.3), hs: 3, hDir: 0.15, face: 0.7,
       legs: [{ x: 0.6, ka: 0.8, f: 3, tx: 1.5, w: 1.5 }, { x: -0.1, ka: PI - 1.0, f: 3, tx: 1.5, w: 1.5 }, { x: -0.7, ka: PI - 0.7, f: 4, tx: 2.5, w: 1.5 }] },
-    { head: HEAD({ len: 0.7, wid: 1.0, eye: 0.35, antGap: 0.3, splaySide: 1.6 }), limbs: LEND(r), dorsal: WINGS('fold', r.range(3.2, 3.8), { at: 0.95, inset: 0.6, lift: 0.1 }), crown: r.chance(0.35) ? { type: 'arthropodHelmet', kind: 'globes', len: r.range(3, 4) } : ANT(1, 0.2) }); } },
+    { head: HEAD({ len: 0.7, wid: 1.0, eye: 0.35, antGap: 0.3, splaySide: 1.6 }), limbs: LEND(r), dorsal: WINGS('fold', r.range(3.2, 3.8), { at: 0.95, inset: 0.6, lift: 0.1 }), crown: ANT(1, 0.2) }); } },
   { name: 'stick insect', w: 1.5, genes: r => { const L = r.range(26, 32); return G({ form: 'insect', legH: r.range(4, 6), tx: r.range(9, 11), ty: 1.5, ax: L, ay: 1.6, aTilt: r.range(-0.02, 0.08), aProf: [[0, 1.5], [0.85, 1.4], [1, 0.8]], hs: 2.2, hDir: 0, face: 0.15,
       legs: [{ x: 0.95, ka: r.range(-0.4, -0.1), f: r.range(9, 12), tx: r.range(5, 8), w: 1.15 }, { x: 0, ka: r.range(-0.1, 0.3), f: r.range(8, 10), tx: 4, w: 1.15 }, { x: -0.9, ka: PI - r.range(-0.1, 0.3), f: r.range(9, 11), tx: 5, w: 1.15 }] },
     { head: HEAD({ len: 1.2, wid: 0.8, antGap: 0.4, splaySide: 0.3 }), limbs: LEND(r, { len: 4, w: 0.2 }), crown: ANT(r.range(4, 9), r.range(0.1, 0.4), { w: 0.18 }) }); } },
-  { name: 'mantis shrimp', w: 2, genes: r => { const rc = r.range(3.8, 4.4); return G({ form: 'shrimp', rc, Lc: rc * r.range(1.9, 2.3), n: 6, sl: rc * r.range(1.2, 1.4), T: r.range(0.2, 0.6), hump: r.range(0.0, 0.15), re: 0.85, a0: 1.0, plDeep: 1.05, segOv: 0.7, fan: rc * r.range(0.95, 1.15), fanSpread: 0.6, fanSpines: true, legH: rc * r.range(0.7, 0.9), legL: rc * 1.7, legW: 1.5, legs: 3, leg0: 0.55, leg1: 0.95, legFw: 0.2, raptor: r.range(1.7, 2.1), scale: rc * 1.0, tilt: r.range(0, 0.06) },
+  { name: 'mantis shrimp', w: 2, genes: r => { const rc = r.range(3.8, 4.4); return G({ form: 'shrimp', rc, Lc: rc * r.range(1.9, 2.3), n: 6, sl: rc * r.range(1.2, 1.4), T: r.range(0.2, 0.6), hump: r.range(0.0, 0.15), re: 0.85, a0: 1.0, plDeep: 1.05, segOv: 0.7, fan: rc * r.range(0.95, 1.15), fanSpread: 0.6, fanSpines: true, legH: rc * r.range(0.7, 0.9), legL: rc * 1.7, legW: 1.5, legs: 3, leg0: 0.55, leg1: 0.95, legFw: 0.2, raptor: r.range(2.3, 2.7), scale: rc * 1.0, tilt: r.range(0, 0.06) },
     { head: HEAD({ stalk: r.range(0.9, 1.2), stalkR: 0.48 }), limbs: CLAWED(r, { clawS: 1.1 }), crown: ANT(r.range(3, 4.5), r.range(0.6, 1.2), { w: 0.22, splaySide: 0.5 }), tail: none() }); } },
   { name: 'sandhopper', w: 1.5, genes: r => { const rc = r.range(3.2, 3.8); return G({ form: 'shrimp', rc, Lc: rc * 1.1, n: 10, sl: rc * r.range(0.72, 0.85), T: r.range(2.6, 3.4), hump: r.range(0.35, 0.6), hang: 1.6, re: 0.55, a0: 1.0, plDeep: 1.5, segOv: 0.7, fan: rc * 0.55, fanSpread: 0.7, legH: rc * r.range(1.3, 1.7), legL: rc * 2.6, legW: 1.3, legs: 6, leg0: 0.3, leg1: 1.6, legFw: 0.5, legBk: 0.6, tilt: r.range(-0.1, 0.05) },
     { head: HEAD({ eye: 0.32 }), limbs: LEND(r, { len: 2.2, w: 0.2 }), crown: ANT(r.range(3.5, 5), r.range(0.6, 1.2), { w: 0.22, splaySide: r.range(0.3, 0.7) }) }); } },
