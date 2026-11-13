@@ -241,8 +241,13 @@ feet.salamanderFoot = (C, p, ang, s, g, k) => toesFoot(C, p, ang, s, g, k, g.toe
 // ---------------------------------------------------------------------
 // TAIL: drawn whole by a tail "tip", from the chassis tail socket
 // ---------------------------------------------------------------------
+// a tail lent to another tag's chassis: its length was set against a salamander body, so
+// keep it to a long-but-plausible multiple of the host's body radius
+const lentLen = (L, sal, plan) => sal ? L : Math.min(L, (plan.r || 8) * 3.2);
+
 function tailTop(C, sock, T) {
-  const { ink, rng } = C, s = sock.s, n = 34, Lt = T.len * s, sal = sock.sal, plan = C.plan;
+  const { ink, rng } = C, s = sock.s, n = 34, sal = sock.sal, plan = C.plan;
+  const Lt = lentLen(T.len * s, sal, plan);
   const comp = T.fin ? (T.topK ?? 0.72) : 1;
   const keys = T.keys ?? [[0, 1], [0.5, 0.58], [1, 0.07]];
   const rf0 = profile(keys.map(([u, k]) => [u, k * T.w0 * s]));
@@ -267,7 +272,8 @@ function tailTop(C, sock, T) {
 }
 
 function tailSide(C, sock, T) {
-  const { ink, rng } = C, s = sock.s, n = 34, Lt = T.len * s * (T.sideLen ?? 1), sal = sock.sal, plan = C.plan;
+  const { ink, rng } = C, s = sock.s, n = 34, sal = sock.sal, plan = C.plan;
+  const Lt = lentLen(T.len * s * (T.sideLen ?? 1), sal, plan);
   const swim = !!sal?.swim, up = sal ? (sal.up || (!!T.up && !swim && sal.up !== false && false)) : !!T.up;
   const keys = T.keys ?? [[0, 1], [0.5, 0.58], [1, 0.07]];
   const rf0 = profile(keys.map(([u, k]) => [u, k * T.w0 * s]));
