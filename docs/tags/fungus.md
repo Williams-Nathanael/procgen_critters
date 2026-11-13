@@ -24,7 +24,33 @@ animals: caps as heads or hats, little mushrooms or brackets growing from a back
 gills/frills, puffball tails and coral antlers read well. Default eyes: none.
 
 ## State (update this section when you work on the tag)
-- 46 species, WIP from an interrupted run, unreviewed. Branch `wip/fungus-species`.
-- First look (main session, 2026-11-13): broad and promising. Weak at a glance: bird's-nest,
-  scarlet elf cup and orange peel read as thin scraps at print size; truffle is a plain blob;
-  several bracket/shelf species look like fence posts.
+Updated 2026-11-13 (species-builder run on main; review rounds done). Sheets:
+`out/roads/03-fungus-species.png`, `out/roads/03-fungus-mixes.png`.
+
+- **45 species** (was 46 unreviewed; wood ear cut). Stem-and-cap agarics are 13 of 45.
+- **Strong**: fly agaric, parasol, shaggy inkcap, bonnet cluster, liberty caps, witch's hat,
+  funnel cap, hedgehog, chanterelle, morel, veiled lady, devil's fingers (egg + arms),
+  lattice cage (on its volva), earthstar, bird's nest (eggs in the cup), scarlet elf cup,
+  coral, stag's horn, dead man's fingers, hoof fungus, cordyceps, elfin saddle.
+- **Weak, by name**: giant puffball (still a big blob; context from grass only), cauliflower
+  fungus (crinkled mass, blob-like at print size), earthball (lumpy potato with root fringe),
+  witch's butter (jelly folds on a branch, reads only as "lumpy"), truffle (now knobbly
+  crenellated tubers, but low and small at print size), reindeer lichen vs coral fungus are
+  close, pixie cups are a thin strip at print size, hen of the woods could be more rosette-like.
+- **Fixed this run**: funnel margins (chanterelle, horn of plenty) no longer feather to
+  hairlines; new `vase` form (cups in section with thick walls, goblet option, eggs) for
+  bird's nest, scarlet elf cup, orange peel, horn of plenty, pixie cups; brackets rewritten
+  (`shelf` keeps a rounded margin, no lollipop knobs; stumps wider/shorter with root flare;
+  turkey tail in overlapping tiers, chicken/oyster shelves spaced by real thickness);
+  witch's hat and stinkhorn no longer read as arrows; elfin saddle is a draped sheet with
+  free flaps, not a palm; truffle is a new crenellated `tuber`; witch's butter uses new
+  `jelly` folds; grass tufts snap against a stalk so they never float as scraps.
+- **Decisions**: wood ear cut (ears read as hooks or clouds in every variant tried).
+  Lent ornaments use `lite()` copies of their fruit body (fewer warts/teeth/branches): mixes
+  stay fast and legible. Lent fungus heads get a minimum socket size (4.2) so tiny arthropod
+  heads still show a fruit body. Back growths in top view stay side-profile mushrooms
+  pointing outward (discs seen from above read as warts, tried and rejected).
+- **Speed**: fungus alone ~5 ms average (heaviest species < 10 ms). Mix maxima are dominated
+  by the host tag (salamander/dragon bodies with many polygons).
+- **Next**: a log substrate with shelves (turkey tail on a fallen log), jelly antler,
+  hairy-curtain crust (lichen) forms, slime-mould-like extras if wanted; improve the blobs above.
