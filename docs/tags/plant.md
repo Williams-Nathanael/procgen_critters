@@ -32,7 +32,36 @@ leaves as ears/wings/tail, tendrils and fiddlehead curls, a flower, seed-head or
 for a head, root feet, thorns, a sprout on the crown. Default eyes: none.
 
 ## State
-- Main still has the 1-species first pass. Branch `wip/plant-species` holds ~520 lines of
-  helper parts (registered heads like `plantLeaf`, `drawUnit`, etc.) and NO species list or
-  default export yet: the agent was cut off mid-file. Start from that branch's file, read it,
-  keep what is good, finish it.
+- 2026-11-13: 47 species, reviewed over 3 rounds plus stacking checks. Sheets:
+  `out/roads/03-plant-species.png`, `out/roads/03-plant-mixes.png`.
+- Architecture (in `plant.js`): one chassis `plant` with body FORMS: `stems` (the workhorse:
+  substrate, basal rosette of units, stems with leaves/whorls/prickles/branches and a crowning
+  unit), `mandrake`, `bulb`, `taproot`, `potato`, `cactus` (columns/barrel/pincushion), `pear`,
+  `lithops`, `tree` (baobab/dragon/bonsai/monkey), `weed` (kelp/oarweed/wrack), `welwitschia`,
+  `tillandsia`. Drawing goes through a ground-clamping `Pen`, so nothing goes below the line
+  except deliberate root slivers (`pen.root`). Ornaments are UNITS (`U.*`) or plant heads,
+  reused as stem parts, lent heads, crowns (`plantSprig`), dorsal rows (`plantRow`), tail tips
+  (`plantOrn`) and root feet (`plantRoot`).
+- Lending: each species lends a head (`plantLend` + `lend` gene: its signature flower/trap/
+  pitcher/seed-head on a small receptacle knob carrying the eye), crown, dorsal, tail and root
+  legs. On the plant's own chassis those ornaments are muted (fungus-style `_own`). With
+  borrowed legs the plant is lifted onto a root ball. A borrowed head replaces the main stem's
+  crowning unit (`plan.mainUnit`).
+- Strong: venus flytrap, cape sundew, trumpet pitchers, nepenthes, cobra lily, dandelion clock,
+  jack-in-the-pulpit, cuckoo-pint, fritillary, cattail, hogweed, lotus, liverwort umbrellas,
+  horsetail, mandrake, radish, carrot, onion/garlic (scape loop, allium ball), saguaro,
+  pincushion, prickly pear, baobab, dragon's blood tree, windswept bonsai, kelp/oarweed, air plant.
+- Weak (by name): living stones (cleft barely reads at print size; low weight), welwitschia
+  (low, flat, small; low weight), titan arum (still a bit rocket-like), old man cactus (just a
+  fuzzy column), teasel (head small for the stem), honesty and bleeding heart (busy at print
+  size), foxglove bells (read as a notched spike more than bells).
+- Decisions: dropped milkweed, sweet pea and echeveria (muddy silhouettes). No drifting
+  dandelion seeds (would be detached). Clumps stand on a low soil mound so each critter is one
+  connected piece. Bonsai sometimes in a shallow pot (charm over strict wildness).
+  Performance: the ink union cost scales with vertex count, so fronds and sword leaves are one
+  toothed outline each and spines/scales are 4-6 point kites; every species averages < 16 ms.
+- Not yet covered from the list: bladderwort, butterwort, bee/monkey orchid, nigella, sycamore
+  keys, ginseng, string-of-pearls, rafflesia, gunnera, mistletoe, Spanish moss, passionflower,
+  sea holly, burdock (heads exist: `plantBur` seaholly/burdock), pinecone twig, ginkgo, hops,
+  bindweed, strawberry runner, squirting cucumber, touch-me-not, sensitive plant, maidenhair,
+  moonwort/adder's tongue (heads exist), clubmoss (head exists).

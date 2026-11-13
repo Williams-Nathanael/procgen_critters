@@ -340,12 +340,13 @@ head('plantArum', (C, sock, g) => {
       ink.poly(axTube(H, 1.8, 3.3, [[0, 0.17], [1, 0.19]]));
       apex = [3.8, 0]; break;
     }
-    case 'titan': { // ribbed vase-shaped spathe with a frilled rim, a huge spadix rising from it
-      const cup = 2.6, top = [], bot = [], N = 16, prof = P([[0, 0.55], [0.35, 1.25 * w], [0.75, 1.6 * w], [1, 2.05 * w]]);
-      for (let i = 0; i <= N; i++) { const t = i / N, x = cup * t, rr = prof(t) + (i === N ? 0.25 : 0); top.push(F(x, -rr)); bot.push(F(x, rr)); }
-      for (let i = 0; i <= 10; i++) { const t = i / 10 * 2 - 1; bot.push(F(cup + 0.12 + 0.18 * Math.cos(i * PI) - 0.25 * t * t, -t * 2.15 * w)); }
-      ink.poly(top.concat(bot.slice(N + 1).reverse(), bot.slice(0, N + 1).reverse()));
-      ink.poly(axTube(H, 1.0, g.len ?? 6, [[0, 0.75], [0.35, 0.68], [0.8, 0.42], [1, 0.22]]));
+    case 'titan': { // fluted vase of a spathe whose frilled lip flares out and curls down; a towering spadix
+      const cup = 2.5, N = 14, prof = P([[0, 0.6], [0.3, 1.15 * w], [0.75, 1.55 * w], [1, 1.95 * w]]), top = [], bot = [];
+      for (let i = 0; i <= N; i++) { const t = i / N, x = cup * t, rr = prof(t); top.push(F(x, -rr)); bot.push(F(x, rr)); }
+      const lip = sd => [F(cup - 0.25, sd * 2.35 * w), F(cup - 0.75, sd * 2.45 * w), F(cup - 0.6, sd * 2.1 * w)];
+      const rim = []; for (let i = 0; i <= 8; i++) { const t = i / 8 * 2 - 1; rim.push(F(cup + 0.12 * Math.cos(i * PI * 0.5 + 0.5), t * 1.95 * w)); }
+      ink.poly(top.concat(lip(-1).reverse(), rim, lip(1), bot.reverse()));
+      ink.poly(axTube(H, 1.0, g.len ?? 6, [[0, 0.72], [0.35, 0.66], [0.8, 0.42], [1, 0.22]]));
       apex = [(g.len ?? 6) + 0.2, 0]; break;
     }
     default: { // cuckoo-pint: hooded sheath with a club standing in front of it
@@ -955,10 +956,10 @@ FORMS.lithops = (Cp, g) => {
   let first = null;
   for (const st of g.stones) {
     const pts = [], W = st.w, H = st.h, cl = st.cleft;
-    for (let i = 0; i <= 36; i++) { const t = i / 36, x = (t - 0.5) * 2, y = -H * Math.pow(Math.max(1 - Math.abs(x) ** 2.4, 0), 0.5) * (1 - cl * Math.exp(-((x / 0.16) ** 2)) - 0.06 * x * x) * (1 + st.skew * x * 0.12); pts.push([st.x + x * W / 2, y]); }
+    for (let i = 0; i <= 36; i++) { const t = i / 36, x = (t - 0.5) * 2, y = -H * Math.pow(Math.max(1 - Math.abs(x) ** 2.4, 0), 0.5) * (1 - cl * Math.max(0, 1 - Math.abs(x) / 0.34) ** 1.6 - 0.06 * x * x) * (1 + st.skew * x * 0.12); pts.push([st.x + x * W / 2, y]); }
     pts.push([st.x + W / 2, 0.3], [st.x - W / 2, 0.3]);
     K.poly(pts.map(p => [st.x + (p[0] - st.x) * Math.cos(st.tilt) - p[1] * Math.sin(st.tilt) * 0.3, p[1]]));
-    if (st.flower) { const b = [st.x, -H * (1 - cl) + 0.3]; drawStem(Cp, b, UP + rng.range(-0.15, 0.15), { h: H * 0.25, w: 0.8, w1: 0.7, head: { type: 'plantBloom', petals: 9, spread: 2.9, pl: 1.6, pw: 0.42, disc: 0.55 }, hs: st.w * 0.36 }); }
+    if (st.flower) { const b = [st.x, -H * (1 - cl) + 0.3]; drawStem(Cp, b, UP + rng.range(-0.15, 0.15), { h: H * 0.25, w: 0.8, w1: 0.7, head: { type: 'plantBloom', petals: 7, spread: 2.6, pl: 1.8, pw: 0.5, disc: 0.5 }, hs: st.w * 0.32 }); }
     if (!first) first = st;
   }
   const path = spline([[first.x, 0], [first.x, -first.h / 2], [first.x, -first.h]], 4);
@@ -1194,7 +1195,7 @@ const species = [
     return build(r, { form: 'stems', R: 6, r: 4, stems, basal: [{ n: r.int(2, 3), spread: r.range(1.6, 2.2), s: r.range(9, 11), inner: 0.8, wx: 3, spec: { u: 'stalk', ped: 0.9, rise: 0.4, up: 0.2, k: 0.85, spec: { u: 'heart', arrow: true, len: 0.9, wid: 0.75 } } }] },
       { head: { type: 'plantArum', kind: 'cuckoo' }, headSize: 0.7, orn: { type: 'plantArum', kind: 'cuckoo' }, tipS: 0.4, crownS: 0.38, row: { u: 'heart', arrow: true, len: 0.9, wid: 0.75 }, rowS: 0.9 });
   } },
-  { name: 'titan arum', w: 1.3, genes: r => {
+  { name: 'titan arum', w: 1.0, genes: r => {
     const stems = [{ x: 0, lean: r.range(-0.06, 0.06), h: r.range(3, 6), w: 2.4, w1: 2.2, head: { type: 'plantArum', kind: 'titan', len: r.range(5, 6.4), wid: r.range(0.9, 1.1) }, hs: r.range(6.2, 7.2) }];
     return build(r, { form: 'stems', R: 8, r: 6, stems }, { head: { type: 'plantArum', kind: 'titan', len: 5 }, headSize: 0.55, orn: { type: 'plantArum', kind: 'titan', len: 4.6 }, tipS: 0.35, crownS: 0.3, rowS: 0.25 });
   } },
@@ -1205,11 +1206,11 @@ const species = [
       { head: { type: 'plantSlipper' }, headSize: 0.85, orn: { type: 'plantSlipper' }, tipS: 0.5, crownS: 0.45, row: leafU(1, 0.5), rowS: 0.9 });
   } },
   // ---------------- seed-heads and flowers ----------------
-  { name: 'teasel', w: 1.8, genes: r => {
-    const nb = r.int(0, 2), stems = [{ x: 0, lean: r.range(-0.08, 0.08), arc: r.range(-0.15, 0.15), h: r.range(36, 46), w: 1.1, w1: 0.8, prickles: 6,
+  { name: 'teasel', w: 1.4, genes: r => {
+    const nb = r.int(0, 2), stems = [{ x: 0, lean: r.range(-0.08, 0.08), arc: r.range(-0.15, 0.15), h: r.range(26, 34), w: 1.1, w1: 0.8, prickles: 5,
       leaves: { n: 2, pair: true, t0: 0.3, t1: 0.55, ang: 0.75, s: r.range(9, 11), k1: 0.8, spec: { u: 'leaf', len: 1, wid: 0.22, bend: 0.1 } },
-      branch: nb ? { n: nb, t0: 0.62, t1: 0.75, ang: 0.55, h: r.range(10, 15), w: 0.7, arc: -0.25, head: { type: 'plantBur', kind: 'teasel', wid: 0.95 }, hs: 2.2 } : null,
-      head: { type: 'plantBur', kind: 'teasel', wid: r.range(0.95, 1.1) }, hs: r.range(3.8, 4.4) }];
+      branch: nb ? { n: nb, t0: 0.62, t1: 0.75, ang: 0.55, h: r.range(10, 14), w: 0.7, arc: -0.25, head: { type: 'plantBur', kind: 'teasel', wid: 0.95 }, hs: 3 } : null,
+      head: { type: 'plantBur', kind: 'teasel', wid: r.range(0.95, 1.1) }, hs: r.range(4.6, 5.2) }];
     return build(r, { form: 'stems', R: 5, r: 4, stems }, { head: { type: 'plantBur', kind: 'teasel' }, headSize: 0.8, orn: { type: 'plantBur', kind: 'teasel' }, tipS: 0.5, crownS: 0.45, row: { u: 'thorn', len: 1 }, rowS: 0.5, rowN: 6 });
   } },
   { name: 'thistle', w: 2, genes: r => {
@@ -1229,7 +1230,7 @@ const species = [
   { name: 'honesty', w: 1.5, genes: r => {
     const nb = r.int(2, 3), disc = { u: 'disc' }, sdisc = { u: 'stalk', ped: 0.9, rise: 0.2, up: 0.15, k: 1, spec: disc };
     const stems = [{ x: 0, lean: r.range(-0.1, 0.1), arc: r.range(-0.2, 0.2), h: r.range(38, 46), w: 0.9, w1: 0.5,
-      leaves: { n: 3, t0: 0.65, t1: 0.92, ang: 0.95, s: r.range(3.4, 3.8), k1: 0.85, spec: sdisc },
+      leaves: { n: 3, t0: 0.65, t1: 0.92, ang: 0.95, s: r.range(4.0, 4.5), k1: 0.85, spec: sdisc },
       branch: { n: nb, t0: 0.3, t1: 0.5, ang: 0.7, h: r.range(14, 18), w: 0.6, arc: -0.4, leaves: { n: 2, t0: 0.45, t1: 0.8, ang: 1.0, s: 3.2, k1: 0.9, spec: sdisc }, head: disc, hs: 3.4 },
       head: disc, hs: 3.6 }];
     return build(r, { form: 'stems', R: 5, r: 4, stems }, { head: { type: 'plantLeaf', unit: disc, size: 2 }, orn: disc, tipS: 1.2, crownS: 1, row: disc, rowS: 0.8 });
@@ -1276,9 +1277,9 @@ const species = [
       { head: { type: 'plantCone', kind: 'cattail' }, headSize: 0.9, orn: { type: 'plantCone', kind: 'cattail' }, tipS: 0.55, crownS: 0.5, row: { u: 'strap', len: 1, wid: 0.12 }, rowS: 2 });
   } },
   { name: 'fiddleheads', w: 2.6, genes: r => {
-    const n = r.int(3, 5), stems = [];
+    const n = r.int(2, 4), stems = [];
     for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) - 0.5 : 0, fs = u >= 0 ? -1 : 1, open = r.chance(0.3);
-      stems.push({ x: u * n * 2.6 + r.range(-0.8, 0.8), lean: u * 0.5, h: 0.5, w: 1.2, head: { type: 'plantFiddle', len: r.range(9, 13) * (1 - 0.3 * Math.abs(u)), turns: open ? r.range(0.6, 0.9) : r.range(1.3, 1.8), k: open ? 2.2 : 3.2, w: 0.42, nubs: r.chance(0.6), fs, lean: r.range(0.1, 0.4) }, hs: r.range(2.4, 2.9) }); }
+      stems.push({ x: u * n * 2.6 + r.range(-0.8, 0.8), lean: u * 0.5, h: 0.5, w: 1.2, head: { type: 'plantFiddle', len: r.range(9, 13) * (1 - 0.3 * Math.abs(u)), turns: open ? r.range(0.6, 0.9) : r.range(1.3, 1.8), k: open ? 2.2 : 3.2, w: 0.34, nubs: r.chance(0.6), fs, lean: r.range(0.1, 0.4) }, hs: r.range(2.4, 2.9) }); }
     stems.sort((a, b) => b.head.len - a.head.len);
     const basal = r.chance(0.5) ? [{ n: r.int(1, 2), spread: 1.2, s: r.range(28, 34), inner: 1, wx: 3, spec: { u: 'frond', len: 1, pl: 0.2, pw: 0.075, n: 9, grav: 0.5 } }] : [];
     return build(r, { form: 'stems', R: 6, r: 4, stems, basal }, { head: { type: 'plantFiddle', len: 7, turns: 1.6, w: 0.35 }, headSize: 0.8, orn: { type: 'plantFiddle', len: 6, turns: 1.6, w: 0.3 }, tipS: 0.6, crownS: 0.55, row: { type: 'plantFiddle', len: 5, turns: 1.4, w: 0.3 }, rowS: 0.4, spiral: true });
@@ -1330,7 +1331,7 @@ const species = [
     return build(r, form, { head: { type: 'plantLeaf', unit: { u: 'leaves', n: 3, spread: 1.6, len: 1, wid: 0.55 }, size: 1.6 }, orn: { u: 'leaves', n: 2, spread: 1.4, len: 1, wid: 0.55 }, tipS: 1, crownS: 0.9, rowS: 0.6, row: { u: 'bud', len: 0.5, wid: 0.4 } });
   } },
   // ---------------- succulents and cacti ----------------
-  { name: 'saguaro', w: 2, genes: r => {
+  { name: 'saguaro', w: 2.2, genes: r => {
     const R = r.range(3.2, 4), h = r.range(34, 44), na = r.wpick([[1, 0], [3, 1], [3, 2], [1, 3]]), arms = [];
     const s0 = r.sign(); for (let i = 0; i < na; i++) arms.push({ t: r.range(0.3, 0.6), sd: i % 2 ? -s0 : s0, k: r.range(0.72, 0.85), out: R * r.range(1.9, 2.6), up: h * r.range(0.25, 0.42) * (i === 2 ? 0.7 : 1), flower: r.chance(0.3) });
     const form = { form: 'cactus', kind: 'cols', R, ribs: 0, gap: 3.2, sl: 1.2, cols: [{ x: 0, lean: r.range(-0.05, 0.05), h, R, arms, flowers: r.chance(0.4) ? r.int(1, 3) : 0 }] };
@@ -1342,7 +1343,7 @@ const species = [
     const form = { form: 'cactus', kind: 'barrel', R: W * 0.6, W, H: W * r.range(1.7, 2.4), ribs: r.int(4, 6), sl: r.range(2.2, 2.8), flowers: r.wpick([[1, 0], [2, r.int(3, 5)]]), fs: r.range(2.2, 2.7) };
     return build(r, form, { head: { type: 'plantBloom', petals: 6, spread: 1.6, pl: 1.3, pw: 0.6, disc: 0.4, calyx: true }, headSize: 1.1, orn: { type: 'plantBloom', petals: 5, spread: 1.6, pl: 1.3, pw: 0.6, disc: 0.4 }, tipS: 0.8, crownS: 0.8, row: { u: 'thorn', len: 1, hook: 0.3 }, rowS: 0.5, rowN: 7 });
   } },
-  { name: 'old man cactus', w: 1.3, genes: r => {
+  { name: 'old man cactus', w: 1.0, genes: r => {
     const n = r.int(1, 3), cols = [];
     for (let i = 0; i < n; i++) cols.push({ x: (i % 2 ? 1 : -1) * Math.ceil(i / 2) * r.range(8, 10), lean: r.range(-0.08, 0.08), h: r.range(22, 32) * (i ? r.range(0.5, 0.8) : 1), R: r.range(3.6, 4.4) * (i ? 0.85 : 1) });
     return build(r, { form: 'cactus', kind: 'cols', R: 4, hairy: true, gap: 1.8, sl: 2.4, k: 2, cols }, { head: { type: 'plantTuft', kind: 'tube', n: 7, len: 1.6, wid: 0.25, spread: 2.8 }, headSize: 0.8, orn: { type: 'plantBloom', petals: 5, spread: 1.7, pl: 1.2, pw: 0.6, disc: 0.4 }, tipS: 0.8, crownS: 0.8, row: { u: 'strap', len: 1, wid: 0.04, grav: 1.4 }, rowS: 1.2, rowN: 7 });
@@ -1357,7 +1358,7 @@ const species = [
     const form = { form: 'pear', L: r.range(13, 16), wk: r.range(0.62, 0.75), depth: r.int(1, 2), fruit: r.int(1, 3), bloom: r.chance(0.4) };
     return build(r, form, { head: { type: 'plantBloom', petals: 6, spread: 1.6, pl: 1.3, pw: 0.6, disc: 0.4, calyx: true }, headSize: 1, orn: { u: 'fat', len: 1, wid: 0.62 }, tipS: 1.4, crownS: 1.2, ears: true, row: { u: 'fat', len: 1, wid: 0.6 }, rowS: 0.8 });
   } },
-  { name: 'living stones', w: 1.6, genes: r => {
+  { name: 'living stones', w: 0.8, genes: r => {
     const n = r.int(1, 3), stones = [];
     let x = 0;
     for (let i = 0; i < n; i++) { const w = r.range(7, 10) * (i ? r.range(0.65, 0.95) : 1); if (i) x += (i % 2 ? 1 : -1) * 0; stones.push({ x: 0, w, h: w * r.range(0.95, 1.25), cleft: r.range(0.32, 0.45), skew: r.range(-1, 1), tilt: r.range(-0.3, 0.3), flower: false }); }
@@ -1368,7 +1369,7 @@ const species = [
   { name: 'agave', w: 1.5, genes: r => {
     const mast = r.chance(0.5);
     const form = { form: 'stems', R: 8, r: 5, keepHead: mast, base: { w: 4, h: 2.5 }, stems: mast ? [{ x: 0, lean: r.range(-0.08, 0.08), h: r.range(14, 20), w: 1.4, w1: 1.1, head: { type: 'plantSpire', kind: 'mast', len: r.range(5, 6.5), n: r.int(5, 7), bow: r.range(-0.1, 0.1), t0: 0.25 }, hs: r.range(4.6, 5.4) }] : [],
-      basal: [{ n: r.int(7, 9), spread: r.range(2.2, 2.6), s: r.range(16, 20), inner: 0.85, wx: 4, y: 1, spec: { u: 'sword', len: 1, wid: 0.13, curve: 0.12, teeth: 5 } }] };
+      basal: [{ n: r.int(7, 9), spread: r.range(2.2, 2.6), s: r.range(16, 20), inner: 0.85, wx: 4, y: 1, spec: { u: 'sword', len: 1, wid: 0.13, curve: -0.12, teeth: 5 } }] };
     return build(r, form, { head: { type: 'plantSpire', kind: 'mast', len: 4, n: 5 }, headSize: 0.6, orn: { u: 'sword', len: 1, wid: 0.18, teeth: 4 }, tipS: 1.5, crownS: 1.4, ears: true, row: { u: 'sword', len: 1, wid: 0.18, teeth: 3 }, rowS: 1.1 });
   } },
   { name: 'aloe', w: 1.4, genes: r => {
@@ -1382,7 +1383,7 @@ const species = [
     const form = { form: 'tree', kind: 'baobab', H: r.range(24, 32), R: r.range(5.5, 7.5), belly: r.range(1.0, 1.3), lean: r.range(-0.08, 0.08), nb: r.int(4, 6), leafy: r.chance(0.3) };
     return build(r, form, { head: { type: 'plantLeaf', unit: { u: 'leaves', n: 5, spread: 2.4, len: 1, wid: 0.45 }, size: 1.4 }, orn: { u: 'leaves', n: 4, spread: 2.2, len: 1, wid: 0.45 }, tipS: 1, crownS: 1, row: { u: 'leaves', n: 3, spread: 2, len: 1, wid: 0.45 }, rowS: 0.7 });
   } },
-  { name: 'dragon\'s blood tree', w: 1.6, genes: r => {
+  { name: 'dragon\'s blood tree', w: 1.8, genes: r => {
     const form = { form: 'tree', kind: 'dragon', H: r.range(16, 22), R: r.range(2.2, 2.8), lean: r.range(-0.06, 0.06), nb: r.pick([2, 3]), depth: r.int(1, 2), dome: r.range(0.35, 0.55) };
     return build(r, form, { head: { type: 'plantTuft', kind: 'tube', n: 7, len: 1.8, wid: 0.3, spread: 2.6 }, headSize: 0.9, orn: { u: 'needles', n: 5, spread: 1.4 }, tipS: 1.4, crownS: 1.3, row: { u: 'needles', n: 4, spread: 1.2 }, rowS: 0.9 });
   } },
@@ -1407,7 +1408,7 @@ const species = [
     const form = { form: 'weed', kind: 'wrack', hold: r.range(2.5, 3.2), claws: r.int(4, 6), L: r.range(8, 11), W: r.range(1.5, 1.9), fronds: r.int(1, 2), depth: r.int(2, 3) };
     return build(r, form, { head: { type: 'plantLeaf', unit: { u: 'bud', len: 0.6, wid: 0.45 }, size: 2 }, orn: { u: 'bud', len: 0.6, wid: 0.42 }, tipS: 1.4, crownS: 1.3, row: { u: 'bud', len: 0.55, wid: 0.42 }, rowS: 0.7 });
   } },
-  { name: 'welwitschia', w: 1.3, genes: r => {
+  { name: 'welwitschia', w: 0.8, genes: r => {
     const form = { form: 'welwitschia', W: r.range(6, 8), H: r.range(5, 6.5), L: r.range(16, 22), strips: r.int(2, 3), curl: r.chance(0.6), cones: r.int(0, 4) };
     return build(r, form, { head: { type: 'plantTuft', kind: 'strap', n: 2, len: 3, wid: 0.8, spread: 2.6, grav: 1.2 }, headSize: 0.9, orn: { u: 'strap', len: 1, wid: 0.2, grav: 1 }, tipS: 1.8, crownS: 1.6, ears: true, row: { type: 'plantCone', kind: 'pine', len: 1.6, wid: 1.1, rows: 3 }, rowS: 0.35 });
   } },
