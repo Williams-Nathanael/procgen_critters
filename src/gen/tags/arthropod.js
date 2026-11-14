@@ -1180,6 +1180,10 @@ export default {
   id: 'arthropod', label: 'Crustaceans & arthropods', short: 'Arthropods',
   sig: { crown: 3, limbs: 3, tail: 2.5, dorsal: 1.2, head: 1 },
   // M4: on amphibian bodies insect legs give centipede/cricket looks; lend armour and feelers
-  mix: { amphibian: { sig: { crown: 3, tail: 2, dorsal: 2 }, want: [[3, 1], [2, 2]] } },
+  mix: {
+    amphibian: { sig: { crown: 3, tail: 2, dorsal: 2 }, want: [[3, 1], [2, 2]] },
+    // thin legs under a mushroom read spindly; keep the fungus outline, add feelers and tails
+    fungus: { sig: { crown: 3, tail: 2, dorsal: 1 }, want: [[3, 1], [1, 2]] },
+  },
   species,
 };

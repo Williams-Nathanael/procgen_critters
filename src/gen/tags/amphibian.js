@@ -848,6 +848,10 @@ export default {
   id: 'amphibian', label: 'Amphibians', short: 'Amphibians',
   sig: { limbs: 3, head: 2.2, crown: 1.4, tail: 0.8, dorsal: 0.5 },
   // M4: frog legs on an arthropod body read as a cricket; lead that pair and lend no legs there
-  mix: { arthropod: { lead: 4, sig: { head: 3, crown: 1.4, dorsal: 0.6 } } },
+  mix: {
+    arthropod: { lead: 4, sig: { head: 3, crown: 1.4, dorsal: 0.6 } },
+    // on a mushroom keep the fungus outline: mostly a frog face, legs less often
+    fungus: { sig: { head: 3, limbs: 1.2, crown: 1.4 }, want: [[3, 1], [1, 2]] },
+  },
   species,
 };
