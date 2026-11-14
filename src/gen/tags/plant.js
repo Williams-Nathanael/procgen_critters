@@ -1513,5 +1513,10 @@ const species = [
 export default {
   id: 'plant', label: 'Odd plants', short: 'Odd plants',
   sig: { head: 3, crown: 2.5, dorsal: 2, tail: 1.5, limbs: 1.2 },
+  // M4: on salamander/amphibian bodies lend a flower/trap head, not scattered growths
+  mix: {
+    salamander: { lead: 0.15, sig: { head: 3 }, headS: 1.6 },
+    amphibian: { sig: { head: 3, crown: 0.8 }, want: [[3, 1], [1, 2]], headS: 1.25 },
+  },
   species,
 };

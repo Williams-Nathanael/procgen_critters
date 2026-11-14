@@ -9,18 +9,28 @@ import { TAGS, SLOTS } from './tags/index.js';
 // `chaos` (0..1) is the chance that each remaining slot is handed to a random tag instead.
 export function chooseDonors(rng, tags, chaos = 0.12) {
   const donors = {};
-  const primary = rng.pick(tags);
+  // Optional per-partner tuning, TAGS[t].mix[other] = { lead, sig, want }:
+  // lead weights how often t supplies the body when mixed with `other` (default 1; product
+  // over partners), sig replaces t's sig when it lends to an `other` body, want replaces the
+  // [weight, slot count] table. Single tags never consult it (pure output unchanged).
+  const mixOf = (t, o) => TAGS[t].mix?.[o] ?? {};
+  const primary = tags.length < 2 ? rng.pick(tags)
+    : rng.wpick(tags.map(t => [tags.filter(o => o !== t).reduce((a, o) => a * (mixOf(t, o).lead ?? 1), 1), t]));
   for (const s of SLOTS) donors[s] = primary;
   const taken = new Set(['chassis']);
   for (const t of rng.shuffle(tags.filter(x => x !== primary))) {
-    const want = tags.length === 2 ? rng.wpick([[2, 1], [3, 2], [1, 3]]) : rng.wpick([[3, 1], [2, 2]]);
+    const m = mixOf(t, primary);
+    const want = rng.wpick(m.want ?? (tags.length === 2 ? [[2, 1], [3, 2], [1, 3]] : [[3, 1], [2, 2]]));
     for (let k = 0; k < want; k++) {
-      const opts = Object.entries(TAGS[t].sig).filter(([s]) => !taken.has(s)).map(([s, w]) => [w, s]);
+      const opts = Object.entries(m.sig ?? TAGS[t].sig).filter(([s]) => !taken.has(s)).map(([s, w]) => [w, s]);
       if (!opts.length) break;
       const s = rng.wpick(opts); donors[s] = t; taken.add(s);
     }
   }
-  for (const s of ['head', 'limbs', 'tail', 'dorsal', 'crown']) if (!taken.has(s) && rng.chance(chaos)) donors[s] = rng.pick(tags);
+  for (const s of ['head', 'limbs', 'tail', 'dorsal', 'crown']) if (!taken.has(s) && rng.chance(chaos)) {
+    const t = rng.pick(tags), ms = t !== primary && mixOf(t, primary).sig;
+    if (!ms || ms[s]) donors[s] = t; // a tuned pair never gets a slot its table rules out
+  }
   donors.surface = donors.head;
   donors.primary = primary;
   return donors;
@@ -61,7 +71,10 @@ export function makeCritter(tags, seed, opts = {}) {
   tail(C, plan.tail, g.tail, donors.tail !== (donors.primary ?? donors.chassis));
   if (g.limbs && g.limbs.type !== 'none') for (const sock of plan.limbs) limb(C, sock, g.limbs);
   dorsal(C, plan, g.dorsal);
-  const hd = heads[g.head.type](C, plan.head, g.head);
+  // a lent head may ask to be drawn larger on a given host (mix[host].headS), e.g. a cap
+  // that would otherwise vanish on a slender salamander
+  const hS = donors.head !== donors.chassis && TAGS[donors.head].mix?.[donors.chassis]?.headS;
+  const hd = heads[g.head.type](C, hS ? { ...plan.head, s: plan.head.s * hS } : plan.head, g.head);
   hd.tag = donors.head;
   C.head = hd;
   crown(C, hd, g.crown);
