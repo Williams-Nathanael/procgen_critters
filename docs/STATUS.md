@@ -52,6 +52,17 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    mixes sheet, with a way to mark favourites, rejects and comments. Show the 7 open M2
    items at print size and ask cut / fix / fine as is. Record answers in
    `docs/BRIEF.md`. [user has answered]
+   **PUBLISHED 2026-11-13, waiting for the user's answers.** Page:
+   https://claude.ai/artifact/AttqqiKu3Crg1hsZwwmn7Y (private). Rebuild with
+   `npm run review` (writes `out/review/`, untracked), republish to that `url`.
+   Answers land in the artifact database, collection `answers`; read them with
+   `ArtifactData` (`action: "list"`, `query.limit` 1000). Doc ids: `species-<tag>-<slug>`,
+   `mix-<tagA>-<tagB>`, `open-<slug>`, `tagnote-<tag>`, `overall`; fields `{kind, tag, name,
+   verdict, comment, at}`; verdicts fav/fine/rej (species, mixes) and cut/fix/fine (open
+   items). Next overseer conversation: read the answers, record them in `docs/BRIEF.md`
+   under a dated Decisions heading, turn cut/fix/reject into species-builder briefs (judge
+   at `--cell 60`), and add anything asked for to M4-M6. If the database is empty, ask the
+   user whether they used "Copy all answers as text" instead.
 4. **M4 Mixing quality** (engineer, model opus; no tag workers running). Lent parts scaled
    to the receiving body; `sig` weights tuned; mixes coherent across all 28 tag pairs and
    some triples; per-border tag weights (e.g. mostly fungus, a little dragon) if the user
