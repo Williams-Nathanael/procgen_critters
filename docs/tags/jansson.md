@@ -40,6 +40,15 @@ Signature features to lend: big round ringed eyes, a soft rounded snout or long 
 tasselled tail, tufts and single hairs, small props, the upright pear body.
 
 ## State
+- **M3 taste run (2026-11-13): 30 species** (was 33). Cut per the user: asterisk mite, pilcrow
+  strider, stilt-legs. At-snail renamed **spiral snail**: the 'a' heart of the @ is gone, the shell is
+  now an inward calligraphic spiral (1.25-1.85 turns, thin stroke, ball centre) on the old foot/neck,
+  so it reads as a snail shell, not an @. Eyes smaller and embedded across the whole tag: ring eye
+  scale 0.75 (was 1), frontEyes 0.24 of body width (was 0.33), glyph ball eyes 0.42 of ball radius
+  (was nearly the whole ball), head eyeR 0.18-0.22 (was 0.24-0.29), side-view/huddle/peeper eyes
+  ~25% smaller. Judged at cell 60: eyes now read as small white points inside heads.
+  Weakest now: ampersand (ball head small so eye ring still dominates it), huddle at print,
+  suitcase traveller, curled sleeper, shaggy mop. No shared-code change needed.
 - **M2 fix run (2026-11-13): 33 species** (was 38). Cut: drift bells (drifted toward a known
   character), tail-holding procession, cursive procession (members smudge at print), crook stemling
   (read as b/6), scarf creature (scarf read as arm). Tall wanderer no longer has a cone hat or a
