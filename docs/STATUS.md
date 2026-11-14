@@ -14,9 +14,30 @@ Page: https://claude.ai/artifact/Py2LfDvwLMuFgSZzTwihn1 (rebuilt with `npm run r
 The user does not want encrypted-PDF export (decided 2026-11-14; place-only with the
 notice stays).
 
-**M8 phase 1b (in progress, 2026-11-14)**: the user rejected the phase 1 result as "a hydra
-with a bit extra tacked on" (BRIEF, "after the first hybrid mechanism"). One engineer (Opus)
-is reworking the mechanism so 100% is a true chimera with no base species; phase 2 waits.
+**M8 phase 1b result (2026-11-14)**: chimera mechanism done in one engineer (Opus) run
+(5d61f3e) plus an overseer look. It replaces the phase 1 behaviour described below (kept as
+`road-05-hybrids-untuned`). Kept sheet: `out/roads/06-chimeras-untuned.png`, tag
+`road-06-chimeras-untuned`. **Waiting on the user's verdict on the direction (they try it in
+the app); then M8 phase 2 batch 1.**
+- `opts.hybrid` default 1. At 1 there is no base species: one sibling sets the chassis
+  type, its numbers are a weighted blend with 1-2 same-type siblings (pushed up to 35% past
+  their average, clamped to their range widened 15%); head, limbs, tail, dorsal and crown
+  each come from a different sibling and blend toward another with the same part type.
+  Below 1 each slot switches with chance = hybrid; unswitched slots stay with the chassis
+  parent. 0 is bit-identical to pre-M8 (3,000 seeds, single tags and mixes).
+- `keep` applies to whichever species supplies the chassis; `never` / `noLend` as before
+  (no species uses them yet). Tails not from the chassis parent are capped to body size and
+  pulled onto rooted bodies. Names list every parent, `base` is null for a chimera.
+- 8 tags x 2,000 seeds at 1 and 2,000 mixes at random hybrid: no throws, nothing below the
+  line beyond the root sliver. Build, `test:export`, `test:ui` pass (worker's report).
+- Overseer look (untuned, hybrid 1): dragon, mammal, amphibian and jansson read as unnamed
+  creatures and mostly hold together; arthropod is varied but some are thin or sparse;
+  salamander is coherent but still reads as "a salamander" (siblings too alike: needs
+  bolder crests, tails, heads in its vocabulary); fungus and plant are the weakest, often
+  collages of stalks and bits.
+- Watch, for phase 2: names list 10-13 parents (blend mates count), too long for captions
+  and tooltips; fungus (1491/2000) and plant (2000/2000) use the root sliver below the line
+  far more often than before, check it is a sliver and not a visible dip; bench not re-run.
 
 **M8 phase 1 result (2026-11-14)**: within-tag hybrid mechanism done in one engineer (Opus)
 run (ec19f7b) plus an overseer look at the 8-tag sheet. Kept sheet:
@@ -366,8 +387,10 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
      [hybrid 0 bit-identical; all tags render at default hybrid with nothing below the
      line; `test:export`, build pass; one 8-tag hybrid sheet at `--cell 60`]
    - Phase 2 (one `species-builder` per tag, at most 3 at once, judge at `--cell 60`):
-     tune the hints so the tag's hybrids read as whole creatures and are visibly melded,
-     fix parts that break on a sibling's chassis. Fold in the 1.0 taste fixes for the tag:
+     at hybrid 1 the tag's chimeras must read as whole unnamed creatures (BRIEF, "after the
+     first hybrid mechanism"): fix parts that break on a sibling's chassis, add hints
+     sparingly, widen the vocabulary where siblings are too alike. Pure species are judged
+     with `--hybrid 0` or `tag@species`. Fold in the 1.0 taste fixes for the tag:
      arthropod cut woodlouse; fungus cut oyster mushroom, redo jelly ear (no flat
      baseline); dragon amphisbaena second head gets an eye and reads as a head, and
      "hydra with an amphisbaena tail" must occur; jansson ampersand knot's big spherical
