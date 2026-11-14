@@ -262,9 +262,18 @@ export function limb(C, sock, g) {
 // =====================================================================
 // TAILS
 // =====================================================================
-export function tail(C, sock, g) {
+// Lent tails (another tag's tail on this chassis) were sized against their own tag's
+// body; the socket scale `s` can make them far too long here. Cap the rough reach
+// (stub + plume + tip) at LENT_TAIL_MAX body radii by shrinking the whole tail.
+export const LENT_TAIL_MAX = 3.2;
+export function tail(C, sock, g, lent = false) {
   if (!g || g.type === 'none') return;
-  const { ink, rng } = C, s = sock.s, side = C.plan.view === 'side';
+  const { ink, rng } = C, side = C.plan.view === 'side';
+  let s = sock.s;
+  if (lent && C.plan.r) {
+    const reach = (g.len + (g.pl ?? 0) + 2.2 * (g.tipS ?? 1)) * s, cap = C.plan.r * LENT_TAIL_MAX;
+    if (reach > cap) s *= cap / reach;
+  }
   const n = 20, L = g.len * s;
   let h = sock.dir, p = sock.p;
   const pts = [p], ph = sock.wavePhase ?? rng.range(0, 6.28), cs = (g.curlSign ?? rng.sign());
