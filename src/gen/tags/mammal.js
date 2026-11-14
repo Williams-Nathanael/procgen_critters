@@ -703,20 +703,10 @@ const species = [
     };
   }),
 
-  sp('vole', 2.5, r => {
-    const B = { r: r.range(9.5, 11.5), len: r.range(17, 22), clr: r.range(0.06, 0.14), headS: r.range(0.78, 0.86), arch: 0.55, neckW: 0.92, chest: 0.97, rump: 0.92, footL: 0.5, neckAng: 0.15, neckLen: 0 };
-    const ch = r.wpick([[3, () => walk(r, B, { gait: r.pick(['stand', 'walk']) })], [1, () => sit(r, B, 'hold', { item: r.pick(['seed', 'sprig']), sitH: B.len * 0.6 })], [1, () => sniff(r, B, { pitch: 0.18 })]])();
-    return {
-      chassis: ch, head: head({ snoutLen: r.range(0.8, 1), tipR: r.range(0.4, 0.48), mid: 0.5, droop: 0.2, eyeR: 0.12, whiskers: r.chance(0.4) ? 2 : 0, whiskerL: 0.7 }),
-      crown: ear('round', r.range(0.45, 0.6), r.range(0.6, 0.75), { lean: 0.4 }),
-      tail: tThin(r, r.range(2.5, 3.6), { w0: 0.2, wave: 0.5, curl: r.range(0.2, 0.8) }),
-    };
-  }),
-
   sp('hamster', 2.5, r => {
     const B = { r: r.range(10, 12), len: r.range(15, 19), clr: 0.08, headS: r.range(0.84, 0.92), arch: 0.55, neckW: 0.95, chest: 1, rump: 0.95, footL: 0.5, neckAng: 0.15, neckLen: -0.05, sitH: 14, upShoulder: 0.86, upNeck: 0.8 };
     const cheek = r.range(0.75, 1.15);
-    const ch = r.wpick([[2.5, () => sit(r, B, 'hold', { item: r.pick(['seed', 'nut']), lean: r.range(0.2, 0.4) })], [2, () => walk(r, B, { gait: r.pick(['stand', 'walk']) })], [1, () => sit(r, B, 'groom', { face: 0.3 })]])();
+    const ch = r.wpick([[2.5, () => sit(r, B, 'hold', { item: r.pick(['seed', 'nut']), lean: r.range(0.2, 0.4) })], [0.7, () => walk(r, B, { gait: r.pick(['stand', 'walk']) })], [1, () => sit(r, B, 'groom', { face: 0.3 })]])();
     return {
       chassis: ch, head: head({ snoutLen: r.range(0.8, 0.95), tipR: 0.38, mid: 0.5, droop: 0.15, cheek, eyeR: 0.15, nose: 0.12 }),
       crown: ear('round', r.range(0.65, 0.85), r.range(0.75, 0.9), { lean: 0.1 }), tail: r.chance(0.6) ? tScut({ tipS: 0.3 }) : none(),
@@ -880,16 +870,6 @@ const species = [
     };
   }),
 
-  sp('pika', 1.5, r => {
-    const B = { r: r.range(10.5, 12), len: r.range(13, 17), clr: 0.06, headS: 0.84, arch: 0.6, neckW: 0.95, chest: 1, rump: 0.98, footL: 0.5, neckAng: 0.2, neckLen: -0.05 };
-    const carry = r.chance(0.55);
-    return {
-      chassis: r.chance(0.7) ? walk(r, B, { gait: r.pick(['stand', 'walk']) }) : sniff(r, B, { pitch: 0.2, neckAng: 0.7, face: -0.45 }),
-      head: head({ snoutLen: 0.85, tipR: 0.44, mid: 0.5, droop: 0.15, eyeR: 0.14, carry: carry ? 'sprig' : null, whiskers: carry ? 0 : 2, whiskerL: 0.8 }),
-      crown: ear('round', r.range(0.9, 1.1), r.range(1.05, 1.25), { lean: 0.15 }), tail: none(),
-    };
-  }),
-
   sp('chinchilla', 1.5, r => {
     const B = { r: r.range(10.5, 12), len: r.range(15, 18), clr: 0.12, headS: 0.8, arch: 0.65, neckW: 0.9, rump: 1, footL: 0.9, sitH: 13, sitFoot: 1 };
     const pose = r.wpick([[2, 'sit'], [2, 'walk'], [1, 'hold']]);
@@ -914,9 +894,9 @@ const species = [
   }),
 
   sp('bat', 3.5, r => {
-    const rr = r.range(8, 9.5), bigEar = r.chance(0.35);
+    const rr = r.range(9.5, 11), bigEar = r.chance(0.35);
     return {
-      chassis: { type: 'mammalBat', r: rr, arm: r.range(1.15, 1.45), finger: r.range(2.1, 2.7), elev: r.wpick([[3, r.range(0.05, 0.5)], [1.5, r.range(0.7, 1.05)], [1, r.range(-0.35, -0.1)]]), droop: r.range(-0.05, 0.25), fan: r.range(1.6, 1.9), nf: 4, scallop: r.range(0.4, 0.55), skew: r.range(-0.1, 0.1), bank: r.range(-0.2, 0.2), tailM: r.range(-0.1, 0.2), headS: 0.62 },
+      chassis: { type: 'mammalBat', r: rr, arm: r.range(1.3, 1.55), finger: r.range(2.3, 2.8), elev: r.wpick([[3, r.range(0.55, 0.85)], [1.5, r.range(0.85, 1.1)], [0.6, r.range(-0.45, -0.3)]]), droop: r.range(-0.05, 0.25), fan: r.range(1.6, 1.9), nf: 4, scallop: r.range(0.4, 0.55), skew: r.range(-0.1, 0.1), bank: r.range(-0.2, 0.2), tailM: r.range(-0.1, 0.2), headS: 0.62 },
       head: head({ snoutLen: r.range(0.6, 0.8), tipR: 0.34, mid: 0.5, droop: 0.1, eyeR: 0.13, eyeX: 0.3, nose: 0.14, earY: 0.6 }),
       crown: bigEar ? ear('long', r.range(2.2, 2.9), 1.1, { lean: -0.75 }) : ear('point', r.range(1.25, 1.7), r.range(0.9, 1.1), { lean: -0.7 }),
       dorsal: { type: 'mammalBatWing', size: r.range(2.6, 3.2), nf: 4, fan: r.range(1.3, 1.6), scallop: r.range(0.4, 0.55), at: 0.72 }, // only drawn when lent
@@ -932,7 +912,7 @@ const species = [
     return {
       chassis: ch, head: head({ skull: 0.9, snoutLen: r.range(1.9, 2.3), tipR: 0.16, mid: 0.55, droop: 0.05, eyeR: 0.14, eyeX: 0.6 }),
       crown: none(),
-      dorsal: { type: 'mammalScales', n: rolled ? r.int(8, 10) : r.int(6, 8), k: r.range(0.55, 0.65) },
+      dorsal: { type: 'mammalScales', n: rolled ? r.int(13, 16) : r.int(11, 14), k: r.range(0.3, 0.38) },
       tail: { len: 0.3, w0: 1.1, mid: 0.5, w1: 1, curl: 0, wave: 0, tip: 'mammalScaleTail', tl: r.range(3.6, 4.4), tw: r.range(1.05, 1.25), droop: r.range(0.6, 1.1), ns: r.int(5, 7), wrap: [2.4, 2 * PI - 0.45, 1.7, 0.75] },
     };
   }),
@@ -1011,7 +991,7 @@ const species = [
     const rr = r.range(7.5, 8.8);
     const B = { r: rr, len: r.range(28, 34), clr: 0.3, headS: 0.8, arch: r.range(0.5, 1.1), neckW: 0.8, neckLen: 0.5, neckAng: r.range(0.3, 0.7), footL: 0.7, legW: 0.36, standH: r.range(30, 36), upShoulder: 0.84, upNeck: 0.76, standHaunch: 1.08, tailA: PI - 0.15 };
     const pose = r.wpick([[2, 'float'], [2, 'stand'], [2, 'walk']]);
-    const ch = { float: () => ({ type: 'mammalFloat', r: rr * 1.05, len: r.range(26, 32), raise: r.range(0.5, 0.95), face: -r.range(0.2, 0.6), item: r.pick(['shell', 'nut', 'shell']), headS: 0.76 }), stand: () => stand(r, B, { lean: r.range(0, 0.2), tailA: PI - 0.1 }), walk: () => walk(r, B) }[pose]();
+    const ch = { float: () => ({ type: 'mammalFloat', r: rr * 1.05, len: r.range(19, 23), raise: r.range(0.5, 0.95), face: -r.range(0.2, 0.6), item: r.pick(['shell', 'nut', 'shell']), headS: 0.76 }), stand: () => stand(r, B, { lean: r.range(0, 0.2), tailA: PI - 0.1 }), walk: () => walk(r, B) }[pose]();
     return {
       chassis: ch, head: head({ skullL: 1.1, skullH: 0.92, snoutLen: r.range(0.85, 1), tipR: 0.46, mid: 0.5, droop: 0.1, eyeR: 0.13, eyeX: 0.5, nose: 0.13, whiskers: r.chance(0.5) ? 2 : 0, whiskerL: 0.75 }),
       crown: pose === 'float' ? none() : ear('round', 0.34, 0.45, { lean: 0.7 }),
@@ -1041,9 +1021,9 @@ const species = [
   }),
 
   sp('badger', 2, r => {
-    const B = { r: r.range(10, 11.5), len: r.range(24, 29), clr: 0.18, headS: 0.66, arch: 0.4, neckW: 0.85, chest: 0.98, rump: 0.95, footL: 0.6, neckAng: -0.05, neckLen: 0.3, legW: 0.4, pawS: 1.2 };
+    const B = { r: r.range(12, 13.5), len: r.range(22, 26), clr: r.range(0.55, 0.7), headS: 0.62, arch: 0.08, neckW: 0.8, chest: 1.05, rump: 0.9, footL: 0.9, neckAng: -0.35, neckLen: 0.2, legW: 0.5, pawS: 1.5 };
     return {
-      chassis: r.chance(0.75) ? walk(r, B, { face: r.range(0.05, 0.3) }) : sniff(r, B, { pitch: 0.08, neckAng: 0.45, face: -0.45 }),
+      chassis: r.chance(0.6) ? walk(r, B, { face: r.range(0.25, 0.5), gait: r.pick(['walk', 'stand']) }) : sniff(r, B, { pitch: -0.05, neckAng: 0.6, face: -0.2 }),
       head: head({ skull: 0.95, skullL: 1.1, snoutLen: r.range(1.7, 2), tipR: 0.24, mid: 0.5, droop: 0.1, nose: 0.17, eyeR: 0.12, eyeX: 0.55 }),
       crown: ear('round', 0.42, 0.55, { lean: 0.5 }),
       tail: tBrush({ pk: CLUB, pl: r.range(2.6, 3.4), pw: 0.75, ptarget: PI - 0.2, precurve: 0.2, fluff: 2 }),

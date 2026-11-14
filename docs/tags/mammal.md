@@ -61,3 +61,17 @@ rounds plus stacking checks). Sheets: `out/roads/03-mammal-species.png`,
 - **Next**: a distinct pangolin (bipedal ground pangolin walk, bigger rounded scales);
   otter swimming/porpoising pose; badger digging; tarsier and red panda second poses;
   marmot as its own species; lemming back only with a distinct pose.
+
+### M2 fix run (2026-11-13)
+Addressed the critic's "would bother" items; 38 -> 36 species.
+- Cut vole and pika (potato blobs; house/wood mouse cover vole, pika had no outline cue).
+  Hamster now mostly sits upright with cheek pouches (walk pose weight 0.7); chinchilla keeps
+  its big ears plus curled brush tail.
+- Badger rebuilt: bigger, flat back, high clearance with thick legs and big fore paws, head
+  carried low; reads as a squat digger on legs, clearly apart from the paddle-tailed beaver.
+- Bat: larger body, longer arm/fingers, wings mostly raised (elev 0.55-1.1), so it is a
+  V or W outline instead of a flat sliver.
+- Pangolin: dorsal scales doubled in count at half size, so the back reads as shingles
+  not saw teeth. Otter float shortened (19-23) so it is not a log.
+- Still weak: rolled pangolin (big curl), red panda (raccoon clone), mole vs star-nosed
+  mole heaps, tarsier/bushbaby same clinging pose, shrew vs otter walk somewhat alike.
