@@ -686,20 +686,15 @@ const species = [
   }) },
   { name: 'horned frog', w: 2, genes: r => ({ // pacman frog: a mouth with legs
     chassis: sit(r, { seat: r.range(0.12, 0.22), r: r.range(12, 14), len: r.range(8, 11), pitch: r.range(0.25, 0.42), rump: 0.86, belly: 1.04, chest: 0.94, neck: 0.78, hump: 0, arch: 0.1, headS: r.range(1.04, 1.16), neckLen: 0.3, face: r.range(-0.05, 0.12) }),
-    head: frogHead(r, { snout: r.range(0.9, 1.02), point: 0, deep: r.range(0.9, 1.02), eye: r.range(0.2, 0.25), eyeUp: 0.5, neck: 0.9, wide: 1.15, gape: r.chance(0.55) ? r.range(0.3, 0.5) : 0 }),
+    head: frogHead(r, { snout: r.range(0.9, 1.02), point: 0, deep: r.range(0.9, 1.02), eye: r.range(0.2, 0.25), eyeUp: 0.5, neck: 0.9, wide: 1.15, gape: r.range(0.55, 0.75) }),
     limbs: legs(r, 'stub', { hl: r.range(0.66, 0.78), hf: 0.5, fl: 1.1, toeLen: 0.4 }), tail: none(), dorsal: none(),
-    crown: { type: 'amphibianBrow', len: r.range(0.4, 0.65), lean: r.range(0, 0.3), pair: true }, surface: look(r, 0.3, 0.5),
-  }) },
-  { name: 'narrowmouth toad', w: 0.9, genes: r => ({ // also the purple frog: bloated body, tiny pointed head
-    chassis: sit(r, { seat: r.range(0.18, 0.28), r: r.range(11.5, 13.5), len: r.range(11, 15), pitch: r.range(0.16, 0.34), rump: 0.8, belly: 1.08, chest: 0.84, neck: 0.5, hump: 0, headS: r.range(0.42, 0.52), neckLen: 0.55 }),
-    head: frogHead(r, { snout: r.range(1.3, 1.7), point: r.range(0.7, 1), deep: 0.55, eye: r.range(0.16, 0.22), eyeUp: 0.1 }),
-    limbs: legs(r, 'stub', { fl: 1.0 }), tail: none(), dorsal: none(), crown: popEyes(r), surface: look(r, 0.2, 0),
+    crown: { type: 'amphibianBrow', len: r.range(0.85, 1.15), lean: r.range(0, 0.3), pair: true }, surface: look(r, 0.3, 0.5),
   }) },
   // ---- toads ----
   { name: 'common toad', w: 3, genes: r => ({
     chassis: sit(r, { seat: r.range(0.35, 0.5), r: r.range(10.5, 12.5), len: r.range(15, 19), pitch: r.range(0.3, 0.46), rump: 0.74, belly: 1.08, chest: 0.92, neck: 0.8, hump: 0, headS: 0.84 }),
-    head: frogHead(r, { snout: r.range(0.9, 1.02), point: 0, deep: 0.72, eye: r.range(0.25, 0.3), parotoid: r.range(0.8, 1.15), neck: 0.78 }),
-    limbs: legs(r, 'toad'), tail: none(), dorsal: warts(r), crown: popEyes(r), surface: look(r, 0.35, 0.5),
+    head: frogHead(r, { snout: r.range(0.9, 1.02), point: 0, deep: 0.72, eye: r.range(0.25, 0.3), parotoid: r.range(1.2, 1.5), neck: 0.78 }),
+    limbs: legs(r, 'toad', { hw: 0.5, fw: 0.3 }), tail: none(), dorsal: warts(r, { n: r.int(4, 6), size: r.range(0.2, 0.26) }), crown: popEyes(r), surface: look(r, 0.35, 0.5),
   }) },
   { name: 'walking toad', w: 1.2, genes: r => ({
     chassis: sit(r, { seat: null, r: r.range(8.5, 9.5), len: r.range(23, 27), pitch: r.range(0.06, 0.16), rump: 0.66, belly: 0.94, chest: 0.86, neck: 0.8, hump: 0, arch: r.range(0.02, 0.12), rearLift: 1, headS: 1, neckLen: 0.55, face: r.range(-0.05, 0.12) }),
@@ -737,13 +732,13 @@ const species = [
   { name: 'flying frog', w: 1.5, genes: r => ({
     chassis: topBody(r, { r: r.range(7, 8.2), len: r.range(21, 25), prof: [[0, 0.5], [0.3, 0.8], [0.6, 0.95], [1, 0.86]], headS: 1 }),
     head: frogHead(r, { snout: r.range(1.05, 1.2), point: 0.3, eye: r.range(0.3, 0.36) }),
-    limbs: legs(r, 'glide', { pose: 'glide', loose: 0.1, spread: 1.9, foreSpread: 2.1, foreWeb: 0.88, fingerK: 0.85 }),
+    limbs: legs(r, 'glide', { pose: 'glide', loose: 0.1, hl: r.range(0.72, 0.85), hw: 0.5, fl: 1.4, fw: 0.24, toes: 4, toeLen: r.range(1.9, 2.2), web: 1, spread: 1.45, foreSpread: 1.5, foreWeb: 1, fingerK: 0.75, fingers: 4, tr: 0.17, pad: 0.2, forePad: 0.18 }),
     tail: none(), dorsal: none(), crown: popEyes(r), surface: look(r, 0.1, 0),
   }) },
   { name: 'Surinam toad', w: 1.5, genes: r => ({ // flat as a dead leaf
-    chassis: topBody(r, { r: r.range(10.5, 12), len: r.range(20, 24), prof: [[0, 0.78], [0.12, 0.98], [0.75, 1], [1, 0.9]], headS: 0.9, bend: 0.02, foreT: 0.92, hindT: 0.06 }),
-    head: frogHead(r, { snout: r.range(1, 1.2), point: 0.95, eye: 0, wide: 1.04, neck: 0.95 }),
-    limbs: legs(r, 'claw', { pose: 'pipa', loose: 0.1, hw: 0.36, hl: r.range(1, 1.15), toes: 5, toeLen: r.range(1.05, 1.25), web: 0.95, spread: 1.7, foreWeb: 0, fingers: 4, foreSpread: 1.5, fingerK: 0.95, forePad: 0.09, fl: r.range(1.35, 1.6), fw: 0.13 }),
+    chassis: topBody(r, { r: r.range(12.5, 14), len: r.range(17, 20), prof: [[0, 0.92], [0.08, 1], [0.85, 1], [1, 0.95]], headS: 1.05, bend: 0.02, foreT: 0.92, hindT: 0.06 }),
+    head: frogHead(r, { snout: r.range(1.35, 1.6), point: 1, eye: 0, wide: 0.9, neck: 0.95 }),
+    limbs: legs(r, 'claw', { pose: 'pipa', loose: 0.1, hw: 0.45, hl: r.range(0.42, 0.52), toes: 5, toeLen: r.range(0.75, 0.9), web: 0.9, spread: 1.4, foreWeb: 0, fingers: 4, foreSpread: 1.3, fingerK: 0.6, tr: 0.18, forePad: 0.2, fl: r.range(1.1, 1.25), fw: 0.2 }),
     tail: none(), dorsal: none(), crown: none(), surface: { eyes: 'none' },
   }) },
   // ---- tadpoles ----

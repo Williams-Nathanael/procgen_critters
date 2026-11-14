@@ -25,6 +25,13 @@ eyes, toe pads, inflated throat, tadpole tail. Default eyes: a small dot only wh
 helps; most should read without.
 
 ## State
+2026-11-13 M2 fix run 2 (judged at --cell 60 only): cut narrowmouth toad (never read apart
+from horned frog/common toad at print size). Horned frog: always gaping, much longer brow
+horns. Common toad: bigger parotoids, fewer larger warts, thicker limbs. Flying frog: shorter
+thick legs, long fully webbed 4-toe feet as solid paddles front and back. Surinam toad: wide
+square flat body, arrow-pointed head, short stubby legs, thick star-tipped fingers. Species
+count now 35 minus 1 = 34 (approx; see sheet).
+
 2026-11-13, after review rounds 1-4. **35 species** (was 37 unreviewed). Sheets:
 `out/roads/03-amphibian-species.png`, `out/roads/03-amphibian-mixes.png`.
 
