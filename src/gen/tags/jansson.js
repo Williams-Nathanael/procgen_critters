@@ -576,7 +576,8 @@ chassis.janssonGlyph = (C, g) => {
     case 'amp': {
       const raw = [[12.6, 3.2], [9.4, 0.7], [4.6, 4.4], [0.6, 10.6], [0.1, 15.4], [3.5, 18.8], [7, 15.6], [5, 11.4], [-1, 7.6], [-5.4, 3.4], [-3.4, 0.7], [1, 0.3], [5.6, 3.6], [8.4, 7.6], [9.6, 10.8]];
       penG(ink, raw.map(([a, b]) => P(a + j(0.5), b + j(0.5))), 2.5 * k, { con: 0.5, t0: 0.45 });
-      hc = ball(P(10.2, 12.2), 3.7 * k); hr = 3.7 * k;
+      hr = 3.7 * k; hc = P(10.2, 12.2); ink.dot(hc, hr);
+      { const ec = P(3.4, 18.1); ink.dot(ec, 2.1 * k); eyes.push({ p: [ec[0] + 0.3 * k, ec[1] + 0.1 * k], r: 0.85 * k }); } // one small eye set into the top loop
       for (const lx of [-3.6, 0.8, 9]) tick(lx * k, -(lg + 1 * k), rng.sign());
       tailP = P(12.6, 3.2); tailDir = 0;
       break;
@@ -706,7 +707,7 @@ chassis.janssonGlyph = (C, g) => {
         bar(ink, Pm(hxk, hy - 0.4), Pm(sd * br * 0.7, hy - 0.2), 1.4 * k);
       }
       hr = br * k; hc = Pm(0, hy + 0.6); ink.dot(hc, hr);
-      eyes.push(...[-1, 1].map(sd => ({ p: [hc[0] + sd * hr * 0.42, hc[1] - hr * 0.05], r: hr * 0.26 / 1.5 })));
+      eyes.push(...[-1, 1].map(sd => ({ p: [hc[0] + sd * hr * 0.36, hc[1] - hr * 0.12], r: hr * 0.11 })));
       tailP = Pm(-gp, hy * 0.5); tailDir = PI;
       break;
     }

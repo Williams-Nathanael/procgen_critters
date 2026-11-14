@@ -40,6 +40,12 @@ Signature features to lend: big round ringed eyes, a soft rounded snout or long 
 tasselled tail, tufts and single hairs, small props, the upright pear body.
 
 ## State
+- **M3b eye fix (2026-11-13), still 30 species.** Bracket peeper: the two eyes are now small
+  white points (r = 0.11 hr) set high in the head, no longer goggly discs. Ampersand knot: the
+  right-hand ball keeps no eye; one small ringed eye sits in an ink knob on the top loop, so the
+  glyph reads as a creature at print size. Judged at --cell 60.
+- **Watch, not fixed:** five blob-with-two-eyes species (shy lump, huddle, stack, stone peeper,
+  pot dweller) read as one template; comma crawler and loop runner legs are hairline at print size.
 - **M3 taste run (2026-11-13): 30 species** (was 33). Cut per the user: asterisk mite, pilcrow
   strider, stilt-legs. At-snail renamed **spiral snail**: the 'a' heart of the @ is gone, the shell is
   now an inward calligraphic spiral (1.25-1.85 turns, thin stroke, ball centre) on the old foot/neck,
