@@ -85,3 +85,25 @@ done). Sheets: `out/roads/03-dragon-species.png`, `out/roads/03-dragon-mixes.png
   so the head breaks the ring outline at the top.
 - Weak: draco is thin at print size; fire salamander chunky; jaculus, sleeping drake, sea
   serpent minors untouched.
+
+### M3 taste fixes (2026-11-13, judged at --cell 60)
+- Still 25 species. Only the five the user flagged were touched; the rest is unchanged.
+- Each was tried in 2-3 variants (scratch `amph A/B`, `bas A/B`, `cock A/B`, `our A/B`, `fire A`), best kept:
+  - **Amphisbaena**: low two-legged dragon (draco-like stance, sturdier legs), tail thick and held
+    high in an arc ending in a big second head (tipS 1.7-2). Rejected: serpent U with raised stern
+    (tail head too small, read as a lizard).
+  - **Basilisk**: 65% a crowned coiled serpent reared from a flat spiral with a big crown (reads
+    instantly at print size); 35% the old reared serpent on cock's legs, now shorter and thicker
+    with sturdier legs and bigger crown.
+  - **Cockatrice**: upright, pot-bellied cock body, short neck, big comb and wattle, feather wing
+    raised behind, serpent tail curled high with barb. Rejected: bat-wing version (wing became a
+    blob over the body).
+  - **Ouroboros**: thin ring, moderate head (1.5-1.65), snout follows the ring (`faceOff` on the
+    serpent ring), gaping jaws closing over a thin tapered tail tip; small horns/ears/none; 40%
+    winged. No foreleg (it made a lump at the bottom of the ring).
+  - **Fire salamander**: new `dragonNewt` chassis (low newt body, long tail, sprawled stout legs,
+    small flat head, no flame breath) and `dragonFlames` dorsal (low newt crest throwing up
+    curling flame tongues along back and tail), flame tail tip.
+- Weakest now: fire salamander is still small at cell 60 (long and low) and its flames are
+  somewhat regular; cockatrice could still read as a griffin to some; ouroboros head is only a
+  bump at cell 60.
