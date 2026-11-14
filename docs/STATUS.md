@@ -5,13 +5,17 @@ of every milestone. Per-tag detail lives in the State section of `docs/tags/<tag
 
 ## Where things stand (2026-11-14)
 
-**Waiting on the user: 1.0 taste check** (published 2026-11-14):
-https://claude.ai/artifact/Py2LfDvwLMuFgSZzTwihn1 (private; answers in its database,
-collection `answers`; rebuilt with `npm run review`, output in git-ignored `out/review/`).
-65 rows: 3 cut-or-retry, 25 unseen reworks, 9 weak leftovers, 28 mix pairs. Next
-conversation: read the answers (ArtifactData `list`), record them in `docs/BRIEF.md`, apply
-cuts and retries (one `species-builder` per tag), then push and tag 1.0. The user does not
-want encrypted-PDF export (decided 2026-11-14; place-only with the notice stays).
+**1.0 taste check answered (2026-11-14); 1.0 is NOT ready.** Answers are in
+`docs/BRIEF.md` ("Decisions (2026-11-14, 1.0 taste check)"). The user's major objection:
+a single tag only ever shows catalogue species; they want every critter to be a melding of
+its tag's species ("a hydra with an amphisbaena tail"). That is M8 below, then M9 (mix
+verdicts), then the 1.0 push. Nothing is pushed until the user says 1.0 is complete.
+Page: https://claude.ai/artifact/Py2LfDvwLMuFgSZzTwihn1 (rebuilt with `npm run review`).
+The user does not want encrypted-PDF export (decided 2026-11-14; place-only with the
+notice stays).
+
+**M8 phase 1 (in progress, 2026-11-14)**: one `engineer` (Opus) builds the within-tag
+hybrid mechanism in shared code; see queue item 8.
 
 **Working end to end**: `./critters` opens the app in the browser. Open a PDF, draw a
 scribble / polyline / box / oval border, stack tags, choose side, band depth, spacing and
@@ -327,6 +331,33 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
 7. **M7 Robustness. DONE 2026-11-14** (see "M7 result" above; text kept for
    reference). (engineer). Large and odd PDFs (many pages, encrypted, forms), memory
    on the 7.5 GB laptop, clear errors. [tested on 3 real-world PDFs]
+8. **M8 Within-tag hybrids** (the user's 1.0 blocker; see BRIEF 2026-11-14).
+   - Phase 1 (engineer, model opus; no tag workers running): mechanism in `critter.js`.
+     A single tag (and the primary of a mix) picks a base species and takes 1-3 slots from
+     other species of the same tag, and blends numeric genes where two species share a
+     part type. `opts.hybrid` 0..1, default high; 0 is bit-identical to today. Optional
+     tag-file hints (per species: never hybridize, slots it must keep, slots it should not
+     lend). Sheet tool can render pure or hybrid; UI slider; `AUTHORING.md` section.
+     [hybrid 0 bit-identical; all tags render at default hybrid with nothing below the
+     line; `test:export`, build pass; one 8-tag hybrid sheet at `--cell 60`]
+   - Phase 2 (one `species-builder` per tag, at most 3 at once, judge at `--cell 60`):
+     tune the hints so the tag's hybrids read as whole creatures and are visibly melded,
+     fix parts that break on a sibling's chassis. Fold in the 1.0 taste fixes for the tag:
+     arthropod cut woodlouse; fungus cut oyster mushroom, redo jelly ear (no flat
+     baseline); dragon amphisbaena second head gets an eye and reads as a head, and
+     "hydra with an amphisbaena tail" must occur; jansson ampersand knot's big spherical
+     lump reduced. Suggested batches: dragon, amphibian, arthropod; fungus, jansson,
+     mammal; salamander, plant.
+     [critic at `--cell 60` per tag; overseer looks at one sheet per batch]
+   - Phase 3: taste check with the user (one page, hybrid sheets per tag).
+9. **M9 Mix verdicts from the 1.0 taste check** (engineer, model opus, `mix` tables in tag
+   files; no tag workers running). Never: salamander+fungus (overseer's reading: when both
+   tags are stacked, each critter is one or the other, never a blend; confirm with the user
+   at M8 phase 3). Less of this: amphibian+arthropod, arthropod+plant, fungus+dragon,
+   fungus+mammal, salamander+jansson, plant+jansson (overseer's reading: blend less often
+   and improve what remains; the within-tag hybrids of M8 change these pairs, so re-render
+   `--pairs` first). [critic on the 28-pair sheet; user check]
+10. **1.0**: clean-copy check, push, tag. Only on the user's say-so.
 
 ## Known issues
 

@@ -139,3 +139,45 @@ the user's. "Overseer reading" marks an interpretation, not something the user s
 - Favourites: every salamander+animal pair (amphibian, arthropod, dragon, mammal),
   amphibian+arthropod, amphibian+dragon, arthropod+dragon ("Lovely combinations"),
   fungus+jansson, mammal+jansson.
+
+## Decisions (2026-11-14, 1.0 taste check)
+
+Page: https://claude.ai/artifact/Py2LfDvwLMuFgSZzTwihn1 (raw answers in its database,
+collection `answers`). Overall: "More of them work better than I expected!"
+
+**The major objection (blocks 1.0): no hybridization within a tag.** In the user's words:
+"within species, we have almost no hybridization. Much of the point is that these fellows,
+even as lone tags, are procedurally generated afresh, but as is they just generate from a
+pool of ~40 species with ~3 noticeable variations per species. Can we have a major overhaul
+to make e.g. each amphibian be an unnameable hybrid of the amphibians rather than the
+present singular type? Or even if it does have a visible base, absolutely being an
+interesting melding? If we can't get a hydra with an amphisbaena tail, I'm dissatisfied and
+don't feel that it's really procedurally generated."
+So: a single tag must produce meldings of its own species by default, not one species at a
+time. A visible base species is acceptable; a plain catalogue entry is not.
+
+**Species**
+- Cut: woodlouse (arthropod), oyster mushroom (fungus, "Log still doesn't read right").
+- Try again: amphisbaena ("the second head needs an eye, or at least a little more to not
+  read as just 'funky tail'"); jelly ear ("Log almost reads right, I'd keep this as is but
+  would prefer a redo. The 'flat baseline' style it's running doesn't quite work");
+  ampersand knot ("Eye is good, the big lump is questionable; if the big lump were not so
+  spherical and bothersome I'd say keep as is").
+- Kept, with comments: coconut crab "Quite handsome", squat lobster "Also handsome",
+  chicken of the woods "Very good", lattice cage "Aha! Much nicer.", ouroboros "Much
+  better", beaver "Works.", fire salamander "A little busy, but workable.", spiral snail
+  "Is alright, though it lost some of the charm."
+- Kept without comment: all other new arthropods, mantis shrimp, basilisk, cockatrice,
+  Surinam toad, hare's ear, the four vines. Weak leftovers left as they are: trilobite,
+  pill bug, giant puffball, earthball, jaculus, sleeping drake, hairy frog, midwife toad.
+
+**Mixes** (20 fine, 7 less of this, 1 never)
+- Never: salamander+fungus ("A little overdone, these fellows do get boring now; switching
+  to pure cap-head wasn't great").
+- Less of this: amphibian+arthropod ("These don't work as well as I expected"),
+  arthropod+plant ("Doesn't really feel special, somehow."), fungus+dragon ("They don't
+  work as well as I hoped"), fungus+mammal ("Not great, same as salamanders."),
+  salamander+jansson ("Doesn't combine smoothly."), plant+jansson (no comment).
+- Fine, with comments: salamander+arthropod "Cooler than I expected", amphibian+fungus
+  "Nice", dragon+plant "Rather good", dragon+jansson "Not as good as I hoped, but still
+  okay."
