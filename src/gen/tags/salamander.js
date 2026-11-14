@@ -525,7 +525,9 @@ const isTop = k => !['walkS', 'alert', 'tall', 'unken', 'swim', 'tailcurl'].incl
 
 // Seen from the side a sprawling leg shows only its lower part: shorter, nearly straight legs
 // angled fore-forward / hind-back read as walking; long bent ones merge into blocks.
-const sideLegs = (L, top, d) => top ? L : { ...L, len: L.len * (d.sideLegK ?? (d.stout ? 0.85 : 0.7)), w: L.w * (d.stout ? 0.95 : 0.78), stance: d.sideStance ?? 0.35, lift: d.sideLift ?? L.lift };
+// sprawl: parts.limb() tames these legs when lent to another tag's side-view body
+// (near arm only; top-view legs also shortened by sprawlK)
+const sideLegs = (L, top, d) => top ? { ...L, sprawl: 'salamander', sprawlK: 0.7 } : { ...L, sprawl: 'salamander', len: L.len * (d.sideLegK ?? (d.stout ? 0.85 : 0.7)), w: L.w * (d.stout ? 0.95 : 0.78), stance: d.sideStance ?? 0.35, lift: d.sideLift ?? L.lift };
 
 // One generic assembler: d describes the species; kind is the chosen pose.
 function make(r, d, kinds) {

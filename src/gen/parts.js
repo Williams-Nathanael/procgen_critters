@@ -204,7 +204,11 @@ export function limb(C, sock, g) {
   const { ink, rng } = C, s = sock.s, role = sock.role;
   const isArm = role === 'arm', hind = role === 'hind';
   if (sock.far && g.noFar) return;
-  let len = g.len * s * (isArm ? (g.arm ?? 0.75) : 1) * (hind ? (g.hind ?? 1) : 1);
+  // top-view sprawling legs lent to a side-view body: only the near arm, at side-leg length
+  // (both arms splayed out like a pinned specimen read wrong on upright folk)
+  const tame = g.sprawl && g.sprawl !== C.plan.tag && C.plan.view === 'side';
+  if (tame && isArm && sock.side < 0) return;
+  let len = g.len * s * (tame ? g.sprawlK ?? 1 : 1) * (isArm ? (g.arm ?? 0.75) : 1) * (hind ? (g.hind ?? 1) : 1);
   const w0 = Math.max(g.w * s * (hind ? (g.hindW ?? 1) : 1) * (isArm ? 0.8 : 1), MINW), w1 = Math.max(w0 * g.taper, MINW);
   const curve = g.angular ? (pts => polyline(pts, 4)) : (pts => spline(pts, 6));
   const jit = () => rng.range(-0.12, 0.12);
