@@ -187,3 +187,23 @@ time. A visible base species is acceptable; a plain catalogue entry is not.
 - Follow-up on the "less of this" pairs (same day): "the same - take a look for a redesign,
   or leave as is - but not high priority, because I either don't care much about them or
   think they're already okay. Not every combination needs to look amazing."
+
+## Decisions (2026-11-14, after the first hybrid mechanism)
+
+The user saw the first within-tag hybrids (base species + 1-3 borrowed slots, 85%) and
+rejected the approach: "I still don't like it. The procedural generation idea feels like
+it's falling by the wayside and being replaced with 'a hydra with a bit extra tacked on' -
+these things really should be chimeras, albeit chimeras that make an effort to have some
+coherence. Their point is not to be 'a surinam toad with some modifications,' their point
+is to be 'some creature, inspired by real life but not of it'. The slider is a good idea,
+but at 100% it really should be 100% hybridization, hybridized to the max; if I want less,
+that's just a reason to set the slider lower."
+
+So:
+- The species libraries are a parts-and-proportions vocabulary, not a catalogue. The normal
+  output of a tag is a creature nobody can name.
+- Hybrid 100% means no base species at all: every part from a different parent where
+  possible, the body itself a blend, proportions free to land between and beyond the
+  parents. Coherence (parts attached, scaled to the body, reading as one animal) is still
+  required at 100%.
+- The slider is the user's way to ask for less; do not hold back at the top of its range.

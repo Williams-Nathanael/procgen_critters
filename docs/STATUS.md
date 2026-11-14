@@ -14,6 +14,10 @@ Page: https://claude.ai/artifact/Py2LfDvwLMuFgSZzTwihn1 (rebuilt with `npm run r
 The user does not want encrypted-PDF export (decided 2026-11-14; place-only with the
 notice stays).
 
+**M8 phase 1b (in progress, 2026-11-14)**: the user rejected the phase 1 result as "a hydra
+with a bit extra tacked on" (BRIEF, "after the first hybrid mechanism"). One engineer (Opus)
+is reworking the mechanism so 100% is a true chimera with no base species; phase 2 waits.
+
 **M8 phase 1 result (2026-11-14)**: within-tag hybrid mechanism done in one engineer (Opus)
 run (ec19f7b) plus an overseer look at the 8-tag sheet. Kept sheet:
 `out/roads/05-hybrids-untuned.png`, tag `road-05-hybrids-untuned`. **Next: M8 phase 2,
