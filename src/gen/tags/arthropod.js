@@ -1179,5 +1179,7 @@ const species = [
 export default {
   id: 'arthropod', label: 'Crustaceans & arthropods', short: 'Arthropods',
   sig: { crown: 3, limbs: 3, tail: 2.5, dorsal: 1.2, head: 1 },
+  // M4: on amphibian bodies insect legs give centipede/cricket looks; lend armour and feelers
+  mix: { amphibian: { sig: { crown: 3, tail: 2, dorsal: 2 }, want: [[3, 1], [2, 2]] } },
   species,
 };
