@@ -30,7 +30,7 @@ main { flex: 1; display: flex; min-height: 0; }
 #pdf { display: block; }
 #overlay { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 #overlay.draw { cursor: crosshair; }
-#overlay .critter { fill: #000; }
+#overlay .critter { fill: var(--c, #000); }
 #overlay.pick .critter { cursor: pointer; }
 #overlay.pick .critter:hover { fill: var(--accent); }
 #overlay .band { fill: var(--sel); opacity: .1; pointer-events: none; }
@@ -70,3 +70,15 @@ details summary { cursor: pointer; color: var(--muted); font-size: 12px; text-tr
 .samples { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 10px 0 2px; padding: 8px; background: #fff; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
 .samples svg { width: 100%; height: 46px; }
 .samples path { fill: #000; fill-rule: nonzero; }
+
+.line input[type=color] { width: 40px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--chip); cursor: pointer; }
+.line input[type=text] { width: 9ch; background: var(--chip); border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+#presetsel { max-width: 140px; }
+#help { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 10; }
+#help[hidden] { display: none; }
+#help .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 22px; max-width: 560px; max-height: 85vh; overflow: auto; }
+#help h2 { margin: 0 0 4px; font-size: 17px; }
+#help h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 12px 0 4px; }
+#help dl { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; margin: 0; }
+#help dt { font-weight: 600; font-size: 13px; }
+#help dd { margin: 0; font-size: 13px; }

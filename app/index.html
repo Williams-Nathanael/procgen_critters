@@ -31,7 +31,9 @@
   </div>
   <div class="group right">
     <button id="undo" title="Undo (Ctrl+Z)">Undo</button>
-    <button id="export" class="primary">Export PDF</button>
+    <button id="helpbtn" title="Keyboard shortcuts and mouse tips (?)">?</button>
+    <button id="exportpage" title="Export only the page you are looking at (that page alone, with its critters)">Export this page</button>
+    <button id="export" class="primary" title="Export every page with critters">Export PDF</button>
   </div>
 </header>
 <main>
@@ -46,6 +48,7 @@
     <div id="panel"></div>
   </aside>
 </main>
+<div id="help" hidden></div>
 <script type="module" src="dist/main.js"></script>
 </body>
 </html>

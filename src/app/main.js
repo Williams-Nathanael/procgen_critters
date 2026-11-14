@@ -5,17 +5,18 @@ import { TAGS, TAG_NAMES } from '../gen/tags/index.js';
 import { ringsToPath } from '../gen/core.js';
 import { makeCritter } from '../gen/critter.js';
 import { DEFAULTS, placeBorder, placeInteractive, bandOutline, borderPolyline } from '../place.js';
-import { exportPdf } from '../export.js';
+import { exportPdf, hexToRgb } from '../export.js';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL('./dist/pdf.worker.min.mjs', document.baseURI).href;
 const $ = s => document.querySelector(s);
 const el = (tag, attrs = {}, ...kids) => {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) { if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (v !== false && v != null) e.setAttribute(k, v === true ? '' : v); }
-  for (const k of kids.flat()) if (k != null) e.append(k);
+  for (const k of kids.flat(3)) if (k != null) e.append(k);
   return e;
 };
 
+const DEFAULT_INK = '#000000';
 const state = {
   name: 'blank page', bytes: null, doc: null, numPages: 1,
   page: 1, zoom: 1, fit: true, pageW: 612, pageH: 792, viewport1: null,
@@ -126,6 +127,7 @@ function drawOverlay(draft = null) {
     if (!m.el || m.sel !== sel) {
       const poly = borderPolyline(b), d = polyD(poly.pts, poly.closed);
       m.el = svgGroup(`<path class="hit" data-b="${b.id}" d="${d}"/>` + r.items.map(it => `<path class="critter" data-b="${b.id}" data-slot="${it.slot}" d="${ringsToPath(it.rings, null, 2)}"/>`).join('') + `<path class="bline${sel ? ' sel' : ''}" d="${d}"/>`);
+      m.el.style.setProperty('--c', b.settings.ink || DEFAULT_INK);
       m.sel = sel;
     }
     nodes.push(m.el);
@@ -212,6 +214,9 @@ function setupPointer() {
   svg.addEventListener('dblclick', finishPoly);
   window.addEventListener('keydown', e => {
     if (e.target.matches('input, select, textarea')) return;
+    if (e.key === 'Escape' && !$('#help').hidden) { toggleHelp(false); return; }
+    if (e.key === '?') { toggleHelp(); return; }
+    if (!$('#help').hidden) return;
     if (e.key === 'Enter') finishPoly();
     if (e.key === 'Escape') { polyDraft = null; drag = null; drawOverlay(); }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
@@ -299,6 +304,60 @@ function describe(b) {
   return `${kind} · ${b.settings.tags.map(t => t.slice(0, 4)).join('+') || 'no tags'} · ${where}`;
 }
 
+// ------------------------------------------------------------------ presets
+const PRESET_KEYS = ['tags', 'side', 'radius', 'spacing', 'size', 'facing', 'sizeVar', 'spacingVar', 'lift', 'tilt', 'startOffset', 'detail', 'chaos', 'plump', 'avoidOverlap', 'ink'];
+const BUILTIN_PRESETS = {
+  'Tidy row': { tags: ['salamander'], side: 'left', radius: 40, spacing: 72, size: 40, sizeVar: 0.1, spacingVar: 0.1, tilt: 0, lift: 0 },
+  'Dense hedge': { tags: ['plant', 'fungus'], side: 'both', radius: 50, spacing: 24, size: 24, sizeVar: 0.35, spacingVar: 0.4, tilt: 0.2 },
+  'Sparse wanderers': { tags: ['mammal'], side: 'left', radius: 70, spacing: 190, size: 56, sizeVar: 0.3, spacingVar: 0.5, facing: 'random' },
+  'Tiny frieze': { tags: ['salamander', 'fungus'], side: 'left', radius: 20, spacing: 30, size: 16, sizeVar: 0.15, spacingVar: 0.1 },
+};
+const loadPresets = () => { try { return JSON.parse(localStorage.getItem('critters:presets') || '{}') || {}; } catch { return {}; } };
+const storePresets = p => { try { localStorage.setItem('critters:presets', JSON.stringify(p)); } catch { /* storage unavailable */ } };
+function applyPreset(p) {
+  const b = selected(); if (b) pushHistory();
+  const st = target();
+  for (const k of PRESET_KEYS) if (k in p) st[k] = structuredClone(p[k]);
+  if (p.ink) state.defaults.ink = p.ink;
+  changed();
+}
+function presetBar(st, b) {
+  const user = loadPresets();
+  const sel = el('select', { id: 'presetsel', title: 'Saved and built-in sets of border options' },
+    el('option', { value: '' }, 'Presets…'),
+    Object.keys(BUILTIN_PRESETS).map(n => el('option', { value: 'b:' + n }, n)),
+    Object.keys(user).map(n => el('option', { value: 'u:' + n }, n + ' (saved)')));
+  const pick = () => { const v = sel.value; return v.startsWith('b:') ? BUILTIN_PRESETS[v.slice(2)] : v.startsWith('u:') ? user[v.slice(2)] : null; };
+  const name = el('input', { type: 'text', id: 'presetname', placeholder: 'name', size: 10, title: 'Name for a new preset' });
+  return el('div', { class: 'line' },
+    sel,
+    el('button', { id: 'presetapply', title: b ? 'Apply to the selected border' : 'Apply to the settings for the next border', onclick: () => { const p = pick(); if (p) applyPreset(p); } }, 'Apply'),
+    el('button', { id: 'presetdel', title: 'Delete the chosen saved preset', onclick: () => { if (sel.value.startsWith('u:')) { delete user[sel.value.slice(2)]; storePresets(user); drawPanel(); } } }, 'Delete'),
+    name,
+    el('button', { id: 'presetsave', title: 'Save the current options under this name', onclick: () => {
+      const n = name.value.trim(); if (!n) return;
+      const p = {}; for (const k of PRESET_KEYS) if (k in st) p[k] = structuredClone(st[k]);
+      user[n] = p; storePresets(user); drawPanel();
+    } }, 'Save'));
+}
+
+// ------------------------------------------------------------------ keyboard help
+const HELP = [
+  ['Tools', [['F', 'Scribble'], ['L', 'Line (click points; double-click or Enter to finish)'], ['R', 'Box'], ['O', 'Oval'], ['V', 'Select']]],
+  ['Drawing', [['Shift + drag / click', 'Snap line to 45 degrees; square box; circle'], ['Enter', 'Finish a line'], ['Esc', 'Cancel the line being drawn']]],
+  ['Select tool', [['Click a border', 'Select it; drag to move it'], ['Click a critter', 'Reroll just that critter'], ['Alt + click / Shift + click a critter', 'Remove that critter'], ['Delete / Backspace', 'Delete the selected border']]],
+  ['General', [['Ctrl + Z', 'Undo'], ['?', 'Show or hide this help'], ['Esc', 'Close this help'], ['Drop a PDF on the page', 'Open it']]],
+];
+function toggleHelp(show = $('#help').hidden) {
+  const h = $('#help'); h.hidden = !show;
+  if (show) {
+    h.replaceChildren(el('div', { class: 'card', role: 'dialog', 'aria-label': 'Keyboard shortcuts' },
+      el('h2', {}, 'Shortcuts and mouse'),
+      HELP.map(([t, rows]) => [el('h3', {}, t), el('dl', {}, rows.map(([k, d]) => [el('dt', {}, k), el('dd', {}, d)]))]),
+      el('button', { onclick: () => toggleHelp(false) }, 'Close (Esc)')));
+  }
+}
+
 function drawPanel() {
   const b = selected(), st = target(), panel = $('#panel');
   const closed = b ? borderPolyline(b).closed : false;
@@ -312,6 +371,13 @@ function drawPanel() {
   if (st.tags.length > 1) kids.push(el('p', { class: 'note' }, 'Stacked: each critter takes its body from one of these and borrows features from the others, differently each time.'));
   if (!st.tags.length) kids.push(el('p', { class: 'note' }, 'Pick at least one tag.'));
   else kids.push(sampleStrip(st));
+
+  kids.push(el('div', { class: 'line' }, el('label', { for: 'ink' }, 'Ink colour'),
+    el('input', { type: 'color', id: 'ink', value: st.ink || DEFAULT_INK, title: 'Colour of the critters, on screen and in the exported PDF. New borders use the last colour you picked.',
+      onpointerdown: () => { if (b) pushHistory(); },
+      oninput: e => { st.ink = e.target.value; state.defaults.ink = st.ink; drawSoon(); },
+      onchange: () => changed() })));
+  kids.push(presetBar(st, b));
 
   kids.push(el('h3', {}, 'Side of the line'));
   kids.push(seg(closed ? [['left', 'Outside'], ['right', 'Inside'], ['both', 'Both']] : [['left', 'One side'], ['right', 'Other side'], ['both', 'Both']], () => st.side, v => { st.side = v; }));
@@ -379,23 +445,23 @@ async function loadProject(e) {
   catch (err) { alert('Could not read that file: ' + err.message); }
 }
 
-async function buildExport() {
+async function buildExport(only = 0) {
   const pages = [];
-  for (let n = 1; n <= state.numPages; n++) {
+  for (let n = only || 1; n <= (only || state.numPages); n++) {
     const bs = state.borders.filter(b => appliesTo(b, n)); if (!bs.length) continue;
     const vp = (await state.doc.getPage(n)).getViewport({ scale: 1 });
-    const critters = bs.flatMap(b => placeBorder(b, pageKey(b, n)));
-    const strokes = bs.filter(b => b.showLine).map(b => { const p = borderPolyline(b); return { pts: p.pts, closed: p.closed, width: 0.6 }; });
+    const critters = bs.flatMap(b => { const ink = hexToRgb(b.settings.ink || DEFAULT_INK); return placeBorder(b, pageKey(b, n)).map(c => ({ rings: c.rings, ink })); });
+    const strokes = bs.filter(b => b.showLine).map(b => { const p = borderPolyline(b); return { pts: p.pts, closed: p.closed, width: 0.6, ink: hexToRgb(b.settings.ink || DEFAULT_INK) }; });
     pages.push({ index: n - 1, toPdf: pt => vp.convertToPdfPoint(pt[0], pt[1]), critters, strokes });
   }
-  return exportPdf(state.bytes, pages);
+  return exportPdf(state.bytes, pages, only ? { onlyIndex: only - 1 } : {});
 }
 state.buildExport = buildExport;
-async function doExport() {
-  const btn = $('#export'); btn.disabled = true; btn.textContent = 'Exporting…';
-  try { download(await buildExport(), state.name.replace(/\.pdf$/i, '').replace(/ /g, '-') + '-critters.pdf', 'application/pdf'); }
+async function doExport(only = 0) {
+  const btn = $(only ? '#exportpage' : '#export'), label = btn.textContent; btn.disabled = true; btn.textContent = 'Exporting…';
+  try { download(await buildExport(only), state.name.replace(/\.pdf$/i, '').replace(/ /g, '-') + (only ? `-p${only}` : '') + '-critters.pdf', 'application/pdf'); }
   catch (err) { console.error(err); alert('Export failed: ' + err.message); }
-  btn.disabled = false; btn.textContent = 'Export PDF';
+  btn.disabled = false; btn.textContent = label;
 }
 
 // ------------------------------------------------------------------ wiring
@@ -413,7 +479,10 @@ async function init() {
   $('#zoomout').onclick = () => { state.fit = false; state.zoom = Math.max(state.zoom / 1.25, 0.2); showPage(); };
   $('#zoomfit').onclick = () => { state.fit = true; showPage(); };
   $('#undo').onclick = undo;
-  $('#export').onclick = doExport;
+  $('#export').onclick = () => doExport();
+  $('#exportpage').onclick = () => doExport(state.page);
+  $('#helpbtn').onclick = () => toggleHelp(true);
+  $('#help').addEventListener('click', e => { if (e.target.id === 'help') toggleHelp(false); });
   for (const b of document.querySelectorAll('#tools button')) b.onclick = () => setTool(b.dataset.tool);
   window.addEventListener('resize', () => { if (state.fit) showPage(); });
   const stage = $('#stage');

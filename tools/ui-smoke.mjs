@@ -1,5 +1,6 @@
 // UI smoke test: load sample PDF, demo borders, then draw by hand with real pointer events.
 const base = process.env.APP_URL || 'http://127.0.0.1:4188/app/';
+import { inflateSync } from 'node:zlib';
 const assert = (c, m) => { if (!c) throw new Error('ASSERT: ' + m); };
 export default async function (ff) {
   // headless Firefox sometimes never reports 'complete' for the pdf page even though it is up; retry once
@@ -85,4 +86,49 @@ export default async function (ff) {
   const same = await ff.eval(`(() => { const s = window.__critters; return s.borders.length === 3 && document.querySelectorAll('#overlay .critter').length > 100; })()`);
   assert(same, 'overlay lost critters after slider drags');
   await ff.shot('out/tmp/ui-3borders.png');
+
+  // --- M6a: ink colour, single-page export, presets, keyboard help
+  await ff.eval(`(() => { const i = document.querySelector('#ink'); i.value = '#ff0000'; i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); })()`);
+  await ff.waitFor(`!window.__critters.stale`, 20000);
+  const ink = await ff.eval(`JSON.stringify([window.__critters.borders[0].settings.ink, window.__critters.borders[1].settings.ink, window.__critters.defaults.ink, document.querySelector('#overlay .critter').parentNode.style.getPropertyValue('--c')])`);
+  console.log('ink:', ink);
+  assert(JSON.parse(ink)[0] === '#ff0000' && JSON.parse(ink)[2] === '#ff0000' && JSON.parse(ink)[3] === '#ff0000', 'ink colour not applied to selected border / overlay');
+  assert(await ff.eval(`JSON.parse(${JSON.stringify(ink)})[1] !== '#ff0000'`), 'ink leaked onto another border');
+  const b64 = await ff.eval(`window.__critters.buildExport().then(u => { let s = ''; for (let i = 0; i < u.length; i += 8192) s += String.fromCharCode(...u.subarray(i, i + 8192)); return btoa(s); })`);
+  const raw = Buffer.from(b64, 'base64'); let streams = '';
+  for (let at = raw.indexOf('stream\n'); at >= 0; at = raw.indexOf('stream\n', at + 7)) {
+    const end = raw.indexOf('endstream', at); if (end < 0) break;
+    try { streams += inflateSync(raw.subarray(at + 7, end)).toString('latin1'); } catch { /* not flate */ }
+  }
+  assert(/(^|\s)1 0 0 rg/.test(streams) && /(^|\s)0 0 0 rg/.test(streams), 'exported PDF lacks the red fill or the other borders\' black');
+  await ff.eval(`(() => { const s = window.__critters; s.selected = null; s.redraw(); })()`);
+  await ff.eval(`(() => { const s = window.__critters; s.borders.push({ id: 300, kind: 'line', pts: [[40, 40], [300, 60]], closed: false, page: 1, scope: 'page', overrides: {}, showLine: false, settings: { ...structuredClone(s.defaults), tags: ['salamander'], seed: 3 } }); })()`);
+  assert(await ff.eval(`window.__critters.defaults.ink === '#ff0000'`), 'last-used ink should be the default for new borders');
+  await ff.eval(`document.querySelector('[data-tool=select]').click(), 1`);
+
+  assert(await ff.eval(`!!document.querySelector('#exportpage')`), 'no Export this page button');
+  assert(await ff.eval(`window.__critters.buildExport(1).then(u => u.length > 500 && String.fromCharCode(...u.subarray(0, 4)) === '%PDF')`), 'single-page export failed');
+
+  // presets: save, change an option, apply it back, delete
+  await ff.eval(`(() => { const s = window.__critters; s.selected = 100; s.redraw(); })()`);
+  await ff.eval(`(() => { const n = document.querySelector('#presetname'); n.value = 'smoke'; document.querySelector('#presetsave').click(); })()`);
+  assert(await ff.eval(`!!JSON.parse(localStorage.getItem('critters:presets') || '{}').smoke`), 'preset not saved');
+  await ff.eval(`(() => { const b = window.__critters.borders[0]; b.settings.size = 99; b.settings.tags = ['plant']; window.__critters.redraw(); })()`);
+  await ff.eval(`(() => { const sel = document.querySelector('#presetsel'); sel.value = 'u:smoke'; document.querySelector('#presetapply').click(); })()`);
+  const pb = await ff.eval(`JSON.stringify(window.__critters.borders[0].settings)`);
+  assert(JSON.parse(pb).size === 16 && JSON.parse(pb).tags.join() === 'mammal,fungus', 'preset apply did not restore the border options: ' + pb);
+  await ff.eval(`(() => { const sel = document.querySelector('#presetsel'); sel.value = 'b:Sparse wanderers'; document.querySelector('#presetapply').click(); })()`);
+  assert(await ff.eval(`window.__critters.borders[0].settings.size === 56`), 'built-in preset did not apply');
+  assert(await ff.eval(`window.__critters.borders[1].settings.size === 10`), 'preset leaked onto an unselected border');
+  await ff.eval(`(() => { const sel = document.querySelector('#presetsel'); sel.value = 'u:smoke'; document.querySelector('#presetdel').click(); })()`);
+  assert(await ff.eval(`!JSON.parse(localStorage.getItem('critters:presets') || '{}').smoke`), 'preset not deleted');
+  console.log('presets ok');
+
+  // keyboard help
+  const key = k => ff.eval(`(document.body.dispatchEvent(new KeyboardEvent('keydown', { key: ${JSON.stringify(k)}, bubbles: true })), document.querySelector('#help').hidden)`);
+  assert(await key('?') === false, '? did not open help');
+  assert(await ff.eval(`document.querySelectorAll('#help dt').length > 10 && /Alt/.test(document.querySelector('#help').textContent)`), 'help lacks shortcut list');
+  await ff.shot('out/tmp/ui-help.png');
+  assert(await key('Escape') === true, 'Esc did not close help');
+  await ff.shot('out/tmp/ui-m6a.png');
 }
