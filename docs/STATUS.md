@@ -68,6 +68,22 @@ batch 1 (builder, `critic` at `--cell 60`, one fix run, overseer look). Counts n
   invisible at print size); mole salamander legs barely show in side view; amphiuma, siren,
   newt larva untouched.
 
+**M3b batch 3 result (2026-11-14)**: mammal and plant done, which closes M3b. Counts now:
+mammal 35, plant 51.
+- mammal (one builder run, `critic` at `--cell 60` found nothing that would bother the user,
+  no fix run): beaver's paddle tail is thicker, lifted and tilted up and shows on every seed
+  (the fix is in `tips.mammalPaddle`, so paddle tails lent to other tags are thicker in side
+  view too; mixes looked fine); harvest mouse only climbs a stalk; house mouse has no
+  standing pose. Watch: harvest mouse is small next to its stalk; beaver still the weakest;
+  house mouse sitting upright reads a little rat-like on some seeds.
+- plant (builder, `critic`, one fix run, overseer look): four vines kept on a new `vine`
+  form, each with its own layout: wisteria (arch with hanging racemes, the best), bottle
+  gourd (sprawling arch, gourd hanging clear), grapevine (trunk and cane, bunches hanging),
+  ivy (creeps low along the line). Passionflower tried twice and cut (read as a thistle,
+  then as a stem with a cross on top). Not yet shown to the user. Watch: grapevine leaves
+  still a little flag-like and the whole reads somewhat like a signpost; ivy small at print
+  size; vine parts lent into mixes were only glanced at (three pairs, nothing broken).
+
 **M2 result**: the final critic pass ranks nothing "would bother the user" in dragon,
 salamander, jansson and plant. Seven items remain in the other four (capped at two fix
 rounds per tag to bound cost; they go to the user at M3 as cut-or-fix choices):
@@ -112,7 +128,7 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
      sorts), **amphibian** (cut horned frog, coiled caecilian, poison dart frog; faithful
      Surinam toad body plan), **salamander** (sturdier legs on about half the species; if
      that needs `parts.js`, stop and report).
-   - Batch 3: **mammal** (beaver, one attempt, keep as is if it fails; harvest mouse
+   - Batch 3 **DONE 2026-11-14** (see "M3b batch 3 result" above): **mammal** (beaver, one attempt, keep as is if it fails; harvest mouse
      climbing only; house mouse no standing pose). **plant** optional: a few vines, kept
      only if coherent.
    [each changed tag passes a `critic` look at `--cell 60`; sheets regenerated]
@@ -145,6 +161,10 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    spindly; give the fungus donor more of the outline. The sheet tool throws in
    `chooseDonors` on `<tag>+legacy` (`src/gen/tags/legacy` has no `sig`) and in
    `pickSpecies` on an unknown tag id; skip or report cleanly.
+   From M3b batch 3 (sheet tool, `tools/sheet.mjs`): an unmatched species name
+   (`"mammal@harvestMouse"`, and reportedly `plant@bindweed`, hops, pea, strawberry runner)
+   silently renders random species of the tag; it should fail with the list of valid names.
+   Support `tag@species+othertag` so one species can be pinned inside a mix row.
    [critic on a 28-pair sheet]
 5. **M5 Placement polish** (engineer). No identical species adjacent; spacing by actual
    critter width; corners of boxes and tight curves handled; "both sides" staggered;
