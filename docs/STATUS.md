@@ -14,8 +14,29 @@ Page: https://claude.ai/artifact/Py2LfDvwLMuFgSZzTwihn1 (rebuilt with `npm run r
 The user does not want encrypted-PDF export (decided 2026-11-14; place-only with the
 notice stays).
 
-**M8 phase 1 (in progress, 2026-11-14)**: one `engineer` (Opus) builds the within-tag
-hybrid mechanism in shared code; see queue item 8.
+**M8 phase 1 result (2026-11-14)**: within-tag hybrid mechanism done in one engineer (Opus)
+run (ec19f7b) plus an overseer look at the 8-tag sheet. Kept sheet:
+`out/roads/05-hybrids-untuned.png`, tag `road-05-hybrids-untuned`. **Next: M8 phase 2,
+batch 1 (dragon, amphibian, arthropod)**, one conversation per batch.
+- `makeCritter`: the base species borrows 1-3 of head/limbs/tail/dorsal/crown from siblings
+  of the same tag (surface follows head) and blends numeric genes toward one sibling where
+  part types match, chassis included. `opts.hybrid` default 0.85; hybrids draw from their
+  own rng stream, so `hybrid: 0` is bit-identical to before (3,600 seeds, pure and all 28
+  mixes). In a mix, slots lent by another tag stay lent.
+- Result carries `species` as `base x donor x ...`, plus `base` and `hybrid` (slot -> sibling).
+- Species hints in tag files, `hybrid: { never, keep, noLend }` (AUTHORING.md). No tag file
+  uses them yet; that is phase 2.
+- Sheet tool: `--hybrid <0..1>`; `tag@species` rows are pure by default; cells captioned
+  with the melded name. UI: "Hybrid" slider under More options, in presets and session.
+- 8 tags x 2,000 seeds: no throws, nothing below the line. "Hydra with an amphisbaena tail"
+  occurs (dragon seed 157). Build, `test:export`, `test:ui` pass. Bench mean 4.23 -> 5.34 ms.
+- Overseer look (untuned): mammal, dragon, salamander and amphibian already read as whole
+  creatures, though salamander and amphibian meldings are subtle (siblings too alike; they
+  may need bolder borrowing). Fungus, arthropod and plant show collages and detached-looking
+  bits; jansson is uneven. The "Hybrids" notes in each `docs/tags/<tag>.md` come from an
+  automated scan (pieces apart, very stretched shapes), not from looking at sheets.
+- Watch: old presets and saved sessions get the default hybrid; phase 2 workers need
+  `--hybrid 0` or `tag@species` when they judge a pure species.
 
 **Working end to end**: `./critters` opens the app in the browser. Open a PDF, draw a
 scribble / polyline / box / oval border, stack tags, choose side, band depth, spacing and
@@ -332,7 +353,7 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    reference). (engineer). Large and odd PDFs (many pages, encrypted, forms), memory
    on the 7.5 GB laptop, clear errors. [tested on 3 real-world PDFs]
 8. **M8 Within-tag hybrids** (the user's 1.0 blocker; see BRIEF 2026-11-14).
-   - Phase 1 (engineer, model opus; no tag workers running): mechanism in `critter.js`.
+   - Phase 1 **DONE 2026-11-14** (see "M8 phase 1 result" above). (engineer, model opus; no tag workers running): mechanism in `critter.js`.
      A single tag (and the primary of a mix) picks a base species and takes 1-3 slots from
      other species of the same tag, and blends numeric genes where two species share a
      part type. `opts.hybrid` 0..1, default high; 0 is bit-identical to today. Optional
