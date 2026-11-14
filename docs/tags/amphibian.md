@@ -25,6 +25,15 @@ eyes, toe pads, inflated throat, tadpole tail. Default eyes: a small dot only wh
 helps; most should read without.
 
 ## State
+2026-11-14 M3 taste run: **25 species** (was 28). Cut horned frog, coiled caecilian, poison
+dart frog (user rejects). Surinam toad redrawn on its own chassis `amphibianPipa` (draws
+body, head and limbs whole; limb genes ignored on it, `amphLimbless` so foreign legs skip
+it): flat rounded-square body a little wider at the hips, flat straight-sided triangular
+head, thin arms reaching forward with four long fingers ending in star tips (dot cross),
+big five-toed fully webbed hind feet swept out behind on short thighs. Reads apart from
+the flying frog's X at --cell 60. Weakest now: four-legged tadpole, crested newt, midwife
+toad (eggs small), hairy frog, walking toad (low at print size).
+
 2026-11-13 M2 fix run 2 (judged at --cell 60 only): cut narrowmouth toad (never read apart
 from horned frog/common toad at print size). Horned frog: always gaping, much longer brow
 horns. Common toad: bigger parotoids, fewer larger warts, thicker limbs. Flying frog: shorter

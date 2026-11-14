@@ -323,6 +323,54 @@ chassis.amphibianTop = (C, g) => {
   };
 };
 
+// Surinam toad (Pipa pipa), top view, drawn whole: a flat square leaf of a body, a small
+// flat triangular head, thin forward-reaching arms with long fingers ending in star tips,
+// and big fully webbed hind feet swept out behind. Limb genes are ignored on its own chassis.
+chassis.amphibianPipa = (C, g) => {
+  const { ink, rng } = C, h = g.r * C.plump, L = g.len, j = () => rng.range(-1, 1);
+  const xf = L / 2, xb = -L / 2, hl = h * g.headL, hw = h * g.headW, sq = g.square;
+  // body: rounded square, slightly wider at the hips like the real animal
+  const body = [[xf, -h * 0.82], [xf * 0.35, -h * (0.98 + sq * 0.04)], [xb * 0.4, -h * (1.02 + sq * 0.05)], [xb, -h * 0.9], [xb - h * 0.12, -h * 0.35], [xb - h * 0.14, 0],
+    [xb - h * 0.12, h * 0.35], [xb, h * 0.9], [xb * 0.4, h * (1.02 + sq * 0.05)], [xf * 0.35, h * (0.98 + sq * 0.04)], [xf, h * 0.82], [xf + h * 0.1, 0]];
+  ink.poly(blob(body, 6));
+  // head: a flat straight-sided triangle with a slightly pinched point
+  const tip = [xf + hl, j() * h * 0.04];
+  ink.poly([[xf - h * 0.3, -hw], [lerp([xf, -hw], tip, 0.55)[0], -hw * 0.5], tip, [lerp([xf, hw], tip, 0.55)[0], hw * 0.5], [xf - h * 0.3, hw]]);
+  const fingersOf = (p, a, s, n, len, spread) => {
+    const tr = Math.max(0.09 * s, MINW / 2);
+    for (let i = 0; i < n; i++) {
+      const u = i / (n - 1), aa = a + (u - 0.5) * spread + j() * 0.08, q = polar(p, aa, len * s * (0.85 + 0.25 * Math.sin(u * PI)));
+      ink.poly(tube([p, lerp(p, q, 0.5), q], [tr * 1.2, tr, tr * 0.9]));
+      // star tip: a tiny cross of four nubs
+      const k = Math.max(0.15 * s, MINW * 0.9);
+      for (let m = 0; m < 4; m++) ink.dot(polar(q, aa + m * PI / 2 + PI / 4, k * 0.55), k * 0.42);
+      ink.dot(q, k * 0.5);
+    }
+    ink.dot(p, Math.max(0.14 * s, tr));
+  };
+  for (const sd of [-1, 1]) {
+    const s = h, A = t => sd * t; // angle measured from forward (+x)
+    // arm: from the shoulder out sideways, elbow, forearm reaching forward-out
+    const sh = [xf * 0.55, sd * h * 0.8], el = polar(sh, A(g.armOut + j() * 0.12), s * g.arm * 0.5);
+    const hand = polar(el, A(g.armFwd + j() * 0.15), s * g.arm * 0.55), fw = Math.max(0.15 * s, MINW);
+    seg(C, [sh, el, hand], fw * 1.15, fw * 0.8);
+    fingersOf(hand, A(g.armFwd), s, 4, g.finger, 1.35);
+    // hind leg: thigh out-back, shin back, a big webbed fan of five toes behind
+    const hip = [xb * 0.75, sd * h * 0.78], kn = polar(hip, A(g.hipA + j() * 0.12), s * g.thigh);
+    const an = polar(kn, A(g.shinA + j() * 0.12), s * g.thigh * 0.9), lw = 0.36 * s;
+    seg(C, [hip, lerp(hip, kn, 0.5), kn], lw, lw * 0.7, lw);
+    seg(C, [kn, lerp(kn, an, 0.5), an], lw * 0.7, lw * 0.45);
+    toes(C, an, A(g.footA + j() * 0.1), s, { n: 5, len: g.toe, spread: g.footSpread, web: 0.95, tr: 0.11, long: 0.75, base: 0.2 });
+  }
+  const path = spline([[xb, 0], [0, 0], [xf, 0]], 6), rad = () => h * 0.9;
+  return {
+    view: 'top', r: h, path, rad, amphLimbless: true,
+    head: { p: [xf + hl * 0.3, 0], dir: 0, face: 0, s: h * 0.6, sym: true, eyes: [] },
+    tail: { p: [xb, 0], dir: PI, s: h * 0.4 },
+    limbs: [], back: [strip(path, rad, 0.2, 0.8, 8, -1), strip(path, rad, 0.2, 0.8, 8, 1)],
+  };
+};
+
 // Side view: a frog at full stretch, toes just leaving the line.
 chassis.amphibianLeap = (C, g) => {
   const { ink, rng } = C, r = g.r * C.plump, L = g.len, al = g.pitch;
@@ -670,11 +718,6 @@ const species = [
     head: frogHead(r, { snout: r.range(1, 1.15), point: 0.1, eye: r.range(0.38, 0.46), eyeUp: 0.3 }),
     limbs: legs(r, 'tree'), tail: none(), dorsal: none(), crown: popEyes(r), surface: look(r, 0.4, 0.1),
   }) },
-  { name: 'poison dart frog', w: 2, genes: r => ({
-    chassis: sit(r, { r: r.range(6.4, 7.6), len: r.range(19, 23), pitch: r.range(0.6, 0.82), belly: 0.9, chest: 0.8, neck: 0.7, rump: 0.48, hump: r.range(0.5, 0.9), arch: r.range(0, 0.12), headS: 0.95, face: r.range(0.05, 0.25) }),
-    head: frogHead(r, { snout: r.range(1.15, 1.3), point: r.range(0.3, 0.55), deep: 0.56, eye: r.range(0.26, 0.3) }),
-    limbs: legs(r, 'dart', { reach: r.range(0.3, 0.7) }), tail: none(), dorsal: none(), crown: popEyes(r), surface: look(r, 0.3, 0.6),
-  }) },
   { name: 'tongue-flicking frog', w: 1.2, genes: r => ({
     chassis: sit(r, { pitch: r.range(0.5, 0.7), face: r.range(0.25, 0.5) }), head: frogHead(r, { tongue: r.range(1.4, 2.6) }),
     limbs: legs(r, 'frog'), tail: none(), dorsal: none(), crown: popEyes(r), surface: look(r, 0.4),
@@ -683,12 +726,6 @@ const species = [
     chassis: sit(r, { seat: r.range(0.55, 0.7), r: r.range(9, 10.5), len: r.range(18, 22), pitch: r.range(0.34, 0.5), belly: 0.96, hump: r.range(0.5, 0.9) }),
     head: frogHead(r, { snout: r.range(1.4, 1.7), point: 1, deep: 0.56, eye: r.range(0.24, 0.3), hh: 0.92, wide: 1.1 }),
     limbs: legs(r, 'frog', { hw: 0.36, web: 0.3 }), tail: none(), dorsal: none(), crown: { type: 'amphibianBrow', len: r.range(0.6, 1), lean: r.range(-0.1, 0.25), pair: true }, surface: look(r, 0.2, 0.2),
-  }) },
-  { name: 'horned frog', w: 2, genes: r => ({ // pacman frog: a mouth with legs
-    chassis: sit(r, { seat: r.range(0.12, 0.22), r: r.range(12, 14), len: r.range(8, 11), pitch: r.range(0.25, 0.42), rump: 0.86, belly: 1.04, chest: 0.94, neck: 0.78, hump: 0, arch: 0.1, headS: r.range(1.04, 1.16), neckLen: 0.3, face: r.range(-0.05, 0.12) }),
-    head: frogHead(r, { snout: r.range(0.9, 1.02), point: 0, deep: r.range(0.9, 1.02), eye: r.range(0.2, 0.25), eyeUp: 0.5, neck: 0.9, wide: 1.15, gape: r.range(0.55, 0.75) }),
-    limbs: legs(r, 'stub', { hl: r.range(0.66, 0.78), hf: 0.5, fl: 1.1, toeLen: 0.4 }), tail: none(), dorsal: none(),
-    crown: { type: 'amphibianBrow', len: r.range(0.85, 1.15), lean: r.range(0, 0.3), pair: true }, surface: look(r, 0.3, 0.5),
   }) },
   // ---- toads ----
   { name: 'common toad', w: 3, genes: r => ({
@@ -736,10 +773,10 @@ const species = [
     tail: none(), dorsal: none(), crown: popEyes(r), surface: look(r, 0.1, 0),
   }) },
   { name: 'Surinam toad', w: 1.5, genes: r => ({ // flat as a dead leaf
-    chassis: topBody(r, { r: r.range(12.5, 14), len: r.range(17, 20), prof: [[0, 0.92], [0.08, 1], [0.85, 1], [1, 0.95]], headS: 1.05, bend: 0.02, foreT: 0.92, hindT: 0.06 }),
-    head: frogHead(r, { snout: r.range(1.35, 1.6), point: 1, eye: 0, wide: 0.9, neck: 0.95 }),
-    limbs: legs(r, 'claw', { pose: 'pipa', loose: 0.1, hw: 0.45, hl: r.range(0.42, 0.52), toes: 5, toeLen: r.range(0.75, 0.9), web: 0.9, spread: 1.4, foreWeb: 0, fingers: 4, foreSpread: 1.3, fingerK: 0.6, tr: 0.18, forePad: 0.2, fl: r.range(1.1, 1.25), fw: 0.2 }),
-    tail: none(), dorsal: none(), crown: none(), surface: { eyes: 'none' },
+    chassis: { type: 'amphibianPipa', r: r.range(8.5, 10), len: r.range(15, 19), square: r.range(0, 1), headL: r.range(0.75, 1), headW: r.range(0.7, 0.85),
+      arm: r.range(1.15, 1.4), armOut: r.range(1.25, 1.5), armFwd: r.range(0.3, 0.6), finger: r.range(0.5, 0.65),
+      thigh: r.range(0.5, 0.62), hipA: r.range(1.7, 2.0), shinA: r.range(2.5, 2.8), footA: r.range(2.1, 2.45), toe: r.range(1.35, 1.6), footSpread: r.range(1.4, 1.65) },
+    head: { type: 'amphibianNone' }, limbs: legs(r, 'claw', { ownNone: true }), tail: none(), dorsal: none(), crown: none(), surface: { eyes: 'none' },
   }) },
   // ---- tadpoles ----
   { name: 'tadpole', w: 2.5, genes: r => ({
@@ -777,10 +814,6 @@ const species = [
   }) },
   { name: 'looped caecilian', w: 0.7, genes: r => ({
     chassis: { type: 'amphibianCaecilian', style: 'loop', r: r.range(3.2, 3.7), c: r.range(5.2, 6.2), R: r.range(12.5, 14.5), lead: r.range(0.9, 1.3), tailLead: r.range(0.7, 1.2), drift: r.range(-0.6, 0.6), ring: r.range(0.75, 0.95) },
-    head: { type: 'amphibianBlunt', len: r.range(1.2, 1.6), tipR: r.range(0.5, 0.62) }, limbs: legs(r, 'frog', { ownNone: true }), tail: none(), dorsal: none(), crown: none(), surface: { eyes: 'none' },
-  }) },
-  { name: 'coiled caecilian', w: 0.9, genes: r => ({
-    chassis: { type: 'amphibianCaecilian', style: 'coil', r: r.range(3.3, 3.9), turns: r.range(1.6, 2.2), gap: r.range(2.9, 3.3), hand: r.sign(), run: r.range(10, 20), unwind: r.range(0.6, 1.4), ring: r.range(0.75, 0.95) },
     head: { type: 'amphibianBlunt', len: r.range(1.2, 1.6), tipR: r.range(0.5, 0.62) }, limbs: legs(r, 'frog', { ownNone: true }), tail: none(), dorsal: none(), crown: none(), surface: { eyes: 'none' },
   }) },
   // ---- newts (the salamander tag covers Caudata in depth; these are for completeness) ----
