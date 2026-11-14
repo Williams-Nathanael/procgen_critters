@@ -123,3 +123,11 @@ arms / proboscis), acorn barnacles (small), hairy caterpillar (spiky rather than
 - Review tooling used: `out/tmp/arsheet.sh` renders from a private copy of `src/gen` at git HEAD
   plus this tag's draft (`--zoom` lifts the sheet's 1.6x cap), `out/tmp/artime.mjs` (timing,
   holes, detached parts), `out/tmp/arslot.mjs` / `arhost.mjs` (lent slots both ways).
+
+### 2026-11-14 follow-up (critic fixes at --cell 60)
+- Marrella: thinner, shorter horn pairs swept back; gill-legs on every other segment, longer, with two bristles each, fringing both sides.
+- Arthropleura: now head-up (rot UP) so both leg rows show; slimmer, 10-12 plates; legs drawn as `stub` leaves (plated form, `g.stub`) because jleg legs vanished on one side.
+- Mantis shrimp: raptorial claws folded short beside the head (no more antlers); larger stalked eyes; bigger telson and uropods. Still the weakest of the six at print size (head end a dark mass).
+- Squat lobster: short, chunky, spread claws. Spiny lobster: side spines removed (`antB` gene), thick antenna-base leaves, antennae w 0.85.
+- Camel spider: big cephalothorax, larger and wider jaws, narrow pointed abdomen, thinner legs.
+- Watch: old trilobite reads as a blob; woodlouse and pill bug plain; mantis shrimp head.
