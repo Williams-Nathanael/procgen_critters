@@ -115,7 +115,9 @@ const FB = {
     for (let i = 0; i <= N; i++) { const u = 1 - 2 * i / N; top.push(F(topX(u), W * u + bow(H))); }
     K.poly(R.map(([x, w]) => F(x, w + bow(x))).concat(top, L.reverse().map(([x, w]) => F(x, -w + bow(x)))));
     for (const sd of [-1, 1]) dot(K, F(topX(sd) - th * 0.6, sd * (W - th * 0.45) + bow(H)), th * 0.62);
-    return { top: F(H * (1 - dip), bow(H)), w: W };
+    // crown mount on the dish surface itself (just inside it), not at a nominal depth that the
+    // ruffle can leave hanging in the air above the cap
+    return { top: F(topX(0) - th * 0.5, bow(topX(0))), w: W };
   },
 
   // Morel: pitted cone / egg. The outline is scalloped by the ridges.

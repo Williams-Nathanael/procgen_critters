@@ -36,6 +36,16 @@ export function chooseDonors(rng, tags, chaos = 0.12) {
   return donors;
 }
 
+// the socket moved to the nearest body centreline point, then out toward it to 0.6 of the radius
+function onBody(plan, sock) {
+  const P = plan.path, n = P.length - 1;
+  let bi = 0, bd = Infinity;
+  P.forEach((q, i) => { const d = Math.hypot(q[0] - sock.p[0], q[1] - sock.p[1]) - plan.rad(i / n); if (d < bd) { bd = d; bi = i; } });
+  if (bd <= 0) return sock;
+  const q = P[bi], dx = sock.p[0] - q[0], dy = sock.p[1] - q[1], L = Math.hypot(dx, dy) || 1, k = plan.rad(bi / n) * 0.6 / L;
+  return { ...sock, p: [q[0] + dx * k, q[1] + dy * k] };
+}
+
 export function makeCritter(tags, seed, opts = {}) {
   const rng = makeRng(seed);
   const detail = opts.detail ?? 0.6;
@@ -68,7 +78,11 @@ export function makeCritter(tags, seed, opts = {}) {
   // origin: which tag drew the chassis / head, so lent parts can adapt to their host
   plan.tag = donors.chassis;
   C.plan = plan;
-  tail(C, plan.tail, g.tail, donors.tail !== (donors.primary ?? donors.chassis));
+  const lentTail = donors.tail !== (donors.primary ?? donors.chassis);
+  // rooted bodies (plants, fungi) often put the tail socket off the body (beside a taproot,
+  // under a baobab's crown); a lent tail there floats, so pull the socket onto the body
+  if (lentTail && plan.rooted && plan.path?.length > 1 && plan.rad) plan.tail = onBody(plan, plan.tail);
+  tail(C, plan.tail, g.tail, lentTail);
   if (g.limbs && g.limbs.type !== 'none') for (const sock of plan.limbs) limb(C, sock, g.limbs);
   dorsal(C, plan, g.dorsal);
   // a lent head may ask to be drawn larger on a given host (mix[host].headS), e.g. a cap
