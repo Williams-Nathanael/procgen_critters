@@ -85,3 +85,11 @@ weighted down), newt larva (busy at print size), web-footed (close to arboreal),
 - New species gene `stout` (in `make`): limb width x stout, length x(1-0.3(stout-1)), taper >= 0.8; side view keeps 95% width (not 78%) and 0.85 length so stubs show.
 - 14 of 29 species stout, chosen where thick limbs are true to the animal: fire, spotted, tiger (1.4), mole, giant, hellbender (1.3), mudpuppy, axolotl (1.5), cave (1.35), great crested, red eft, rough-skinned, ribbed, crocodile newt (1.4). Plethodontids (red-backed, slender, long-tailed, arboreal, ensatina...), eels and larvae keep slender limbs.
 - Still weak: mole salamander top view (fat, occasional curled-tail trap), hellbender/giant side view sausage, amphiuma, siren top gills, newt larva.
+
+### M3b critic fix round (2026-11-14)
+- New gene `sideLift` (side-view body height, passed as limbs.lift) with `sideLegK`: hellbender/giant 0.55/1.2, tiger/great crested/rough-skinned 0.42/1.1. Side-view legs now show as real legs, not nubs.
+- Hellbender/giant: stout 1.5, new dorsal `salamanderFold` (low crest + wrinkled lateral skin fold along the lower flank, side view only).
+- Mole salamander: narrower trunk (r 6.6-7.4), shorter stout legs (1.2), limbs set further apart (tF 0.9, tH 0.07), 'curl' replaced by 'coil' with curl clamped (no trapped tail gap).
+- Axolotl: 3 gill fringe lobes (was 5), shorter gills and legs; no more spider reads.
+- Crocodile newt: rib knobs sunk into the body (out -0.2/-0.1), smoother joins.
+- Still weak: mole salamander side view (legs barely show), amphiuma, siren, newt larva, hellbender fold subtle at 60px.

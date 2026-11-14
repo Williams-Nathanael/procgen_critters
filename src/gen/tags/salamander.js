@@ -439,6 +439,21 @@ dorsals.salamanderCrest = (C, plan, st, sd, si, g) => {
   ink.poly(bot.concat(top.reverse()));
 };
 
+// hellbender / giant salamander: low wavy crest plus the wrinkled lateral skin fold along the
+// lower flank (side view only; top view falls back to the crest's skin folds)
+dorsals.salamanderFold = (C, plan, st, sd, si, g, at) => {
+  dorsals.salamanderCrest(C, plan, st, sd, si, g, at);
+  if (plan.view !== 'side' || plan.rooted || !plan.rad || !plan.path) return;
+  const { ink } = C, M = 48, t0 = g.f0 ?? 0.2, t1 = g.f1 ?? 0.86, fq = g.ffreq ?? 7, A = [], B = [];
+  for (let i = 0; i <= M; i++) {
+    const u = i / M, t = mix(t0, t1, u), q = pathAt(plan.path, t), rr = plan.rad(t), e = Math.sin(Math.PI * u) ** 0.5;
+    const n = q.ang + Math.PI / 2, bump = Math.abs(Math.sin(u * fq * Math.PI + si));
+    A.push(polar(q.p, n, rr * 0.5));
+    B.push(polar(q.p, n, rr * (0.98 + e * (g.fold ?? 0.2) * (0.35 + 0.65 * bump))));
+  }
+  ink.poly(A.concat(B.reverse()));
+};
+
 dorsals.salamanderWarts = (C, plan, st, sd, si, g, at) => {
   const { ink, rng } = C, r = plan.r, cnt = g.n;
   for (let i = 0; i < cnt; i++) {
@@ -510,7 +525,7 @@ const isTop = k => !['walkS', 'alert', 'tall', 'unken', 'swim', 'tailcurl'].incl
 
 // Seen from the side a sprawling leg shows only its lower part: shorter, nearly straight legs
 // angled fore-forward / hind-back read as walking; long bent ones merge into blocks.
-const sideLegs = (L, top, d) => top ? L : { ...L, len: L.len * (d.sideLegK ?? (d.stout ? 0.85 : 0.7)), w: L.w * (d.stout ? 0.95 : 0.78), stance: d.sideStance ?? 0.35 };
+const sideLegs = (L, top, d) => top ? L : { ...L, len: L.len * (d.sideLegK ?? (d.stout ? 0.85 : 0.7)), w: L.w * (d.stout ? 0.95 : 0.78), stance: d.sideStance ?? 0.35, lift: d.sideLift ?? L.lift };
 
 // One generic assembler: d describes the species; kind is the chosen pose.
 function make(r, d, kinds) {
@@ -549,17 +564,18 @@ const species = [
     spots: r.int(5, 8),
   }, [[3, 'walk'], [1.5, 'ess'], [1, 'curl'], [1, 'look'], [1.5, 'walkS']]) },
 
-  { name: 'tiger salamander', w: 4, genes: r => make(r, { stout: 1.4,
+  { name: 'tiger salamander', w: 4, genes: r => make(r, { sideLift: 0.42, sideLegK: 1.1, stout: 1.4,
     r: r.range(7.6, 8.6), len: r.range(45, 52), belly: 1.1, neckW: 0.9, tail: r.range(0.72, 0.88),
     head: headG(r, { len: r.range(1.12, 1.22), wid: r.range(1.0, 1.06), p: 2.4, neckW: 0.82, eye: 0.16, eyeIn: 0.4, top: 0.7, jaw: 0.55 }),
     limbsG: legs(r, { w: 0.6, len: r.range(2.0, 2.2) }), T: { fin: 0.18, topK: 0.8, keys: [[0, 1], [0.5, 0.72], [1, 0.12]] },
   }, [[2.5, 'walk'], [1, 'curl'], [1, 'look'], [2, 'walkS'], [1.6, 'alert']]) },
 
-  { name: 'mole salamander', w: 2, genes: r => make(r, { stout: 1.3,
-    r: r.range(8, 9), len: r.range(37, 43), belly: 1.1, neckW: 0.88, tail: r.range(0.5, 0.62),
+  { name: 'mole salamander', w: 2, genes: r => make(r, { stout: 1.2, tF: 0.9, tH: 0.07,
+    r: r.range(6.6, 7.4), len: r.range(39, 45), belly: 1.06, neckW: 0.9, tail: r.range(0.5, 0.62),
     head: headG(r, { len: r.range(1.25, 1.35), wid: r.range(0.92, 0.98), p: 2.0, eye: 0.17, neckW: 0.88 }),
-    limbsG: legs(r, { w: 0.56, len: r.range(1.8, 2.0), toeLen: 0.5 }), T: { fin: 0.15, keys: [[0, 1], [0.5, 0.7], [1, 0.14]], curlK: 0.6 },
-  }, [[3, 'walk'], [1, 'curl'], [2, 'walkS'], [1, 'alert']]) },
+    limbsG: legs(r, { w: 0.56, len: r.range(1.55, 1.75), toeLen: 0.5, spread: 1.6 }), T: { fin: 0.15, keys: [[0, 1], [0.5, 0.7], [1, 0.14]], curlK: 0.6, curlMax: 0.5 },
+    poseFix: (p, top) => top ? { curl: Math.max(-0.5, Math.min(0.5, p.curl)) } : null,
+  }, [[3, 'walk'], [1, 'coil'], [2, 'walkS'], [1, 'alert']]) },
 
   // ------------------------------------------------ lungless salamanders
   { name: 'red-backed salamander', w: 4, genes: r => make(r, {
@@ -619,24 +635,24 @@ const species = [
   }, [[3, 'walkS'], [2, 'coil'], [2, 'walk']]) },
 
   // ------------------------------------------------ giants
-  { name: 'giant salamander', w: 3, genes: r => make(r, { stout: 1.3,
+  { name: 'giant salamander', w: 3, genes: r => make(r, { sideLift: 0.55, sideLegK: 1.2, stout: 1.5,
     r: r.range(10, 11.5), len: r.range(58, 66), neckW: 0.94, tail: r.range(0.5, 0.6), headS: 0.95, limbS: 0.85, sideLimbS: 0.78,
     prof: [[0, 0.74], [0.2, 0.95], [0.5, 1], [0.8, 0.97], [1, 0.92]], sideR: 0.72, sideProf: [[0, 0.6], [0.25, 0.95], [0.5, 1], [0.75, 0.95], [1, 0.8]],
     head: headG(r, { len: r.range(1.12, 1.24), wid: r.range(0.9, 0.97), p: 2.4, eye: 0, neckW: 0.9, top: 0.5, jaw: 0.5, pt: 2.4 }),
     limbsG: legs(r, { len: r.range(1.9, 2.1), w: 0.62, toeLen: 0.45, lift: 0.12 }),
     T: { fin: 0.75, finB: 0.2, finBase: 0.7, topK: 0.62, keys: [[0, 1], [0.5, 0.7], [1, 0.2]], curlK: 0.6 },
     dorsalTop: { type: 'salamanderCrest', h: 0.3, top: r.range(0.13, 0.19), wave: 0.5, freq: r.range(10, 14) },
-    dorsalSide: { type: 'salamanderCrest', h: 0.14, wave: 0.5, freq: 6, rear: 1 }, backT0: 0.1, backT1: 0.86,
+    dorsalSide: { type: 'salamanderFold', h: 0.14, wave: 0.5, freq: 6, rear: 1, fold: r.range(0.3, 0.38), ffreq: r.range(5, 7) }, backT0: 0.1, backT1: 0.86,
   }, [[3, 'walk'], [0.8, 'curl'], [1.8, 'walkS']]) },
 
-  { name: 'hellbender', w: 3, genes: r => make(r, { stout: 1.3,
+  { name: 'hellbender', w: 3, genes: r => make(r, { sideLift: 0.55, sideLegK: 1.2, stout: 1.5,
     r: r.range(7.8, 8.8), len: r.range(51, 58), neckW: 0.88, tail: r.range(0.55, 0.68), limbS: 0.95, sideLimbS: 0.85,
     prof: [[0, 0.72], [0.2, 0.93], [0.5, 1], [0.8, 0.96], [1, 0.88]], sideR: 0.7,
     head: headG(r, { len: r.range(1.3, 1.42), wid: r.range(0.95, 1.0), p: 2.3, eye: 0.08, eyeIn: 0.3, neckW: 0.85, top: 0.46, jaw: 0.46, pt: 2.2 }),
     limbsG: legs(r, { len: r.range(1.9, 2.1), w: 0.58, toeLen: 0.48, lift: 0.12 }),
     T: { fin: 0.85, finB: 0.25, finBase: 0.6, topK: 0.6, keys: [[0, 1], [0.5, 0.66], [1, 0.16]] },
     dorsalTop: { type: 'salamanderCrest', h: 0.3, top: r.range(0.15, 0.22), wave: 0.55, freq: r.range(11, 15) },
-    dorsalSide: { type: 'salamanderCrest', h: 0.12, wave: 0.6, freq: 8, rear: 1 }, backT0: 0.1, backT1: 0.84,
+    dorsalSide: { type: 'salamanderFold', h: 0.12, wave: 0.6, freq: 8, rear: 1, fold: r.range(0.32, 0.4), ffreq: r.range(6, 8) }, backT0: 0.1, backT1: 0.84,
   }, [[3, 'walk'], [0.8, 'ess'], [0.7, 'curl'], [2, 'walkS']]) },
 
   // ------------------------------------------------ gilled and eel-like
@@ -651,9 +667,9 @@ const species = [
   { name: 'axolotl', w: 5, genes: r => make(r, { stout: 1.5,
     r: r.range(7, 8), len: r.range(37, 43), belly: 1.06, neckW: 0.84, tail: r.range(0.8, 0.95), headS: 1.02,
     head: headG(r, { len: r.range(1.12, 1.22), wid: r.range(1.24, 1.36), p: 2.8, eye: 0.09, eyeIn: 0.3, top: 0.6, jaw: 0.5, pt: 2.3, sideLen: 1.15 }),
-    limbsG: legs(r, { len: r.range(2.1, 2.4), w: 0.36, toeLen: 0.72, toeW: 0.85, spread: 1.9, lift: 0.22 }),
+    limbsG: legs(r, { len: r.range(1.7, 1.95), w: 0.36, toeLen: 0.6, toeW: 0.85, spread: 1.9, lift: 0.22 }),
     T: { fin: 0.95, finB: 0.6, finBase: 0.85, topK: 0.6, keys: [[0, 1], [0.5, 0.6], [1, 0.08]] },
-    crown: gills(r, { style: 'plume', len: r.range(3.0, 3.6), fl: 0.6, w: 0.15, nf: 5, fan: [-0.55, 0.2, 0.9] }),
+    crown: gills(r, { style: 'plume', len: r.range(2.5, 2.9), fl: 0.45, w: 0.15, nf: 3, fan: [-0.55, 0.2, 0.9] }),
     dorsalSide: { type: 'salamanderCrest', h: r.range(0.45, 0.6), rear: 1, env: [[0, 1], [0.6, 0.9], [1, 0]] }, backT1s: 0.72,
   }, [[3, 'walk'], [1.2, 'curl'], [1, 'look'], [2, 'walkS'], [2, 'swim']]) },
 
@@ -692,7 +708,7 @@ const species = [
   }, [[3, 'walk'], [1.5, 'ess'], [1, 'look']]) },
 
   // ------------------------------------------------ newts
-  { name: 'great crested newt', w: 5, genes: r => make(r, { stout: 1.4,
+  { name: 'great crested newt', w: 5, genes: r => make(r, { sideLift: 0.42, sideLegK: 1.1, stout: 1.4,
     r: r.range(5.8, 6.5), len: r.range(36, 42), belly: 1.08, neckW: 0.84, tail: r.range(0.85, 1),
     head: headG(r, { len: r.range(1.25, 1.36), wid: r.range(1.04, 1.1), p: 2.3, eye: 0.2 }),
     limbsG: legs(r, { len: r.range(2.2, 2.5), w: 0.42, toeLen: 0.78, toeW: 0.9, spread: 1.9 }),
@@ -726,7 +742,7 @@ const species = [
     T: { topK: 0.62, fin: 0.14, keys: [[0, 1], [0.5, 0.56], [1, 0.07]] },
   }, [[3, 'alert'], [2, 'walkS'], [3, 'walk'], [1.5, 'look'], [1.5, 'curl']]) },
 
-  { name: 'rough-skinned newt', w: 3, genes: r => make(r, { stout: 1.4,
+  { name: 'rough-skinned newt', w: 3, genes: r => make(r, { sideLift: 0.42, sideLegK: 1.1, stout: 1.4,
     r: r.range(6, 6.8), len: r.range(35, 41), belly: 1.08, neckW: 0.86, tail: r.range(0.9, 1.05),
     head: headG(r, { len: r.range(1.2, 1.3), wid: r.range(1.05, 1.12), p: 2.4, eye: 0.2 }),
     limbsG: legs(r, { len: r.range(2.2, 2.5), w: 0.46, toeLen: 0.6 }),
@@ -748,8 +764,8 @@ const species = [
     head: headG(r, { len: r.range(1.25, 1.35), wid: r.range(1.06, 1.14), p: 1.9, jawX: 0.35, eye: 0.14, ridge: r.range(0.2, 0.25), top: 0.7 }),
     limbsG: legs(r, { len: r.range(2.1, 2.3), w: 0.52, toeLen: 0.58 }),
     T: { fin: 0.3, topK: 0.62, keys: [[0, 1], [0.5, 0.6], [1, 0.1]] },
-    dorsalTop: { type: 'salamanderWarts', n: r.int(6, 8), size: r.range(0.17, 0.21), out: 0.3 },
-    dorsalSide: { type: 'salamanderWarts', n: r.int(7, 9), size: r.range(0.18, 0.22), out: 0.4 }, backT0: 0.16, backT1: 0.82,
+    dorsalTop: { type: 'salamanderWarts', n: r.int(6, 8), size: r.range(0.17, 0.2), out: -0.2 },
+    dorsalSide: { type: 'salamanderWarts', n: r.int(7, 9), size: r.range(0.17, 0.2), out: -0.1 }, backT0: 0.16, backT1: 0.82,
   }, [[4, 'walk'], [0.8, 'curl'], [1, 'look'], [2, 'walkS']]) },
 
   // ------------------------------------------------ larvae
