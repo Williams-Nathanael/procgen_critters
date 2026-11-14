@@ -405,12 +405,11 @@ head('plantBur', (C, sock, g) => {
   const ring = (cx, rx, ry, n, len, wd, bias) => { for (let i = 0; i < n; i++) { const t = i / n * TAU + 0.2, q = F(cx + rx * Math.cos(t), ry * Math.sin(t)); ink.poly(leaf(q, ax + t * (1 - bias) + (bias ? angDiff(t, 0) * 0 : 0), len * s, wd * s, 0, 0.25)); } };
   let top = 2.4;
   switch (g.kind) {
-    case 'teasel': {
-      ink.oval(F(1.5, 0), 1.3 * s, 0.74 * w * s, ax);
-      for (let i = 0; i < 18; i++) { const t = i / 18 * TAU, q = F(1.5 + 1.25 * Math.cos(t), 0.7 * w * Math.sin(t)); ink.poly(leaf(q, ax + t * 0.55, 0.42 * s, 0.24 * s, 0, 0.25)); }
-      for (const sd of [-1, 1]) for (const k of [0, 1]) ink.poly(tube(arcPath(F(0.15, 0), ax + sd * (1.5 - k * 0.35), (2.9 + k * 0.8) * s, -sd * (1.35 - k * 0.2), 10, 0.9), P([[0, 0.15 * s], [0.6, 0.12 * s], [1, hair]])));
-      ink.poly(leaf(F(2.6, 0), ax, 0.7 * s, 0.4 * s, 0, 0.3));
-      top = 3.2; break;
+    case 'teasel': { // tall egg of spines, long thin bracts sweeping out and up from beneath
+      ink.oval(F(2.0, 0), 1.85 * s, 0.68 * w * s, ax);
+      for (let i = 0; i < 22; i++) { const t = i / 22 * TAU, q = F(2.0 + 1.8 * Math.cos(t), 0.64 * w * Math.sin(t)); ink.poly(leaf(q, ax + Math.sign(Math.sin(t) || 1) * PI / 2 * 0.8 + (Math.cos(t) > 0.9 ? 0 : 0), 0.38 * s, 0.2 * s, 0, 0.25)); }
+      for (const sd of [-1, 1]) for (const k of [0, 1]) ink.poly(tube(arcPath(F(0.3, 0), ax + sd * (1.6 - k * 0.35), (3.6 + k * 0.6) * s, -sd * (1.25 - k * 0.3), 10, 0.9), P([[0, 0.17 * s], [0.6, 0.12 * s], [1, hair]])));
+      top = 4.0; break;
     }
     case 'burdock': {
       ink.dot(F(1.05, 0), 0.95 * w * s);
@@ -422,12 +421,11 @@ head('plantBur', (C, sock, g) => {
       ink.oval(F(1.05, 0), 0.85 * s, 0.6 * w * s, ax);
       top = 2; break;
     }
-    default: { // thistle: a spiny, bulbous involucre with a shaving-brush of florets on top
-      ink.poly(lathe(H, 0, 1.75, [[0, 0.25], [0.45, 0.88 * w], [0.8, 0.78 * w], [1, 0.5 * w]]));
-      for (let i = 0; i < 4; i++) for (const sd of [-1, 1]) { const x = 0.35 + i * 0.35; ink.poly(leaf(F(x, sd * 0.75 * w * Math.sin(PI * (0.25 + x / 2.2))), ax + sd * (1.25 - i * 0.18), 0.6 * s, 0.22 * s, 0, 0.2)); }
-      ink.poly(lathe(H, 1.6, 2.8, [[0, 0.45 * w], [0.6, 0.8 * w], [1, 0.95 * w]]));
-      for (let i = 0; i < 5; i++) { const f = i / 4 - 0.5; ink.poly(leaf(F(2.6, f * 1.6 * w), ax + f * 0.8, 0.5 * s, 0.32 * s, 0, 0.5)); }
-      top = 3.1;
+    default: { // thistle: a round spiny bulb pinched to a neck, topped by a wide flaring brush
+      ink.poly(lathe(H, 0, 1.9, [[0, 0.3], [0.2, 0.85 * w], [0.5, 1.12 * w], [0.8, 0.85 * w], [1, 0.42 * w]]));
+      for (let i = 0; i < 5; i++) for (const sd of [-1, 1]) { const t = 0.15 + i * 0.16, x = t * 1.9, r0 = 1.1 * w * Math.sin(PI * (0.1 + t * 0.85)); ink.poly(leaf(F(x, sd * r0), ax + sd * (1.9 - i * 0.3), 0.55 * s, 0.2 * s, 0, 0.2)); }
+      for (let i = 0; i < 9; i++) { const f = i / 8 - 0.5; ink.poly(tube(arcPath(F(1.8, f * 0.5 * w), ax + f * 2.4, 1.6 * s * (1 - 0.25 * Math.abs(f)), 0, 4), P([[0, 0.24 * s], [0.8, 0.2 * s], [1, 0.08 * s]]))); }
+      top = 3.3;
     }
   }
   void ring;
@@ -1009,17 +1007,21 @@ FORMS.tree = (Cp, g) => {
     const pad = (c, w) => { for (let j = 0; j < 5; j++) { const f = j / 4 - 0.5; K.oval([c[0] + f * w * 1.6, c[1] - Math.cos(f * PI) * w * 0.25], w * 0.42 * rng.range(0.85, 1.15), w * 0.3, 0); } K.poly(superE([c[0], c[1] + w * 0.08], w * 1.05, w * 0.2, 0, 2.5)); };
     for (const br of g.branches) { const q = pathAt(trunk, br.t), bs = br.sd * sd, e = polar(polar(q.p, bs > 0 ? 0 : PI, br.len), UP, br.len * 0.2); K.poly(tube(spline([q.p, lerp(q.p, e, 0.5), e], 5), P([[0, trad(br.t) * 0.6], [1, trad(br.t) * 0.35]]))); pad(polar(e, UP, R * 0.35), br.pad); }
     pad(polar(last(trunk), UP, R * 0.4), g.topPad);
-  } else { // monkey-puzzle
-    trunk = stemPts([0, 0.3], UP + g.lean, H, 0, 0, 10); trad = P([[0, R * 1.1], [0.1, R], [1, R * 0.5]]);
-    K.poly(tube(trunk, trad)); roots(2, 0.8);
-    const rope = (pts, w) => { K.poly(tube(pts, P([[0, w], [0.7, w], [1, w * 0.75]]))); for (let i = 2; i < pts.length; i += 2) { const a = angOf(pts[i - 1], pts[i]); for (const s2 of [-1, 1]) K.poly(kite(polar(pts[i], a + s2 * PI / 2, w * 0.7), a + s2 * 0.9, w * 1.0, w * 0.9, 0.3)); } };
-    for (let i = 0; i < g.tiers; i++) {
-      const t = mix(g.t0, 0.92, i / (g.tiers - 1)), q = pathAt(trunk, t), len = mix(H * 0.42, H * 0.12, (i / (g.tiers - 1)) ** 0.8) * rng.range(0.9, 1.1);
-      for (const s2 of [-1, 1]) { const L = len * rng.range(0.85, 1.3), dr = rng.range(0.22, 0.38), up = rng.range(0.08, 0.25);
-        const pts = spline([q.p, [q.p[0] + s2 * L * 0.45, q.p[1] + L * dr], [q.p[0] + s2 * L * 0.85, q.p[1] + L * dr * 0.6], [q.p[0] + s2 * L, q.p[1] - L * up]], 4);
-        rope(floorPts(pts, -1), R * 0.62 * mix(1, 0.75, i / (g.tiers - 1))); }
+  } else { // monkey-puzzle: tall bare thick trunk, dome of many drooping spiky rope branches
+    trunk = stemPts([0, 0.3], UP + g.lean, H, g.lean * -2, 0, 10); trad = P([[0, R * 1.25], [0.08, R], [1, R * 0.6]]);
+    K.poly(tube(trunk, trad)); roots(3, 0.9);
+    const rope = (pts, w) => { K.poly(tube(pts, P([[0, w], [0.6, w * 0.9], [1, w * 0.6]]))); for (let i = 1; i < pts.length; i++) { const a = angOf(pts[i - 1], pts[i]); for (const s2 of [-1, 1]) K.poly(kite(polar(pts[i], a + s2 * PI / 2, w * 0.6), a + s2 * 1.0, w * 0.9, w * 0.8, 0.3)); } };
+    const n = g.nb;
+    for (let i = 0; i < n; i++) {
+      const t = mix(g.t0, 0.97, i / (n - 1)), q = pathAt(trunk, t), u = (t - g.t0) / (1 - g.t0);
+      for (const s2 of [-1, 1]) {
+        if (rng.chance(0.18)) continue;
+        const L = H * 0.52 * Math.sqrt(Math.max(1 - u * u, 0.04)) * rng.range(0.75, 1.2) * (1 + s2 * g.skew), dr = mix(0.6, 0.32, u) * rng.range(0.75, 1.25), up = rng.range(0.05, 0.3);
+        const pts = spline([q.p, [q.p[0] + s2 * L * 0.35, q.p[1] - L * 0.15 * (1 - u)], [q.p[0] + s2 * L * 0.75, q.p[1] + L * dr * 0.5], [q.p[0] + s2 * L, q.p[1] + L * (dr * 0.6 - up)]], 4);
+        rope(floorPts(pts, -1), R * mix(0.42, 0.32, u));
+      }
     }
-    rope(arcPath(last(trunk), UP, H * 0.06, 0, 3), R * 0.5);
+    for (const a of [-0.9, 0, 0.9]) rope(arcPath(last(trunk), UP + a + rng.range(-0.15, 0.15), H * (a ? 0.1 : 0.06), a * 0.8, 4), R * 0.4);
   }
   return { r: R * 1.5, path: trunk, rad: trad, head: { p: last(trunk), dir: UP, s: R * 1.4 }, foot: [-R * 2, R * 2] };
 };
@@ -1370,7 +1372,7 @@ const species = [
     return build(r, form, { head: { type: 'plantLeaf', unit: { u: 'leaves', n: 5, spread: 2.4, len: 1, wid: 0.45 }, size: 1.4 }, orn: { u: 'leaves', n: 4, spread: 2.2, len: 1, wid: 0.45 }, tipS: 1, crownS: 1, row: { u: 'leaves', n: 3, spread: 2, len: 1, wid: 0.45 }, rowS: 0.7 });
   } },
   { name: 'dragon\'s blood tree', w: 1.8, genes: r => {
-    const form = { form: 'tree', kind: 'dragon', H: r.range(16, 22), R: r.range(2.2, 2.8), lean: r.range(-0.06, 0.06), nb: r.pick([2, 3]), depth: r.int(1, 2), dome: r.range(0.35, 0.55) };
+    const form = { form: 'tree', kind: 'dragon', H: r.range(16, 22), R: r.range(2.0, 2.5), lean: r.range(-0.06, 0.06), nb: r.pick([2, 3]), depth: r.int(1, 2), dome: r.range(0.35, 0.55) };
     return build(r, form, { head: { type: 'plantTuft', kind: 'tube', n: 7, len: 1.8, wid: 0.3, spread: 2.6 }, headSize: 0.9, orn: { u: 'needles', n: 5, spread: 1.4 }, tipS: 1.4, crownS: 1.3, row: { u: 'needles', n: 4, spread: 1.2 }, rowS: 0.9 });
   } },
   { name: 'windswept bonsai', w: 1.5, genes: r => {
@@ -1380,7 +1382,7 @@ const species = [
     return build(r, form, { head: { type: 'plantLeaf', unit: { u: 'needles', n: 7, spread: 2.4 }, size: 1.6 }, orn: { u: 'needles', n: 6, spread: 2 }, tipS: 1.3, crownS: 1.2, row: { u: 'needles', n: 5, spread: 1.6 }, rowS: 0.8 });
   } },
   { name: 'monkey puzzle', w: 1.2, genes: r => {
-    const form = { form: 'tree', kind: 'monkey', H: r.range(36, 46), R: r.range(1.6, 2.1), lean: r.range(-0.04, 0.04), tiers: r.int(3, 4), t0: r.range(0.5, 0.62) };
+    const form = { form: 'tree', kind: 'monkey', H: r.range(36, 46), R: r.range(2.0, 2.5), lean: r.range(-0.06, 0.06), nb: r.int(6, 7), t0: r.range(0.5, 0.6), skew: r.range(-0.25, 0.25) };
     return build(r, form, { head: { type: 'plantCone', kind: 'pine', len: 2.2, wid: 1.6 }, headSize: 1, orn: { type: 'plantCone', kind: 'pine', len: 2, wid: 1.4 }, tipS: 0.8, crownS: 0.7, row: { u: 'thorn', len: 1, hook: 0 }, rowS: 0.45, rowN: 8 });
   } },
   // ---------------- oddities ----------------
