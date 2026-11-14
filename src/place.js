@@ -134,11 +134,13 @@ function overlap(A, B) {
   return true;
 }
 
+export const stats = { made: 0 }; // generator calls (for tests)
 const critterCache = new Map();
 function cachedCritter(tags, seed, st) {
   const key = tags.join('+') + '|' + seed + '|' + st.detail + '|' + st.chaos + '|' + st.plump;
   let c = critterCache.get(key);
   if (!c) {
+    stats.made++;
     c = makeCritter(tags, seed, { detail: st.detail, chaos: st.chaos, plump: st.plump });
     if (critterCache.size > 4000) critterCache.clear();
     critterCache.set(key, c);
@@ -146,8 +148,28 @@ function cachedCritter(tags, seed, st) {
   return c;
 }
 
+const speciesKey = c => String(c.species?.[c.donors?.primary ?? c.donors?.chassis] ?? Object.values(c.species || {})[0] ?? '');
+const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return Math.abs(d); };
+
+// Does a critter of width w centred at arc length s sit cleanly on the line? Rejects sharp
+// corners under its feet and line that rises into the body (inside of a tight bend).
+function fitsLine(poly, meas, s, w, sideSign) {
+  const ends = [pointAt(poly, meas, s - w / 2), pointAt(poly, meas, s), pointAt(poly, meas, s + w / 2)];
+  const d1 = Math.atan2(ends[1][1] - ends[0][1], ends[1][0] - ends[0][0]), d2 = Math.atan2(ends[2][1] - ends[1][1], ends[2][0] - ends[1][0]);
+  if (angDiff(d1, d2) > 0.75) return false;
+  const { p, ang } = restAt(poly, meas, s, w * 0.42, sideSign);
+  const nx = Math.sin(ang) * sideSign, ny = -Math.cos(ang) * sideSign;
+  for (let k = 0; k <= 12; k++) {
+    const q = pointAt(poly, meas, s - w / 2 + w * k / 12);
+    if ((q[0] - p[0]) * nx + (q[1] - p[1]) * ny > Math.max(1.5, 0.12 * w)) return false;
+  }
+  return true;
+}
+
 // Place critters along one border. `overrides` maps slot index -> { seed } | { skip:true }.
 // pageKey varies the result between pages when the border repeats.
+// Layout is computed from each slot's "natural" critter (never from overrides), so rerolling
+// or removing one critter leaves every other critter where it was.
 export function placeBorder(border, pageKey = 0) {
   const st = { ...DEFAULTS, ...border.settings };
   if (!st.tags.length) return [];
@@ -155,49 +177,128 @@ export function placeBorder(border, pageKey = 0) {
   if (poly.pts.length < 2) return [];
   const meas = measure(poly);
   if (meas.length < 4) return [];
+  const L = meas.length, closed = poly.closed;
   const overrides = border.overrides || {};
   const out = [];
   const sides = st.side === 'both' ? [1, -1] : [st.side === 'right' ? -1 : 1];
+  const gapBase = Math.max(st.spacing - st.size, st.spacing * 0.15), pitch = st.size + gapBase;
+  const arcDist = (a, b) => { const d = Math.abs(a - b); return closed ? Math.min(d, L - d) : d; };
+  let rows = [];
+  const scaleOf = (c, sizeK) => {
+    const b = c.bbox;
+    let sc = st.size * sizeK / Math.max(b.w, b.h * 1.25, 1);
+    const tall = -b.y0;
+    if (tall * sc > st.radius) sc = st.radius / tall;
+    return sc;
+  };
   for (const sideSign of sides) {
     const rng = makeRng(hashStr(`${st.seed}|${pageKey}|${sideSign}`));
-    let count = Math.max(1, Math.floor(meas.length / st.spacing + (poly.closed ? 0 : 1 - st.startOffset)));
-    const step = poly.closed ? meas.length / Math.max(1, Math.round(meas.length / st.spacing)) : st.spacing;
-    if (poly.closed) count = Math.max(1, Math.round(meas.length / st.spacing));
-    for (let i = 0; i < count; i++) {
-      const slot = `${sideSign}:${i}`;
-      const r = rng.fork(); // one independent stream per slot, so edits elsewhere don't reshuffle it
-      const ov = overrides[`${pageKey}|${slot}`] || overrides[slot];
-      if (ov?.skip) continue;
-      const s = (i + st.startOffset) * step + (r() * 2 - 1) * st.spacingVar * step * 0.5 + (sideSign < 0 && st.side === 'both' ? step * 0.5 : 0);
-      if (!poly.closed && (s < 0 || s > meas.length)) continue;
-      const seed = ov?.seed ?? Math.floor(r() * 2 ** 31);
-      const sizeK = 1 + (r() * 2 - 1) * st.sizeVar;
-      const faceR = r(), liftR = r(), tiltR = r() * 2 - 1;
-      const c = cachedCritter(st.tags, seed, st);
-      const b = c.bbox;
-      // scale: nominal size governs the larger of width / 1.25*height; never taller than the band
-      let sc = st.size * sizeK / Math.max(b.w, b.h * 1.25, 1);
-      const tall = -b.y0; // height above the line
-      if (tall * sc > st.radius) sc = st.radius / tall;
+    const opp = rows.find(r => r.sideSign === -sideSign)?.slots ?? [];
+    // geometry of critter c (scale sc) resting at arc length s: transform + oriented footprint box
+    const frame = (n, c, sc, s) => {
+      const b = c.bbox, tall = -b.y0; // height above the line
       const { p, ang } = restAt(poly, meas, s, b.w * sc * 0.42, sideSign);
       // Critter space: x along facing, y down with ground at 0, body in -y.
-      // Page: line direction `ang`; the chosen side is the direction (sin, -cos)*sideSign ("left" of travel when y is down = up on screen for rightward lines).
-      const back = st.facing === 'backward' || (st.facing === 'random' && faceR < 0.5);
+      const back = st.facing === 'backward' || (st.facing === 'random' && n.faceR < 0.5);
       const fx = back ? -1 : 1;
-      const lift = st.lift * liftR * Math.max(st.radius - tall * sc, 0);
-      const rot = ang + st.tilt * tiltR;
+      const lift = st.lift * n.liftR * Math.max(st.radius - tall * sc, 0);
+      const rot = ang + st.tilt * n.tiltR;
       const ca = Math.cos(rot), sa = Math.sin(rot);
-      // up vector (critter -y) must map to the chosen side normal: n = sideSign * (sin, -cos)
       const tf = ([x, y]) => {
-        const lx = x * sc * fx, ly = (y * sc - lift) * sideSign; // ly>0 is toward the far side of the line
+        const lx = x * sc * fx, ly = (y * sc - lift) * sideSign;
         return [p[0] + lx * ca - ly * sa, p[1] + lx * sa + ly * ca];
       };
       const box = [[b.x0, b.y0], [b.x1, b.y0], [b.x1, Math.min(b.y1, 0)], [b.x0, Math.min(b.y1, 0)]].map(tf);
-      if (st.avoidOverlap && out.some(o => o.sideSign === sideSign && overlap(o.box, box))) continue;
-      // mirroring an odd number of axes flips winding; keep rings consistently wound for nonzero fill
-      const rings = c.rings.map(ring => ring.map(tf));
-      out.push({ rings, box, slot, seed, sideSign, at: p, critter: c });
+      return { p, tf, box };
+    };
+    const streams = []; // per-slot random streams (slot-stable), created in order
+    const stream = i => { while (streams.length <= i) streams.push(rng.fork()); return streams[i]; };
+    const nat = []; // natural pick per slot
+    let exhausted = 0;
+    const candidate = (i, attempt) => {
+      const r = stream(i);
+      if (attempt === 0) {
+        const jit = r(), seed = Math.floor(r() * 2 ** 31), sizeK = 1 + (r() * 2 - 1) * st.sizeVar;
+        const faceR = r(), liftR = r(), tiltR = r() * 2 - 1;
+        const c = cachedCritter(st.tags, seed, st);
+        return { c, seed, sizeK, faceR, liftR, tiltR, jit, w: c.bbox.w * scaleOf(c, sizeK), key: speciesKey(c) };
+      }
+      const ra = makeRng(hashStr(`${st.seed}|${pageKey}|${sideSign}|${i}|alt${attempt}`));
+      const base = nat[i] ?? candidate(i, 0);
+      const seed = Math.floor(ra() * 2 ** 31), c = cachedCritter(st.tags, seed, st);
+      return { ...base, c, seed, w: c.bbox.w * scaleOf(c, base.sizeK), key: speciesKey(c) };
+    };
+    const pick = (i, prevKey, centreOf) => {
+      const tries = exhausted >= 2 ? 1 : 5;
+      let cand = null;
+      for (let a = 0; a < tries; a++) {
+        cand = a === 0 && nat[i] ? nat[i] : candidate(i, a);
+        const s = centreOf(cand);
+        const clash = cand.key === prevKey || opp.some(o => o.key === cand.key && arcDist(o.s, s) < (o.w + cand.w) / 2 + 2);
+        if (!clash) { nat[i] = cand; return cand; }
+      }
+      exhausted++;
+      nat[i] = candidate(i, 0);
+      return nat[i];
+    };
+    const startEdge = st.startOffset * gapBase + (sideSign < 0 && st.side === 'both' ? pitch * 0.5 : 0);
+    const run = extra => {
+      const slots = []; let edge = startEdge, prevKey = null, used = 0;
+      for (let i = 0; i < 400; i++) {
+        const cand = pick(i, prevKey, c => edge + c.w / 2);
+        const w = cand.w;
+        let s = edge + w / 2;
+        // stagger: stay clear of the opposite row's centres
+        for (let sweep = 0; sweep < 2; sweep++) for (const o of opp) {
+          const d = 0.3 * (w + o.w) / 2;
+          if (s >= o.s - d && s < o.s + d) s = o.s + d;
+        }
+        // slide forward off sharp corners and bends
+        let ok = fitsLine(poly, meas, s, w, sideSign);
+        for (let k = 1; !ok && k <= 12; k++) { ok = fitsLine(poly, meas, s + w * k / 4, w, sideSign); if (ok) s += w * k / 4; }
+        const gap = (gapBase + extra) * (1 + (cand.jit * 2 - 1) * st.spacingVar * 0.5);
+        if (closed ? (slots.length && s + w / 2 + gap * 0.5 > slots[0].s - slots[0].w / 2 + L) || s + w / 2 > startEdge + L : s - w / 2 > L) break;
+        const fr = ok && frame(cand, cand.c, scaleOf(cand.c, cand.sizeK), s);
+        // a footprint that collides with a neighbour (round a bend) is skipped, not shoved
+        if (ok && st.avoidOverlap && (slots.some(o => overlap(o.box, fr.box)) || opp.some(o => overlap(o.box, fr.box)))) ok = false;
+        if (!ok) { edge += w + gap; continue; }
+        slots.push({ i, s, w, key: cand.key, cand, gap, box: fr.box });
+        edge = s + w / 2 + gap; prevKey = cand.key;
+        used = edge;
+      }
+      return { slots, used, n: slots.length };
+    };
+    let res = run(0);
+    if (closed && res.n > 1) {
+      const leftover = startEdge + L - res.used;
+      if (leftover > 0) res = run(leftover / res.n * 0.95);
+      // seam: last neighbour must differ from the first
+      const l = res.slots[res.slots.length - 1], f = res.slots[0];
+      if (res.n > 1 && l.key === f.key) {
+        for (let a = 1; a < 6; a++) { const c2 = candidate(l.i, a); if (c2.key !== f.key && c2.key !== res.slots[res.slots.length - 2]?.key && c2.w <= l.w * 1.05) { l.cand = { ...l.cand, ...c2 }; l.key = c2.key; break; } }
+        if (l.key === f.key) res.slots.pop();
+      }
     }
+    rows.push({ sideSign, slots: res.slots });
+    // ---- emit ----
+    const placed = [];
+    for (const sl of res.slots) {
+      const { i, s, cand: n } = sl;
+      const slot = `${sideSign}:${i}`;
+      const ov = overrides[`${pageKey}|${slot}`] || overrides[slot];
+      if (ov?.skip) continue;
+      let c = n.c, seed = n.seed, sc = scaleOf(c, n.sizeK);
+      if (ov?.seed != null) {
+        c = cachedCritter(st.tags, ov.seed, st); seed = ov.seed;
+        sc = scaleOf(c, n.sizeK);
+        const cell = sl.w + sl.gap * 0.6; // an overridden critter keeps its neighbours in place
+        if (c.bbox.w * sc > cell) sc = cell / c.bbox.w;
+      }
+      const { p, tf, box } = frame(n, c, sc, s);
+      const rings = c.rings.map(ring => ring.map(tf));
+      placed.push({ rings, box, slot, seed, sideSign, at: p, critter: c, s, w: c.bbox.w * sc, key: speciesKey(c) });
+    }
+    out.push(...placed);
   }
   return out;
 }
