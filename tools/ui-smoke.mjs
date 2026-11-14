@@ -168,4 +168,28 @@ export default async function (ff) {
   assert(nh >= 2 && nh <= 24, 'scribble handle count ' + nh);
   await ff.eval(`window.__critters.selected = 300, window.__critters.redraw(), 1`);
   await ff.shot('out/tmp/ui-handles.png');
+
+  // --- M6b: page thumbnails (30-page PDF made here)
+  const { PDFDocument } = await import('pdf-lib');
+  const { writeFileSync } = await import('node:fs');
+  const md = await PDFDocument.create(); for (let i = 0; i < 30; i++) md.addPage([612, 792]);
+  writeFileSync('out/tmp/multi.pdf', await md.save());
+  await goto(base + '?pdf=/out/tmp/multi.pdf');
+  await ff.waitFor(`document.querySelectorAll('#thumbs .thumb').length === 30`);
+  await ff.waitFor(`document.querySelectorAll('#thumbs canvas').length > 0`);
+  await ff.eval(`localStorage.clear(), 1`);
+  await new Promise(r => setTimeout(r, 800));
+  const rendered = await ff.eval(`document.querySelectorAll('#thumbs canvas').length`);
+  console.log('thumbs rendered at load:', rendered, 'of 30');
+  assert(rendered < 30, 'all thumbnails rendered up front');
+  assert(await ff.eval(`document.querySelector('#thumbs .thumb.cur').dataset.page === '1'`), 'page 1 not highlighted');
+  await ff.eval(`(() => { const s = window.__critters; s.borders.push({ id: 400, kind: 'line', pts: [[40, 40], [300, 60]], closed: false, page: 3, scope: 'page', overrides: {}, showLine: false, settings: { ...structuredClone(s.defaults), tags: ['salamander'], seed: 3 } }); s.redraw(); })()`);
+  assert(await ff.eval(`[...document.querySelectorAll('#thumbs .thumb.has')].map(t => t.dataset.page).join() === '3'`), 'thumbnail border mark wrong');
+  await ff.eval(`document.querySelector('#thumbs .thumb[data-page="3"]').click(), 1`);
+  await ff.waitFor(`window.__critters.page === 3 && document.querySelector('#pageinfo').textContent === '3 / 30'`);
+  assert(await ff.eval(`document.querySelector('#thumbs .thumb.cur').dataset.page === '3'`), 'current thumbnail not updated');
+  await ff.eval(`document.querySelector('#thumbs .thumb[data-page="30"]').scrollIntoView(), 1`);
+  await ff.waitFor(`document.querySelector('#thumbs .thumb[data-page="30"] canvas')`);
+  assert(await ff.eval(`document.querySelectorAll('#thumbs canvas').length < 30`), 'thumbnails not released when scrolled away');
+  await ff.shot('out/tmp/ui-thumbs.png');
 }

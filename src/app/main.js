@@ -42,6 +42,7 @@ async function loadBytes(bytes, name) {
   state.borders = []; state.selected = null; state.history = [];
   $('#docname').textContent = name;
   restoreSession();
+  buildThumbs();
   await showPage();
 }
 
@@ -66,8 +67,63 @@ async function showPage() {
   shown.getContext('2d').drawImage(canvas, 0, 0);
   $('#overlay').setAttribute('viewBox', `0 0 ${vp1.width} ${vp1.height}`);
   $('#pageinfo').textContent = `${state.page} / ${state.numPages}`;
+  markThumbs(true);
   $('#prev').disabled = state.page <= 1; $('#next').disabled = state.page >= state.numPages;
   drawOverlay(); drawPanel();
+}
+
+// ------------------------------------------------------------------ page thumbnails
+// A strip of placeholders, one per page. Only thumbnails near the visible part of the strip are
+// rendered (small scale, one at a time); ones that scroll away are released, so a 200-page PDF costs
+// a handful of small canvases.
+const THUMB_W = 84;
+let thumbObs = null, thumbQueue = [], thumbBusy = false, thumbDoc = null;
+function buildThumbs() {
+  const box = $('#thumbs'); thumbObs?.disconnect(); thumbQueue = []; thumbDoc = state.doc;
+  box.hidden = state.numPages < 2; box.replaceChildren();
+  if (box.hidden) return;
+  thumbObs = new IntersectionObserver(entries => {
+    for (const en of entries) {
+      const t = en.target;
+      if (en.isIntersecting) { if (!t.dataset.done && !thumbQueue.includes(t)) thumbQueue.push(t); }
+      else { thumbQueue = thumbQueue.filter(x => x !== t); const c = t.querySelector('canvas'); if (c) { c.remove(); delete t.dataset.done; } }
+    }
+    pumpThumbs();
+  }, { root: box, rootMargin: '300px 0px' });
+  const ratio = state.pageH / state.pageW || 1.3;
+  for (let n = 1; n <= state.numPages; n++) {
+    const t = el('button', { class: 'thumb', 'data-page': n, title: `Go to page ${n}`, onclick: () => { if (state.page !== n) { state.page = n; showPage(); } } }, el('span', { class: 'tn' }, String(n)));
+    t.style.height = Math.round(THUMB_W * ratio) + 'px';
+    box.append(t); thumbObs.observe(t);
+  }
+}
+async function pumpThumbs() {
+  if (thumbBusy) return; thumbBusy = true;
+  const doc = thumbDoc;
+  try {
+    while (thumbQueue.length && doc === thumbDoc) {
+      const t = thumbQueue.shift(); if (!t.isConnected || t.dataset.done) continue;
+      const page = await doc.getPage(+t.dataset.page), v1 = page.getViewport({ scale: 1 }), sc = THUMB_W / v1.width * (window.devicePixelRatio || 1);
+      const vp = page.getViewport({ scale: sc }), c = document.createElement('canvas');
+      c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+      await page.render({ canvasContext: c.getContext('2d'), canvas: c, viewport: vp }).promise;
+      page.cleanup();
+      if (doc !== thumbDoc || !t.isConnected) break;
+      t.style.height = ''; t.dataset.done = 1; t.prepend(c);
+    }
+  } catch (e) { console.error(e); }
+  thumbBusy = false;
+  if (thumbQueue.length && doc === thumbDoc) pumpThumbs();
+}
+// Highlight the current page and mark pages that carry borders.
+function markThumbs(scroll = false) {
+  if ($('#thumbs').hidden) return;
+  for (const t of $('#thumbs').children) {
+    const n = +t.dataset.page;
+    t.classList.toggle('cur', n === state.page);
+    t.classList.toggle('has', state.borders.some(b => appliesTo(b, n)));
+    if (scroll && n === state.page) t.scrollIntoView({ block: 'nearest' });
+  }
 }
 
 // ------------------------------------------------------------------ borders
@@ -85,7 +141,7 @@ function undo() {
   const s = JSON.parse(h); state.borders = s.borders; state.selected = s.selected;
   changed();
 }
-function changed() { drawOverlay(); drawPanel(); saveSession(); }
+function changed() { drawOverlay(); drawPanel(); saveSession(); markThumbs(); }
 state.redraw = changed;
 
 function addBorder(kind, pts, closed = false) {
@@ -433,7 +489,7 @@ const HELP = [
   ['Tools', [['F', 'Scribble'], ['L', 'Line (click points; double-click or Enter to finish)'], ['R', 'Box'], ['O', 'Oval'], ['V', 'Select']]],
   ['Drawing', [['Shift + drag / click', 'Snap line to 45 degrees; square box; circle'], ['Enter', 'Finish a line'], ['Esc', 'Cancel the line being drawn']]],
   ['Select tool', [['Click a border', 'Select it; drag to move it'], ['Click a critter', 'Reroll just that critter'], ['Alt + click / Shift + click a critter', 'Remove that critter'], ['Delete / Backspace', 'Delete the selected border'], ['Drag a round handle', 'Move a border point (a box or oval corner; a scribble bends smoothly)'], ['Double-click a line segment', 'Add a point to a straight / polyline border'], ['Delete on a focused handle', 'Remove that polyline point (a line keeps at least 2)']]],
-  ['General', [['Ctrl + Z', 'Undo'], ['?', 'Show or hide this help'], ['Esc', 'Close this help'], ['Drop a PDF on the page', 'Open it']]],
+  ['General', [['Page strip (left)', 'Click a thumbnail to jump to that page; a dot marks pages with borders'], ['Ctrl + Z', 'Undo'], ['?', 'Show or hide this help'], ['Esc', 'Close this help'], ['Drop a PDF on the page', 'Open it']]],
 ];
 function toggleHelp(show = $('#help').hidden) {
   const h = $('#help'); h.hidden = !show;
