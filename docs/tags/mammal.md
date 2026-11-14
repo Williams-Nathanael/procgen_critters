@@ -27,6 +27,15 @@ cottontail), whiskered pointed snouts, hedgehog and porcupine spines, bat wings.
 eyes: a small white dot.
 
 ## State
+**M3b batch 3 (2026-11-14), user's M3 decisions applied, judged at `--cell 60`:**
+- Beaver: one fix attempt kept. The side-view paddle (`tips.mammalPaddle`) is now a thicker oval
+  (peak 0.72 q, was 0.5) lifted a little off the ground, and the species tilts it up 0.1-0.28 rad.
+  It now reads as a paddle on every seed at print size (before, about 1 in 6). It is still the
+  weakest of the favoured-to-keep species. The old version is not kept; this one is clearly better.
+- Harvest mouse: climbing on a stalk only (sitting/holding variant removed).
+- House mouse: 'stand' pose removed (walk, sniff, groom, scurry, hold, stretch remain).
+- Mixing issues not in scope this round; none newly seen on the mixes sheet.
+
 Updated 2026-11-13 (species-builder run on main, continuing the interrupted WIP; four review
 rounds plus stacking checks). Sheets: `out/roads/03-mammal-species.png`,
 `out/roads/03-mammal-mixes.png`.

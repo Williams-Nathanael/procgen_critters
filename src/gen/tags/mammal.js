@@ -552,7 +552,7 @@ tips.mammalFlag = (C, e, ang, s, g) => {
 tips.mammalPaddle = (C, e, ang, s, g) => {
   const side = C.plan.view === 'side', q = s * (g.tipS ?? 1), a = side ? PI + (g.padA ?? -0.08) : ang;
   const c = polar(e, a, q * 1.7), pts = spline([polar(e, a + PI, q * 0.3), c, polar(e, a, q * 3.3)], 6);
-  C.ink.poly(tube(pts.map(p => side ? [p[0], Math.min(p[1], -q * 0.5)] : p), profile([[0, q * 0.3], [0.45, q * (side ? 0.5 : 1)], [0.85, q * (side ? 0.45 : 0.85)], [1, q * 0.25]])));
+  C.ink.poly(tube(pts.map(p => side ? [p[0], Math.min(p[1], -q * 0.7)] : p), profile([[0, q * 0.3], [0.25, q * (side ? 0.4 : 0.75)], [0.6, q * (side ? 0.72 : 1)], [0.88, q * (side ? 0.66 : 0.85)], [1, q * (side ? 0.35 : 0.25)]])));
 };
 
 // =====================================================================
@@ -660,8 +660,8 @@ const sp = (name, w, fn) => ({ name, w, genes: r => { const G = fn(r); G.limbs ?
 const species = [
   sp('house mouse', 4, r => {
     const B = { r: r.range(8.5, 10.5), len: r.range(20, 26), clr: r.range(0.18, 0.3), headS: r.range(0.74, 0.84), arch: 0.5 };
-    const pose = r.wpick([[3, 'walk'], [1.5, 'sniff'], [1.5, 'groom'], [1, 'stand'], [1, 'scurry'], [0.8, 'hold'], [0.8, 'stretch']]);
-    const ch = { walk: () => walk(r, B), sniff: () => sniff(r, B), stretch: () => stretch(r, B), scurry: () => scurry(r, B), groom: () => sit(r, B, 'groom', { face: 0.35 }), hold: () => sit(r, B, 'hold', { item: r.pick(['seed', 'berry', 'nut']) }), stand: () => stand(r, B) }[pose]();
+    const pose = r.wpick([[3, 'walk'], [1.5, 'sniff'], [1.5, 'groom'], [1, 'scurry'], [0.8, 'hold'], [0.8, 'stretch']]);
+    const ch = { walk: () => walk(r, B), sniff: () => sniff(r, B), stretch: () => stretch(r, B), scurry: () => scurry(r, B), groom: () => sit(r, B, 'groom', { face: 0.35 }), hold: () => sit(r, B, 'hold', { item: r.pick(['seed', 'berry', 'nut']) }) }[pose]();
     return {
       chassis: ch, head: head({ snoutLen: r.range(1.35, 1.7), tipR: r.range(0.17, 0.24), nose: 0.14, whiskers: r.chance(0.6) ? 2 : 0 }),
       crown: ear('round', r.range(0.95, 1.25), r.range(0.95, 1.2), { lean: r.range(-0.1, 0.25) }),
@@ -680,10 +680,10 @@ const species = [
   }),
 
   sp('harvest mouse', 2.5, r => {
-    const rr = r.range(6.2, 7.4), onStalk = r.chance(0.8);
+    const rr = r.range(6.2, 7.4), onStalk = true;
     const B = { r: rr, len: rr * 2.1, clr: 0.2, headS: 0.86, arch: 0.5 };
     const ch = onStalk ? { type: 'mammalClimb', r: rr, len: rr * r.range(1.5, 1.9), stalkH: r.range(58, 74), stalkR: r.range(0.95, 1.2), bendX: r.range(0.1, 0.3), top: r.wpick([[3, 'ear'], [1, 'reed'], [1, 'leaf']]), nod: r.range(0.3, 0.9), at: r.range(0.42, 0.62), turn: r.range(0.3, 0.9), face: -r.range(0, 0.6), headS: 0.86 }
-      : sit(r, B, 'hold', { item: 'seed' });
+      : null;
     return {
       chassis: ch, head: head({ snoutLen: r.range(1.0, 1.2), tipR: 0.26, nose: 0.13, eyeR: 0.17 }),
       crown: ear('round', r.range(0.75, 0.95), r.range(0.8, 1), { lean: 0.2 }),
@@ -983,7 +983,7 @@ const species = [
       chassis: up ? sit(r, B, 'hold', { item: 'stick', lean: r.range(0.2, 0.4) }) : walk(r, B, { gait: r.pick(['stand', 'walk']) }),
       head: head({ skullL: 1.05, snoutLen: 0.95, tipR: 0.52, mid: 0.5, droop: 0.15, eyeR: 0.13, eyeX: 0.5, carry: !up && r.chance(0.4) ? 'stick' : null }),
       crown: ear('round', 0.36, 0.5, { lean: 0.6 }),
-      tail: { len: 0.4, w0: 0.5, mid: 0.5, w1: 0.4, curl: 0, wave: 0, tip: 'mammalPaddle', tipS: r.range(1.9, 2.3), padA: r.range(-0.05, 0.05) },
+      tail: { len: 0.4, w0: 0.5, mid: 0.5, w1: 0.4, curl: 0, wave: 0, tip: 'mammalPaddle', tipS: r.range(1.9, 2.3), padA: r.range(0.1, 0.28) },
     };
   }),
 
