@@ -141,6 +141,29 @@ and live sliders on Sonnet, generator speed on Opus) plus an overseer look at th
 - Not judged by the user or the critic: how corners and gaps look on real pages (the sample
   box leaves its corners empty), and whether gaps feel too even.
 
+**M6 result (2026-11-14)**: UI options pass done in two sequential engineer (Sonnet) runs
+(d68bb67, 3e0e535, 5e8f66f), checked by the overseer on a clean copy of HEAD (build,
+`test:export`, all-tags sheet) plus one `test:ui` run and one screenshot.
+- Ink colour: per-border picker, default black, new borders inherit the last colour; the
+  sample strip, overlay and exported PDF all use it.
+- "Export this page" beside Export PDF (current page only).
+- Presets: dropdown with Apply / Delete / name + Save; 4 built-ins plus saved ones in
+  localStorage; applies to the selected border, or to next-border defaults if none.
+- Keyboard help: `?` key or toolbar button; Esc, Close or click outside closes.
+- Editable borders (Select tool): polyline vertices drag, double-click a segment adds a
+  point, Delete removes (minimum 2); box/oval have four corner handles; scribbles get up to
+  24 handles that bend the stretch between neighbours. Critters re-place live and still take
+  reroll / Alt-remove clicks.
+- Page thumbnails: left strip for PDFs with 2+ pages, 84 px wide, lazily rendered near the
+  visible area and released when scrolled away; current page highlighted, pages with
+  borders dotted.
+- Smoke test covers all six; slider medians 2-18 ms.
+- Not done / watch: handles appear only in the Select tool, not right after drawing;
+  thumbnails tested on a 30-page PDF, not 200 (M7); `test:ui` prints an unexplained
+  `[error] [NUXT_E1005]` log line (nothing in the repo mentions NUXT; probably from the
+  Firefox profile or an extension); per-border tag weights not built (the user has not asked
+  for them); none of the M6 UI has been tried by the user yet.
+
 **M2 result**: the final critic pass ranks nothing "would bother the user" in dragon,
 salamander, jansson and plant. Seven items remain in the other four (capped at two fix
 rounds per tag to bound cost; they go to the user at M3 as cut-or-fix choices):
@@ -265,7 +288,8 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    placement fast enough to drag sliders smoothly (now ~1 s for ~60 critters: cache
    geometry per seed, consider a Web Worker). [smoke test passes; sliders feel live on a
    page with 3 borders]
-6. **M6 UI options pass** (engineer). Presets; ink colour; editable border points; page
+6. **M6 UI options pass. DONE 2026-11-14** (see "M6 result" above; text kept for
+   reference). (engineer). Presets; ink colour; editable border points; page
    thumbnails; export current page only; keyboard help; whatever the user asked for at M3.
    [smoke test extended and passing]
 7. **M7 Robustness** (engineer). Large and odd PDFs (many pages, encrypted, forms), memory
