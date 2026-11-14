@@ -166,6 +166,21 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    silently renders random species of the tag; it should fail with the list of valid names.
    Support `tag@species+othertag` so one species can be pinned inside a mix row.
    [critic on a 28-pair sheet]
+
+   **M4 phase 1** (done 2026-11-14, commits 0fb876d..19bbb34, mechanical only). Lent tails
+   are capped at reach `(tailLen + pl + 2.2*tipS)*s <= 3.2*plan.r` (`LENT_TAIL_MAX` in
+   `parts.js`; `tail()` takes a `lent` flag); this changed ~30% of sampled pair mixes, all
+   shorter tails. Origin: `plan.tag`, `hd.tag` and `C.head` are set by `makeCritter`;
+   mammal's `C.mHead` is gone. Empty lent `head`/`limbs` are now re-rolled; amphibian's
+   `ownNone` legs and `amphibianNone` head are kept (they lend frog parts on purpose, and
+   dropping them reorders tadpole gene rolls). The tail length gene is now `tailLen`
+   everywhere (bit-identical over 13k critters); tip genes may use `len`; arthropod's
+   `TAIL()` still maps its `len` arg to `tlen`, which phase 2 could simplify. `ptarget`
+   was not broken: it is the mid-plume heading, and `precurve` bends the outer half, so a
+   big precurve hides it (documented in mammal.js); wrap tails and top view ignore it.
+   Arc tolerance 0.08: 9.2 -> 8.6 ms per pure critter (~6%; soften is not where most time
+   goes any more, look at union/Simplify for M5). Pure species output is unchanged by items
+   1-5; item 6 changes edges by < 0.1 unit.
 5. **M5 Placement polish** (engineer). No identical species adjacent; spacing by actual
    critter width; corners of boxes and tight curves handled; "both sides" staggered;
    placement fast enough to drag sliders smoothly (now ~1 s for ~60 critters: cache
