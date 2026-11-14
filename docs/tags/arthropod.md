@@ -32,6 +32,20 @@ outline are welcome).
 
 ## State
 
+**2026-11-13 M2 fix run** (critic list `out/tmp/critic-arthropod.md`): still 64 species.
+- Shrimp: taller legs, stronger hump and curl (hang 1.3) so the arched, tail-curled profile
+  survives; no longer a low caterpillar tube. Mantis shrimp: deeper body, shorter, eye stalk
+  (`eyeStalk` in `FORMS.shrimp`), much bigger raptorial claw. Still the weakest crustacean.
+- Spiders split: orb = big abdomen, small cephalothorax, long legs; jumping = boxy big
+  cephalothorax (`box`), short stout legs; crab spider = two long front pairs held sideways,
+  short back pairs; tick = egg body, capitulum (`capit`), short stout legs clustered forward.
+- Harvestman legs 1.7 -> 2.5 and bigger body; water strider legs 1.6 -> 2.4, wider body.
+- Horseshoe crab, triops, anomalocaris, opabinia, eurypterid, pseudoscorpion: rot 0 only
+  (no tail-down spade views).
+- Radiodonts: 6-7 rounded lateral lobes on a narrower body; outline now scalloped.
+- Not done (minor): treehopper body, pill bug notches, flea, acorn barnacle size, longhorn
+  antennae. Weakest now: mantis shrimp, pill bug, flea, treehopper, hairy caterpillar.
+
 2026-11-13, review run (continued the interrupted 28-species WIP; commits 451fce9..). **64 species**
 (was 28). Sheets: `out/roads/03-arthropod-species.png`, `out/roads/03-arthropod-mixes.png`.
 
