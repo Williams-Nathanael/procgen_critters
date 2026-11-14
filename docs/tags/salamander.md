@@ -66,3 +66,10 @@ weighted down), newt larva (busy at print size), web-footed (close to arboreal),
   17 ms at detail 0.6; most of the time is in the shared `Ink.finish` (offset/union).
 - Review renders used a private mirror (other tags at git HEAD) because another worker's
   uncommitted `plant.js` briefly broke the shared import.
+
+### M2 fix run (2026-11-13)
+- Slender / long-tailed: tail curl capped (new `T.curlMax`, clamps top-view tail curl) and body curl clamped via poseFix; 'curl'/'ring' poses dropped. No more vertical J/fishhook layouts. Slender thickened (r 3.6-4.0) so it is not a hairline at print size.
+- Amphiuma: thicker body, shorter, broader head, longer visible stubby legs, gentler wave (waveK 0.55), adds 'walk' pose. Now reads as an eel-salamander with legs.
+- Smooth / palmate newt: top view now dominant (side poses ~15%); side legs longer/thicker (sideLegK 0.95, sideLimbS 1.25), feet bigger.
+- Rough-skinned newt unken weight 1.8 -> 0.35; ensatina 'tall' 3 -> 1.2.
+- Not done (minor): axolotl side spiky blot, siren top gill lump, top-view template sameness, hellbender/giant side view still somewhat sausage-like.
