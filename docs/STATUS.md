@@ -16,11 +16,26 @@ with real pointer input, and export checked on a rotated, cropped page.
 signature slots; "Mix wildness" lets more slots wander). Critters sit on the line, never
 below it (rooted forms may poke a sliver of root).
 
-**Species libraries (M1 done, 2026-11-13)**: all 8 tags reviewed by Opus `species-builder`
-runs: arthropod 64, plant 47, fungus 45, salamander 29, mammal 38, jansson 38, amphibian 35,
-dragon 27 species. Final sheets per tag: `out/roads/03-<tag>-species.png` and `-mixes.png`;
-strengths, weak species by name and decisions are in each `docs/tags/<tag>.md` State section.
-The interrupted Fable WIP is kept on `wip/<tag>-species` branches. Pushed to GitHub.
+**Species libraries (M1 done, then M2 critic pass, 2026-11-13)**: all 8 tags reviewed by
+Opus `species-builder` runs, then judged by `critic` at print size (`--cell 60`) and fixed
+in two rounds per tag. Counts from the code: arthropod 64, plant 46, fungus 41, mammal 35,
+jansson 33, salamander 29, amphibian 27, dragon 25. Sheets per tag:
+`out/roads/03-<tag>-species.png` and `-mixes.png` (regenerated after M2); strengths, weak
+species by name and decisions are in each `docs/tags/<tag>.md` State section.
+The interrupted Fable WIP is kept on `wip/<tag>-species` branches.
+
+**M2 result**: the final critic pass ranks nothing "would bother the user" in dragon,
+salamander, jansson and plant. Seven items remain in the other four (capped at two fix
+rounds per tag to bound cost; they go to the user at M3 as cut-or-fix choices):
+- amphibian: horned frog's tall brow horn reads as a rabbit ear (whole frog reads as a
+  sitting rabbit); flying frog and Surinam toad are the same splayed top-view X.
+- mammal: beaver is a flat smear at print size, paddle tail reads on about 1 seed in 6.
+- arthropod: grasshopper is a thin dash; mantis shrimp still reads as a caterpillar tube.
+- fungus: chicken of the woods is a scribbled blob; lion's mane reads as a mop or broom.
+Jansson: the critic confirmed no species reads as a specific existing character (drift
+bells cut, tall wanderer lost hat and stick); watch hunched troll and back-turned sitter.
+Lesson: workers that judged only at `--cell 110` failed the critic; briefs must say
+"judge from `--cell 60` renders".
 
 ## Queue
 
@@ -30,11 +45,12 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    `species-builder` per unfinished tag, at most 3 at a time. [each tag has
    `out/roads/03-<tag>-species.png` and `-mixes.png`; State section updated; no render errors
    in `npm run sheet -- out/tmp/all.png --n 8`]
-2. **M2 Critic pass and fixes.** `critic` on each tag's 03 sheets (two or three tags per
-   critic run), then one short `species-builder` fix run per tag with the ranked list.
-   [critic finds nothing ranked "would bother the user" in the top 5]
+2. **M2 Critic pass and fixes. DONE 2026-11-13 with 7 open items** (listed above; 4 of 8
+   tags meet the criterion). [critic finds nothing ranked "would bother the user" in the
+   top 5]
 3. **M3 Taste checkpoint with the user.** Publish one page: every tag's species sheet plus a
-   mixes sheet, with a way to mark favourites, rejects and comments. Record answers in
+   mixes sheet, with a way to mark favourites, rejects and comments. Show the 7 open M2
+   items at print size and ask cut / fix / fine as is. Record answers in
    `docs/BRIEF.md`. [user has answered]
 4. **M4 Mixing quality** (engineer, model opus; no tag workers running). Lent parts scaled
    to the receiving body; `sig` weights tuned; mixes coherent across all 28 tag pairs and
@@ -52,6 +68,8 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    float beside them (plant tag fix). `tail()` in `parts.js` reads `g.len` for its stub, so a
    tail-tip gene using `len` for itself also draws a long rod (arthropod uses `tlen`);
    rename the stub's field.
+   Mammal brush tails: `ptarget` has no visible effect on a walk chassis when a custom
+   `tailA` is passed, so tails cannot be arched upward (found in M2; cause not investigated).
    [critic on a 28-pair sheet]
 5. **M5 Placement polish** (engineer). No identical species adjacent; spacing by actual
    critter width; corners of boxes and tight curves handled; "both sides" staggered;
@@ -68,6 +86,11 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
 
 - `npm run test:ui` needs the test server on port 4188 (`npm run serve:test`).
 - Worktree isolation branches from the stale `origin/main`; workers run in the main checkout.
+- Parallel workers committing with `-- out/roads/` sweep up each other's sheets (happened
+  three times in M2; one worker then ran `git reset` on a sibling's commit and restored it,
+  nothing lost). Until the commit command in `.claude/agents/species-builder.md` names only
+  `out/roads/03-<tag>-*`, say so in every brief and forbid `git reset`. Workers also tend to
+  commit sheet PNGs but not the matching SVGs.
 - Placement got slower with the richer species (node e2e: ~2.7 s for 57 critters). See M5.
   Fungus worker measured: `Ink.finish` (core.js) costs ~10 ms per 1000 vertices of overlapping
   shapes; some salamander/dragon-bodied mixes take 55-100 ms per critter. Suggested fix: union
