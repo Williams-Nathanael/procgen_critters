@@ -25,6 +25,24 @@ gills/frills, puffball tails and coral antlers read well. Default eyes: none.
 
 ## State (update this section when you work on the tag)
 
+### M3 critic fix round (2026-11-14, judged at --cell 60)
+- **42 species** (was 43; snow fungus cut: a frond-spray rebuild read as seaweed/coral, the old
+  ear-ball as a cloud mound).
+- Logs gained `round` (oval sawn end face, no square block); `rings` option kept but unused.
+  Log shelves gained `front` (drawn in k2 over a 1-unit white halo, log redrawn in k2 on top)
+  and `cap` (new `capShelf`: thin lateral base swelling into a domed, drooping half-cap), plus
+  `g.column` (a short common base, k2) for stacked shelves.
+- Oyster: thick round-ended log, 2 (sometimes 3) separate domed drooping shelves stacked up the
+  end on a short base. 3-shelf version shows the base as a pole; still reads a bit like an "F".
+- Chicken: thicker round-ended log, 2-3 tall upright back fans plus 2 lower front fans with a
+  pale overlap gap. No longer a hedge.
+- Jelly ear: new `jear` drawer (broad ear on a pinched base, one rim notch, pale crescent for
+  the cupped hollow). Always two ears of different size leaning apart, never touching.
+  Borderline: can read as a pair of snails.
+- Hare's ear: new `hare` drawer (tall rounded tongue split at the top into a tall back wall and
+  a lower front flap). 2 (or 3) ears of clearly different heights from one base, leaning apart.
+  Reads as rabbit ears; passes.
+
 ### M3 taste run (2026-11-14)
 - **43 species** (was 41; liberty caps cut; jelly ear, hare's ear, snow fungus added).
 - Chicken of the woods: a rosette of thick scalloped fans rising from the top of a fallen log

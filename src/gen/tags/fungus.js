@@ -362,6 +362,32 @@ const FB = {
     return { top: F(0.95, 0), w: W, c: F(0.5, 0) };
   },
 
+  // Hare's ear (Otidea): a tall narrow cup split down one side, so its top shows two flaps, the
+  // tall back wall and the lower front fold, with a V slit between them.
+  hare(K, rng, p, ax, s, g) {
+    const H = g.h * s, W = g.w * s, sd = g.side ?? rng.sign(), F = (x, y) => frame(p, ax, 1, sd)(x * H, y * W), jt = () => rng.range(-0.03, 0.03);
+    const fl = g.flap ?? 0.78, sl = g.slit ?? 0.62;
+    const ctrl = [[0, -0.35], [0.3, -0.75], [0.62, -0.88], [0.86, -0.78], [0.99, -0.52], [1.0, -0.22], [0.94, -0.04], [sl + 0.06, 0.08], [sl, 0.24], [sl + 0.05, 0.42], [fl - 0.04, 0.62], [fl, 0.8], [fl - 0.1, 0.92], [0.4, 0.84], [0.12, 0.55], [0, 0.35]];
+    const pts = ctrl.map(([x, y]) => [x + jt(), y + jt()]), loop = [pts[pts.length - 1], ...pts, pts[0], pts[1]];
+    const sp = spline(loop, 5);
+    K.poly(sp.slice(5, sp.length - 5).map(([x, y]) => F(x, y)));
+    return { top: F(1, -0.3), w: W, c: F(0.5, 0) };
+  },
+
+  // Jelly ear (Auricularia) seen face-on: a broad rounded ear on a pinched base, one fold notch in
+  // the rim, and a pale crescent showing the cupped hollow inside the rim.
+  jear(K, rng, p, ax, s, g) {
+    const H = g.h * s, W = g.w * s, sd = g.side ?? rng.sign(), F = (x, y) => frame(p, ax, 1, sd)(x * H, y * W), jt = () => rng.range(-0.025, 0.025), nd = g.notch ?? 0.12;
+    const ctrl = [[0, -0.1], [0.18, -0.38], [0.45, -0.55], [0.78, -0.5], [0.98, -0.22], [1.0, 0.12], [0.88, 0.38], [0.74, 0.46], [0.7 - nd, 0.36 - nd], [0.58, 0.5], [0.4, 0.52], [0.18, 0.36], [0.03, 0.1]];
+    const pts = ctrl.map(([x, y]) => [x + jt(), y + jt()]), loop = [pts[pts.length - 1], ...pts, pts[0], pts[1]];
+    const sp = spline(loop, 5);
+    K.poly(sp.slice(5, sp.length - 5).map(([x, y]) => F(x, y)));
+    const cw = [], ck = [];
+    for (let i = 0; i < 20; i++) { const a = i / 20 * TAU; cw.push(F(0.6 + Math.cos(a) * 0.27, -0.04 + Math.sin(a) * 0.33)); ck.push(F(0.55 + Math.cos(a) * 0.27, 0.03 + Math.sin(a) * 0.32)); }
+    if (H > 8) { K.poly(cw, 'w'); K.poly(ck, 'k2'); }
+    return { top: F(0.98, 0), w: W, c: F(0.5, 0) };
+  },
+
   // Devil's fingers / starfish stinkhorn: arching tentacle arms.
   arms(K, rng, p, ax, s, g) {
     const n = g.n ?? 5; let best = p, bh = -1e9;
@@ -486,6 +512,20 @@ function shelf(K, rng, p, sd, len, th, o = {}) {
   dot(K, [tN[0] - sd * rr * 0.55, (tN[1] + bN[1]) / 2], rr);
 }
 
+// An oyster shelf seen side-on: a thin lateral base swelling into a domed half-cap whose margin
+// rolls down. len along sd, th the dome height, droop how far the margin sags (fraction of len).
+function capShelf(K, rng, b, sd, len, th, droop) {
+  const N = 16, T = [], B = [], ph = rng.range(0, TAU);
+  for (let i = 0; i <= N; i++) {
+    const u = i / N, x = b[0] + sd * len * u, d = droop * len * u * u, wv = 0.06 * th * Math.sin(u * 7 + ph) * u;
+    T.push([x, b[1] - th * (0.3 + 0.95 * Math.sin(PI * Math.min(u * 0.75, 0.62))) + d + wv]);
+    B.push([x, b[1] + th * 0.3 * (1 - u) - th * 0.05 * Math.sin(PI * u) + d * 1.1]);
+  }
+  const e = [b[0] + sd * len, (T[N][1] + B[N][1]) / 2], rr = (B[N][1] - T[N][1]) / 2;
+  K.poly(T.concat(B.reverse()));
+  dot(K, [e[0] - sd * rr * 0.4, e[1]], rr);
+}
+
 // A bracket lobe: a fan or tongue growing from b (buried inside the trunk, so the join is the
 // trunk's own smooth side). Half-width grows from w0 to w1 and ends in a rounded, optionally
 // scalloped margin. sd = +1 grows right. up / dn bias the thickness above / below the midline.
@@ -591,10 +631,33 @@ const FORMS = {
       const L = g.len, rr = g.rr, x0 = -L / 2, x1 = L / 2, w = wob(rng, 2), top = [], N = 16;
       const yt = u => -rr * (1.75 + 0.1 * w(u * 3) + g.bow * Math.sin(u * PI));
       for (let i = 0; i <= N; i++) top.push([mix(x0, x1, i / N), yt(i / N)]);
-      K.poly([[x0 - rr * 0.25, 0], [x0 - rr * 0.3, yt(0) * 0.6], ...top, [x1 + rr * 0.3, yt(1) * 0.55], [x1 + rr * 0.2, 0]]);
-      oval(K, [x1, yt(1) * 0.5], rr * 0.45, -yt(1) * 0.5);
+      const logBody = (layer = 'k') => {
+        if (g.round) { // a sawn end: a rounded oval face with a bark lip, instead of a square block
+          const fy = yt(1) * 0.5, fr = -fy;
+          K.poly([[x0 - rr * 0.25, 0], [x0 - rr * 0.3, yt(0) * 0.6], ...top, [x1, yt(1)], [x1, 0]], layer);
+          oval(K, [x1, fy], rr * 0.8, fr, 0, layer);
+          return fy;
+        }
+        K.poly([[x0 - rr * 0.25, 0], [x0 - rr * 0.3, yt(0) * 0.6], ...top, [x1 + rr * 0.3, yt(1) * 0.55], [x1 + rr * 0.2, 0]], layer);
+        oval(K, [x1, yt(1) * 0.5], rr * 0.45, -yt(1) * 0.5, 0, layer);
+      };
+      const fy = logBody();
+      if (g.round && g.rings) { // bark lip and growth rings on the cut face
+        const fr = -fy, ex = x1 + rr * 0.1;
+        oval(K, [ex, fy], rr * 0.55, fr * 0.74, 0, 'w');
+        oval(K, [ex, fy], rr * 0.36, fr * 0.5, 0, 'k2');
+      }
       if (g.snag) { const sx = mix(x0, x1, g.snag); tb(K, [[sx, yt(g.snag) * 0.8], [sx + g.sd * rr * 0.9, yt(g.snag) - rr * 1.2], [sx + g.sd * rr * 1.5, yt(g.snag) - rr * 2.1]], profile([[0, rr * 0.5], [1, rr * 0.3]])); }
-      for (const sh of g.shelves ?? []) lobe(K, rng, [mix(x0, x1, sh.t) + (sh.dx ?? 0), yt(sh.t) * (sh.dip ?? 0.7)], sh.sd, sh.len, sh.w0, sh.w1, sh);
+      for (const sh of g.shelves ?? []) {
+        const b = [mix(x0, x1, sh.t) + (sh.dx ?? 0), yt(sh.t) * (sh.dip ?? 0.7) + (sh.dy ?? 0)];
+        if (sh.cap) { capShelf(K, rng, b, sh.sd, sh.len, sh.th, sh.droop); continue; }
+        if (!sh.front) { lobe(K, rng, b, sh.sd, sh.len, sh.w0, sh.w1, sh); continue; }
+        // a front fan: drawn over the back ones with a thin pale gap, so overlaps read as layers
+        let poly = null; lobe({ poly: q => { poly = q; } }, rng, b, sh.sd, sh.len, sh.w0, sh.w1, sh);
+        K.poly(tube([...poly, poly[0], poly[1]], 1.0), 'w'); K.poly(poly, 'k2');
+      }
+      if (g.shelves?.some(sh => sh.front)) logBody('k2');
+      if (g.column) { const [cx, cy, h, cr] = g.column; tb(K, [[x1 - cx, yt(1) * 0.8], [x1 - cx, yt(1) - h]], profile([[0, cr * 1.2], [1, cr]]), 5); K.poly(tube(spline([[x1 - cx, yt(1) * 0.8], [x1 - cx, yt(1) - h]], 5), profile([[0, cr * 1.2], [1, cr]])), 'k2'); }
       for (const it of g.items ?? []) { const q = [mix(x0, x1, it.t), yt(it.t) * (it.dip ?? 0.92)]; if (it.stem) tb(K, [q, polar(q, UP + it.ax, it.stem)], it.stemW ?? 1); FB[it.fb.form](K, rng, polar(q, UP + it.ax, it.stem ?? 0), UP + it.ax, it.s, it.fb); }
       const c = [0, -rr];
       out.r = rr; out.path = [[x0, -rr], [0, -rr], [x1, -rr]]; out.rad = () => rr * 0.85;
@@ -1073,26 +1136,30 @@ const species = [
   } },
   { name: 'chicken of the woods', w: 1.8, genes: r => {
     // a rosette of thick scalloped fans rising from the top of a fallen log
-    const L = r.range(28, 36), rr = r.range(3.4, 4.0), n = r.int(4, 6), c0 = r.range(0.4, 0.6);
-    const ch = { form: 'wood', kind: 'log', len: L, rr, bow: r.range(-0.05, 0.1), snag: r.chance(0.3) ? r.range(0.12, 0.22) : 0, sd: -1, R: rr, items: [], shelves: [] };
-    for (let i = 0; i < n; i++) {
-      const u = i / (n - 1) * 2 - 1, sd = u < 0 ? -1 : u > 0 ? 1 : r.sign(), au = Math.abs(u);
-      ch.shelves.push({ t: c0 + u * 0.14, dip: 0.95, sd, len: r.range(19, 25) * (1.1 - 0.3 * (1 - au)), w0: 1.8, w1: r.range(5.6, 6.6) * (1.05 - 0.2 * (1 - au)), up: 1, dn: 0.6, rise: mix(1.4, 0.05, au ** 0.9) + r.range(-0.1, 0.1), bend: r.range(0.1, 0.35), scallop: r.range(0.12, 0.2), sf: r.int(2, 4), full: 0.9 });
+    // back tier: 2-3 tall fans standing up off the log; front tier: 2 lower fans splayed outward,
+    // drawn over the back ones with a pale gap so the rosette reads as overlapping fans
+    const L = r.range(28, 34), rr = r.range(4.6, 5.3), c0 = r.range(0.42, 0.58), nb = r.int(2, 3);
+    const ch = { form: 'wood', kind: 'log', round: true, len: L, rr, bow: r.range(-0.05, 0.08), snag: r.chance(0.25) ? r.range(0.12, 0.2) : 0, sd: -1, R: rr, items: [], shelves: [] };
+    for (let i = 0; i < nb; i++) {
+      const u = nb > 1 ? i / (nb - 1) * 2 - 1 : 0, sd = u < 0 ? -1 : u > 0 ? 1 : r.sign();
+      ch.shelves.push({ t: c0 + u * 0.08, dip: 0.9, sd, len: r.range(17, 21) * (1 - 0.12 * Math.abs(u)), w0: 2, w1: r.range(6.2, 7.2), up: 1, dn: 0.6, rise: mix(1.45, 1.05, Math.abs(u)) + r.range(-0.1, 0.1), bend: r.range(0.2, 0.45), scallop: r.range(0.12, 0.2), sf: r.int(2, 4), full: 0.9 });
     }
-    ch.shelves.sort((a, b) => b.rise - a.rise);
+    for (const sd of [-1, 1]) if (r.chance(0.85)) ch.shelves.push({ front: true, t: c0 + sd * r.range(0.1, 0.16), dip: 0.95, sd, len: r.range(14, 18), w0: 1.8, w1: r.range(5.2, 6.2), up: 1, dn: 0.6, rise: r.range(0.45, 0.75), bend: r.range(0.2, 0.4), scallop: r.range(0.12, 0.2), sf: r.int(2, 4), full: 0.9 });
     return build(r, ch, { ...CAP.fan(r), thick: 0.34, rim: 0.2, seat: 1.1 }, { stem: 0.02, rake: 0.6, dorsal: { type: 'fungusFrill', h: r.range(1, 1.5), wid: 0.24, tiers: 2 } });
   } },
   { name: 'oyster mushroom', w: 2, genes: r => {
     // overlapping drooping tongues spraying from the cut end of a log, upper ones longest
-    const L = r.range(26, 34), rr = r.range(3.8, 4.6), n = r.int(3, 5);
-    const ch = { form: 'wood', kind: 'log', len: L, rr, bow: r.range(-0.05, 0.1), snag: r.chance(0.4) ? r.range(0.12, 0.3) : 0, sd: -1, R: rr, items: [], shelves: [] };
+    // a thick log with a rounded sawn end; 2-3 separate drooping shelves stacked up the cut face,
+    // each lower one drawn in front of the one above with a pale gap between them
+    const L = r.range(25, 30), rr = r.range(4.6, 5.2), n = r.wpick([[3, 2], [1, 3]]), gap = r.range(11, 12.5);
+    const ch = { form: 'wood', kind: 'log', round: true, len: L, rr, bow: r.range(-0.05, 0.08), snag: r.chance(0.3) ? r.range(0.12, 0.3) : 0, sd: -1, R: rr, items: [], shelves: [] };
     for (let i = 0; i < n; i++) {
-      const u = n > 1 ? i / (n - 1) : 0;
-      ch.shelves.push({ t: 1, dx: -rr * 0.6, dip: mix(1.15, 0.45, u), sd: 1, len: r.range(16, 21) * (1 - 0.25 * u), w0: 2, w1: r.range(5.2, 6.2) * (1 - 0.2 * u), up: 0.9, dn: 0.65, rise: mix(0.85, -0.05, u) + r.range(-0.08, 0.08), bend: r.range(0.45, 0.7), scallop: r.range(0.04, 0.1), sf: 2, full: 0.95 });
+      const k = n > 1 ? i / (n - 1) : 0; // 0 = top shelf
+      ch.shelves.push({ cap: true, t: 1, dx: -rr * 0.5, dy: -(n - 1 - i) * gap, dip: 0.95, sd: 1, len: r.range(16, 19) * (1 - 0.2 * k), th: r.range(7.2, 8.2) * (1 - 0.15 * k), droop: r.range(0.16, 0.26) });
     }
-    if (r.chance(0.5)) ch.shelves.push({ t: r.range(0.35, 0.55), sd: -1, len: r.range(9, 12), w0: 1.6, w1: 3.6, up: 0.9, dn: 0.65, rise: 0.9, bend: 0.7, scallop: 0.05, full: 0.95 });
-    const oy = { form: 'cap', span: 2, w: r.range(1.7, 2.2), h: r.range(0.5, 0.7), a: 2.6, b: 0.5, under: 0.3, rim: 0.12, curl: r.range(-0.25, 0.1), skew: 0, thick: 0.2, wavy: r.range(0, 0.2) };
-    return build(r, ch, { ...oy, seat: 1.1 }, { stem: 0.3, rake: 0.4 });
+    if (n > 1) ch.column = [rr * 0.45, 0, (n - 1) * gap + 1, 2.4];
+    const oyc = { form: 'cap', span: 2, w: r.range(1.7, 2.2), h: r.range(0.5, 0.7), a: 2.6, b: 0.5, under: 0.3, rim: 0.12, curl: r.range(-0.25, 0.1), skew: 0, thick: 0.2, wavy: r.range(0, 0.2) };
+    return build(r, ch, { ...oyc, seat: 1.1 }, { stem: 0.3, rake: 0.4 });
   } },
   { name: 'lion\'s mane', w: 1.8, genes: r => {
     // a rounded cascade of fine hanging spines off the side of a slim snag, clear of the ground
@@ -1104,30 +1171,23 @@ const species = [
   } },
   { name: 'jelly ear', w: 2.2, genes: r => {
     // rubbery ears on a fallen branch, cupped and veined, turned every which way
-    const L = r.range(30, 38), rr = r.range(2.4, 3.0), n = r.int(2, 3);
-    const ear = (k) => ({ form: 'ear', span: 1.2, h: r.range(1.9, 2.4) * k, w: r.range(1.5, 1.9) * k, notch: r.range(0.35, 0.5), fold: r.range(0.05, 0.065), veins: r.int(1, 3), crinkle: r.range(0.02, 0.05), bulb: 0.5, seat: 0.8, lend: 0.85 });
-    const ch = { form: 'wood', kind: 'log', len: L, rr, bow: r.range(-0.05, 0.12), snag: r.chance(0.5) ? r.range(0.12, 0.3) : 0, sd: -1, R: rr, items: [] };
-    const xs = [];
-    for (let i = 0; i < n; i++) xs.push(mix(0.2, 0.82, n > 1 ? i / (n - 1) : r.range(0.35, 0.65)) + r.range(-0.05, 0.05));
-    xs.forEach((t, i) => { const big = i === Math.floor(n / 2) || r.chance(0.35); ch.items.push({ t, ax: (t - 0.5) * 3 + r.range(-0.35, 0.35), dip: 0.9, s: r.range(11, 13) * (big ? 1 : r.range(0.65, 0.8)), fb: ear(1) }); });
+    // one or two big upright ears leaning apart on a stick (plus at most one small one), never touching
+    const L = r.range(30, 36), rr = r.range(2.4, 2.9), big = r.sign();
+    const ear = (k) => ({ form: 'jear', span: 1.2, h: r.range(1.9, 2.2) * k, w: r.range(1.3, 1.5) * k, notch: r.range(0.18, 0.24), bulb: 0.5, seat: 0.8, lend: 0.85 });
+    const ch = { form: 'wood', kind: 'log', len: L, rr, bow: r.range(-0.05, 0.12), snag: r.chance(0.35) ? r.range(0.12, 0.25) : 0, sd: -1, R: rr, items: [] };
+    for (const sd of [-1, 1]) ch.items.push({ t: 0.5 + sd * r.range(0.2, 0.26), ax: sd * r.range(0.4, 0.6), dip: 0.9, s: r.range(9, 10.5) * (sd === big ? 1 : r.range(0.72, 0.88)), fb: { ...ear(1), side: sd } });
     return build(r, ch, ear(1), { stem: 0.02 });
   } },
   { name: 'hare\'s ear', w: 1.8, genes: r => {
     // Otidea: tall ears standing from the leaf litter, split down one side, in a small clump
-    const n = r.int(3, 5), s = r.range(12, 14);
-    const ear = (k, side) => ({ form: 'ear', span: 1.1, side, h: r.range(2.4, 2.9) * k, w: r.range(1.0, 1.25) * k, notch: r.range(0.35, 0.5), fold: r.range(0.045, 0.06), veins: r.int(0, 1), crinkle: r.range(0.015, 0.03), bulb: 0.5, seat: 0.8, lend: 0.85 });
+    // 2-4 tall narrow slit cups of clearly different heights, leaning apart from one base
+    const n = r.wpick([[4, 2], [2, 3]]), s = r.range(12, 14);
+    const ear = (side) => ({ form: 'hare', span: 0.8, side, h: r.range(2.3, 2.6), w: r.range(0.58, 0.68), flap: r.range(0.72, 0.82), slit: r.range(0.58, 0.66), bulb: 0.5, seat: 0.8, lend: 0.85 });
+    const hs = [1, 0.66, 0.46].slice(0, n).map(k => k * r.range(0.92, 1.05)), order = r.shuffle ? r.shuffle([...Array(n).keys()]) : [...Array(n).keys()];
     const stems = [];
-    for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) * 2 - 1 : 0; stems.push(st(u * s * (0.18 + 0.04 * n) + r.range(-1, 1), 0, 2, { lean: u * r.range(0.25, 0.45) + r.range(-0.08, 0.08), s: s * (1 - 0.22 * Math.abs(u)) * r.range(0.85, 1.05), head: ear(1, u < 0 ? -1 : u > 0 ? 1 : r.sign()) })); }
+    for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) * 2 - 1 : 0, sd = u < 0 ? -1 : u > 0 ? 1 : r.sign(); stems.push(st(u * s * (n > 2 ? 0.3 : 0.2) + r.range(-0.4, 0.4), 0, 2, { lean: u * r.range(0.4, 0.55) + r.range(-0.06, 0.06), s: s * hs[order[i]], head: ear(-sd) })); }
     stems.sort((a, b) => b.s - a.s);
     return stemsSp(r, stems, { R: 6, stem: 0.05, sub: { grass: r.chance(0.5) ? [[r.range(-18, -12), 2, 8]] : null } });
-  } },
-  { name: 'snow fungus', w: 1.3, genes: r => {
-    // Tremella: a frilly ball of thin crinkled ear-lobes on a twig
-    const L = r.range(26, 32), rr = r.range(2.0, 2.5), n = r.int(8, 11), t0 = r.range(0.4, 0.6), s = r.range(7, 8);
-    const ear = () => ({ form: 'ear', span: 1.1, h: r.range(1.5, 1.9), w: r.range(1.4, 1.8), notch: r.range(0.3, 0.5), fold: 0.07, veins: 0, crinkle: r.range(0.05, 0.08), bulb: 0.5, seat: 0.8, lend: 0.85 });
-    const ch = { form: 'wood', kind: 'log', len: L, rr, bow: r.range(-0.05, 0.1), snag: r.chance(0.4) ? r.range(0.12, 0.25) : 0, sd: -1, R: rr, items: [] };
-    for (let i = 0; i < n; i++) { const u = i / (n - 1) * 2 - 1; ch.items.push({ t: t0 + u * 0.06, ax: u * 1.25 + r.range(-0.15, 0.15), stem: s * 0.35 * (1 - Math.abs(u) * 0.5), stemW: 1.2, dip: 0.9, s: s * r.range(0.8, 1.1) * (1 - 0.2 * Math.abs(u)), fb: ear() }); }
-    return build(r, ch, ear(), { stem: 0.02 });
   } },
   { name: 'witch\'s butter', w: 1.5, genes: r => {
     const L = r.range(28, 36), rr = r.range(2.6, 3.3), n = r.int(1, 3);
