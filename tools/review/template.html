@@ -1,4 +1,4 @@
-<title>Critter Taste Check</title>
+<title>Critter Taste Check 1.0</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 :root{
@@ -34,7 +34,7 @@ section{margin:0 0 36px;scroll-margin-top:90px}
 .row{scroll-margin-top:110px}
 h2{font-size:1rem;text-transform:uppercase;letter-spacing:.1em;margin:0 0 4px;padding-bottom:4px;border-bottom:2px solid var(--ink)}
 .sub{color:var(--muted);margin:4px 0 10px;font-size:.9rem}
-.row{display:grid;grid-template-columns:11rem 360px minmax(0,1fr);gap:4px 14px;align-items:center;padding:6px 0;border-bottom:1px solid var(--rule)}
+.row{display:grid;grid-template-columns:12rem 480px minmax(0,1fr);gap:4px 14px;align-items:center;padding:6px 0;border-bottom:1px solid var(--rule)}
 .row.mix{grid-template-columns:11rem 480px minmax(0,1fr)}
 .name{font-weight:600;overflow-wrap:anywhere}
 .name small{display:block;font-weight:400;color:var(--muted);font-size:.75rem}
@@ -49,6 +49,10 @@ h2{font-size:1rem;text-transform:uppercase;letter-spacing:.1em;margin:0 0 4px;pa
 .ctl button[data-v="fav"][aria-pressed="true"],.ctl button[data-v="fix"][aria-pressed="true"]{color:var(--fav);border-color:var(--fav);background:color-mix(in srgb,var(--fav) 12%,transparent)}
 .ctl button[data-v="rej"][aria-pressed="true"],.ctl button[data-v="cut"][aria-pressed="true"]{color:var(--rej);border-color:var(--rej);background:color-mix(in srgb,var(--rej) 12%,transparent);text-decoration:line-through}
 .ctl button[data-v="fine"][aria-pressed="true"]{color:var(--fine);border-color:var(--fine);background:color-mix(in srgb,var(--fine) 14%,transparent)}
+.ctl button[data-v="keep"][aria-pressed="true"]{color:var(--fav);border-color:var(--fav);background:color-mix(in srgb,var(--fav) 12%,transparent)}
+.ctl button[data-v="retry"][aria-pressed="true"],.ctl button[data-v="less"][aria-pressed="true"]{color:var(--accent);border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.ctl button[data-v="never"][aria-pressed="true"]{color:var(--rej);border-color:var(--rej);background:color-mix(in srgb,var(--rej) 12%,transparent);text-decoration:line-through}
+.cell2{display:flex;flex-direction:column;gap:6px;min-width:0}
 .ctl button.note{border-style:dashed;font-size:.8rem}
 .ctl button.note.has{border-style:solid}
 .noterow{grid-column:1/-1;display:none}
@@ -75,17 +79,17 @@ textarea{min-height:64px;resize:vertical}
 <div class="wrap">
 <header class="top">
   <div class="topline">
-    <h1>Critter Taste Check</h1>
+    <h1>Critter Taste Check 1.0</h1>
     <span id="progress">0 of 0 marked</span>
     <span id="status" role="status" aria-live="polite"></span>
   </div>
   <nav id="nav" aria-label="Sections"></nav>
 </header>
-<p class="intro">These are the critters at print size, the size they will sit on a page. Mark what you like, what is fine and what should go. Every answer saves as you click, marking is optional, and nothing has to be finished in one sitting.</p>
+<p class="intro">Only the items that still need a decision, at print size. Pick a button, add a comment if you like. Every answer saves as you click, and nothing has to be finished in one sitting.</p>
 <main id="main"></main>
 <section id="sec-overall" class="overall">
   <h2>Overall</h2>
-  <label for="c-overall">Anything else: general taste, themes to add or avoid, things the sections missed.</label>
+  <label for="c-overall">Overall comment on the mixes, and anything else.</label>
   <textarea id="c-overall"></textarea>
   <p class="ctl" style="margin-top:10px"><button type="button" class="copybtn" id="copy-btn">Copy all answers as text</button><span id="copy-msg" role="status"></span></p>
   <textarea id="copy-fallback" readonly aria-label="All answers as text, select and copy"></textarea>
@@ -94,8 +98,8 @@ textarea{min-height:64px;resize:vertical}
 <script>
 (function(){
 var M = /*MANIFEST*/null;
-var LS_KEY = 'critter-taste-v1';
-var VERDICTS = { species: [['fav','Favourite'],['fine','Fine'],['rej','Reject']], open: [['cut','Cut'],['fix','Fix'],['fine','Fine as is']] };
+var LS_KEY = 'critter-taste-v2';
+var SETS = { kct: [['keep','Keep'],['cut','Cut'],['retry','Try again']], fc: [['fine','Fine'],['cut','Cut']], mix: [['fine','Fine'],['less','Less of this'],['never','Never']] };
 var recs = {};       // id -> {kind, tag, name, verdict, comment, at}
 var db = null, dbState = 'pending', coll = null;
 var chains = {}, timers = {}, ui = {};
@@ -204,79 +208,56 @@ function strip(sprite, i, w, k){
   var sc = el('div', { class: 'scroll', tabindex: '0' }, [s]);
   return { box: sc, strip: s };
 }
-function speciesRow(tag, sp, i){
-  var id = 'species-' + tag + '-' + sp.id, meta = { kind: 'species', tag: tag, name: sp.name };
-  var row = el('div', { class: 'row', id: 'row-' + id });
-  var st = strip(tag, i, M.cell * M.nSp);
-  st.strip.setAttribute('aria-label', sp.name + ', ' + M.nSp + ' seeds');
-  row.appendChild(el('div', { class: 'name', text: sp.name }));
+function itemRow(id, meta, sprite, i, title, q, set, toggleNote, cls){
+  var row = el('div', { class: 'row' + (cls ? ' ' + cls : ''), id: 'row-' + id });
+  var nm = el('div', { class: 'name', text: title });
+  if (q) nm.appendChild(el('small', { text: q }));
+  row.appendChild(nm);
+  var st = strip(sprite, i, M.cell * M.n);
+  st.strip.setAttribute('aria-label', title + ', ' + M.n + ' seeds');
   row.appendChild(st.box);
-  var ctl = makeCtl(id, meta, VERDICTS.species);
-  var n = makeNote(id, meta);
-  ctl.appendChild(n.btn); row.appendChild(ctl); row.appendChild(n.wrap);
-  return row;
-}
-function mixRow(a, b, i){
-  var id = 'mix-' + a + '-' + b, name = a + ' + ' + b, meta = { kind: 'mix', tag: a + '+' + b, name: name };
-  var row = el('div', { class: 'row mix', id: 'row-' + id });
-  var st = strip('mixes', i, M.cell * M.nMix);
-  st.strip.setAttribute('aria-label', name + ', ' + M.nMix + ' seeds');
-  row.appendChild(el('div', { class: 'name', text: name }));
-  row.appendChild(st.box);
-  var ctl = makeCtl(id, meta, VERDICTS.species);
-  var n = makeNote(id, meta);
-  ctl.appendChild(n.btn); row.appendChild(ctl); row.appendChild(n.wrap);
+  var ctl = makeCtl(id, meta, set), side = el('div', { class: 'cell2' });
+  side.appendChild(ctl);
+  if (toggleNote) {
+    var n = makeNote(id, meta);
+    ctl.appendChild(n.btn); side.appendChild(n.wrap);
+  } else {
+    var inp = el('input', { type: 'text', id: 'c-' + id, placeholder: 'Comment (optional)', 'aria-label': 'Comment on ' + title, maxlength: '400' });
+    ui[id].input = inp; ui[id].noteWrap = null;
+    inp.addEventListener('input', function(){ debounced(id, meta, inp.value); });
+    inp.addEventListener('blur', function(){ flush(id); });
+    side.appendChild(inp);
+  }
+  row.appendChild(side);
   return row;
 }
 
 // ---------- build
 var main = $('main'), nav = $('nav');
 function navLink(id, text){ nav.appendChild(el('a', { href: '#' + id, text: text })); }
+var known = {};
 (function build(){
-  var open = el('section', { id: 'sec-open' });
-  open.appendChild(el('h2', { text: 'Seven open questions' }));
-  open.appendChild(el('p', { class: 'sub', text: 'These did not pass the last review. Each is shown at print size and at 2x. Cut removes it, Fix keeps it for another round, Fine as is accepts it.' }));
-  M.open.forEach(function(o){
-    var id = 'open-' + o.id, meta = { kind: 'open', tag: o.rows[0].tag, name: o.title };
-    var it = el('div', { class: 'item', id: 'item-' + id });
-    it.appendChild(el('h3', { text: o.title }));
-    it.appendChild(el('p', { class: 'complaint', text: 'Review said: ' + o.complaint }));
-    var strips = el('div', { class: 'strips' });
-    o.rows.forEach(function(r){
-      var w = M.cell * M.nSp;
-      var a = el('div'); a.appendChild(el('p', { class: 'cap', text: r.name + ', print size' }));
-      var s1 = strip(r.tag, r.i, w); s1.strip.setAttribute('aria-label', r.name + ' at print size'); a.appendChild(s1.box);
-      var b = el('div'); b.appendChild(el('p', { class: 'cap', text: r.name + ', 2x' }));
-      var s2 = strip(r.tag, r.i, w, 2); s2.strip.setAttribute('aria-label', r.name + ' at 2x'); b.appendChild(s2.box);
-      strips.appendChild(a); strips.appendChild(b);
+  M.groups.forEach(function(g, gi){
+    var sec = el('section', { id: 'sec-' + g.id });
+    sec.appendChild(el('h2', { text: (gi + 1) + '. ' + g.title }));
+    sec.appendChild(el('p', { class: 'sub', text: g.sub }));
+    g.items.forEach(function(it, i){
+      var title = it.name.charAt(0).toUpperCase() + it.name.slice(1) + ' (' + it.tag + ')';
+      known[it.id] = 1;
+      sec.appendChild(itemRow(it.id, { kind: 'item', tag: it.tag, name: it.name, group: g.id }, g.id, i, title, it.q, SETS[g.set], false));
     });
-    it.appendChild(strips);
-    var ctl = makeCtl(id, meta, VERDICTS.open);
-    it.appendChild(ctl);
-    var inp = el('input', { type: 'text', id: 'c-' + id, placeholder: 'Comment (optional)', 'aria-label': 'Comment on ' + o.title, maxlength: '400' });
-    ui[id].input = inp; ui[id].noteWrap = null;
-    inp.addEventListener('input', function(){ debounced(id, meta, inp.value); });
-    inp.addEventListener('blur', function(){ flush(id); });
-    it.appendChild(inp);
-    open.appendChild(it);
+    main.appendChild(sec); navLink('sec-' + g.id, g.title);
   });
-  main.appendChild(open); navLink('sec-open', 'Open questions');
-
-  M.tags.forEach(function(t){
-    var sec = el('section', { id: 'sec-' + t.tag });
-    sec.appendChild(el('h2', { text: t.tag }));
-    sec.appendChild(el('p', { class: 'sub', text: t.species.length + ' species, ' + M.nSp + ' seeds each.' }));
-    t.species.forEach(function(sp, i){ sec.appendChild(speciesRow(t.tag, sp, i)); });
-    var tid = 'tagnote-' + t.tag;
-    sec.appendChild(commentBox(tid, { kind: 'tagnote', tag: t.tag, name: t.tag }, 'Comment on the ' + t.tag + ' tag as a whole'));
-    main.appendChild(sec); navLink('sec-' + t.tag, t.tag);
-  });
-
   var mx = el('section', { id: 'sec-mixes' });
-  mx.appendChild(el('h2', { text: 'Mixes' }));
-  mx.appendChild(el('p', { class: 'sub', text: 'Every pair of tags, ' + M.nMix + ' seeds each. Parts of one tag are lent to the body of the other.' }));
-  M.pairs.forEach(function(p, i){ mx.appendChild(mixRow(p[0], p[1], i)); });
-  main.appendChild(mx); navLink('sec-mixes', 'mixes');
+  mx.appendChild(el('h2', { text: '4. Mixes' }));
+  mx.appendChild(el('p', { class: 'sub', text: 'Every pair of tags, ' + M.n + ' seeds each. Fine, less of this pairing, or never.' }));
+  M.pairs.forEach(function(p, i){
+    var id = 'mix-' + p[0] + '-' + p[1], name = p[0] + ' + ' + p[1];
+    known[id] = 1;
+    mx.appendChild(itemRow(id, { kind: 'mix', tag: p[0] + '+' + p[1], name: name }, 'mixes', i, name, '', SETS.mix, true, 'mix'));
+  });
+  main.appendChild(mx); navLink('sec-mixes', 'Mixes');
+  known['overall'] = 1;
   navLink('sec-overall', 'overall');
   ui['overall'] = { btns: {}, area: $('c-overall') };
   var meta = { kind: 'overall', tag: '', name: 'overall' };
@@ -284,24 +265,23 @@ function navLink(id, text){ nav.appendChild(el('a', { href: '#' + id, text: text
   $('c-overall').addEventListener('blur', function(){ flush('overall'); });
 })();
 
-var total = 0;
-M.tags.forEach(function(t){ total += t.species.length; }); total += M.pairs.length;
+var total = Object.keys(known).length - 1;
 function refreshProgress(){
-  var n = 0; for (var id in recs) if ((recs[id].kind === 'species' || recs[id].kind === 'mix') && recs[id].verdict) n++;
+  var n = 0; for (var id in recs) if (known[id] && recs[id].kind !== 'overall' && recs[id].verdict) n++;
   $('progress').textContent = n + ' of ' + total + ' marked';
 }
 function paintAll(){ for (var id in ui) paint(id); refreshProgress(); }
 
 // ---------- copy
 function answersText(){
-  var lines = ['Critter taste check answers'];
-  var groups = [['open','Open questions'],['species','Species'],['mix','Mixes'],['tagnote','Tag comments'],['overall','Overall']];
-  var lab = { fav:'FAVOURITE', fine:'fine', rej:'REJECT', cut:'CUT', fix:'FIX' };
+  var lines = ['Critter Taste Check 1.0 answers'];
+  var groups = [['item','Items'],['mix','Mixes'],['overall','Overall']];
+  var lab = { keep:'KEEP', fine:'fine', cut:'CUT', retry:'TRY AGAIN', less:'LESS OF THIS', never:'NEVER' };
   groups.forEach(function(g){
     var ids = Object.keys(recs).filter(function(i){ return recs[i].kind === g[0]; }).sort();
     if (!ids.length) return;
     lines.push('', g[1]);
-    ids.forEach(function(i){ var r = recs[i]; var head = r.kind === 'species' ? r.tag + ' / ' + r.name : r.name; var v = r.verdict ? (g[0] === 'open' && r.verdict === 'fine' ? 'FINE AS IS' : lab[r.verdict]) : ''; lines.push('- ' + head + (v ? ': ' + v : '') + (r.comment ? (v ? ' | ' : ': ') + r.comment : '')); });
+    ids.forEach(function(i){ var r = recs[i]; var head = r.kind === 'item' ? r.tag + ' / ' + r.name : r.name; var v = r.verdict ? lab[r.verdict] : ''; lines.push('- ' + head + (v ? ': ' + v : '') + (r.comment ? (v ? ' | ' : ': ') + r.comment : '')); });
   });
   return lines.join('\n');
 }
@@ -315,11 +295,11 @@ $('copy-btn').addEventListener('click', function(){
 });
 
 // ---------- load: local first, then db when it arrives
-recs = lsLoad(); paintAll(); setStatus('local');
+recs = lsLoad(); Object.keys(recs).forEach(function(i){ if (!known[i]) delete recs[i]; }); paintAll(); setStatus('local');
 function adopt(remote){
-  var ids = {}; Object.keys(remote).concat(Object.keys(recs)).forEach(function(i){ ids[i] = 1; });
+  var ids = {}; Object.keys(remote).filter(function(i){ return known[i]; }).concat(Object.keys(recs)).forEach(function(i){ ids[i] = 1; });
   Object.keys(ids).forEach(function(i){
-    var r = remote[i], l = recs[i];
+    var r = known[i] ? remote[i] : null, l = recs[i];
     if (r && (!l || (r.at || 0) >= (l.at || 0))) recs[i] = r;
     else if (l && (!r || (l.at || 0) > (r.at || 0))) { pushDb(i); }
   });
