@@ -315,7 +315,7 @@ tips.arthropodTail = (C, e, ea, s, g, curl) => {
   }
 };
 // (`len` of the kind goes to `tlen`: the shared tail() uses `len` for its own stub)
-const TAIL = (kind, { len, ...o } = {}) => ({ len: 0.2, w0: 0.55, mid: 0.5, w1: 0.55, curl: 0.01, wave: 0, tip: 'arthropodTail', kind, tlen: len, ...o });
+const TAIL = (kind, { len, ...o } = {}) => ({ tailLen: 0.2, w0: 0.55, mid: 0.5, w1: 0.55, curl: 0.01, wave: 0, tip: 'arthropodTail', kind, tlen: len, ...o });
 
 // ---------------------------------------------------------------------------
 // DORSAL: insect wings. Frame at the wing base: x outward from the body, y toward the tail.

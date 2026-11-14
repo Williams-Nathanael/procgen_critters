@@ -1172,7 +1172,7 @@ function lends(r, o) {
   return {
     head: { type: 'plantLend', lend: { ...o.head, size: o.headSize ?? 0.75 } },
     limbs: { len: r.range(1.3, 1.9), w: r.range(0.3, 0.4), taper: 0.55, bend: 0.4, foot: 'plantRoot', toes: r.int(3, 4), toeLen: r.range(0.7, 1.0), lift, stance: 0.15, arm: 0.8 },
-    tail: { len: r.range(4, 6.5), w0: 0.3, mid: 0.5, w1: 0.13, curl: r.range(1.5, 3), wave: r.range(0.2, 0.6), up: true, spiral: o.spiral ?? r.chance(0.4), tip: 'plantOrn', unit: o.tip ?? o.orn, tipS: o.tipS ?? 0.5 },
+    tail: { tailLen: r.range(4, 6.5), w0: 0.3, mid: 0.5, w1: 0.13, curl: r.range(1.5, 3), wave: r.range(0.2, 0.6), up: true, spiral: o.spiral ?? r.chance(0.4), tip: 'plantOrn', unit: o.tip ?? o.orn, tipS: o.tipS ?? 0.5 },
     dorsal: { type: 'plantRow', unit: o.row ?? o.orn, n: o.rowN ?? r.int(3, 5), size: o.rowS ?? 0.35 },
     crown: { type: 'plantSprig', unit: o.crown ?? o.orn, stem: o.stem ?? r.range(0.6, 1.1), size: o.crownS ?? 0.4, pair: !!o.ears, ears: !!o.ears, lean: o.ears ? -0.3 : 0 },
   };

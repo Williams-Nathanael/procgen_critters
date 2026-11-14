@@ -521,9 +521,9 @@ const longjaw = (r, o = {}) => ({ type: 'dragonHead', skull: r.range(0.82, 0.92)
 const beak = (r, o = {}) => ({ type: 'dragonHead', beak: true, skull: r.range(0.88, 1), mz: r.range(1.25, 1.7), gape: r.chance(0.6) ? r.range(0.25, 0.5) : 0.02, ...o });
 const sneck = (r, a = 2.2, b = 3.4) => ({ len: r.range(a, b), sway: r.range(0.6, 1.15), w0: 0.72, w1: r.range(0.48, 0.56) });
 const legs = (r, o = {}) => ({ len: r.range(2, 2.5), w: 0.5, taper: 0.55, bend: 1, foot: 'dragonTalon', toeLen: r.range(0.62, 0.8), lift: r.range(0.7, 1), stance: 0.35, hindW: 1.4, arm: 0.8, ...o });
-const tl = (r, o = {}) => ({ len: r.range(8, 11.5), w0: 0.9, mid: 0.5, w1: 0.16, curl: r.range(0.8, 1.8), wave: r.range(0.6, 1.6), freq: 1, up: true, tip: 'dragonBarb', tipS: 1, ...o });
-const knot = (r, o = {}) => tl(r, { len: r.range(6.5, 9), w1: 0.26, curl: r.range(0.5, 1.4), tip: 'dragonKnot', tip2: r.wpick([[3, 'barb'], [1, 'trefoil']]), knotOut: r.range(2.8, 4), knotOver: r.range(-0.8, -0.2), ...o });
-const coil = (r, o = {}) => tl(r, { len: r.range(10, 14), curl: r.range(4.6, 6.6), wave: 0, spiral: true, tip: r.wpick([[2, 'dragonBarb'], [1, 'point']]), tipS: 0.8, ...o });
+const tl = (r, o = {}) => ({ tailLen: r.range(8, 11.5), w0: 0.9, mid: 0.5, w1: 0.16, curl: r.range(0.8, 1.8), wave: r.range(0.6, 1.6), freq: 1, up: true, tip: 'dragonBarb', tipS: 1, ...o });
+const knot = (r, o = {}) => tl(r, { tailLen: r.range(6.5, 9), w1: 0.26, curl: r.range(0.5, 1.4), tip: 'dragonKnot', tip2: r.wpick([[3, 'barb'], [1, 'trefoil']]), knotOut: r.range(2.8, 4), knotOver: r.range(-0.8, -0.2), ...o });
+const coil = (r, o = {}) => tl(r, { tailLen: r.range(10, 14), curl: r.range(4.6, 6.6), wave: 0, spiral: true, tip: r.wpick([[2, 'dragonBarb'], [1, 'point']]), tipS: 0.8, ...o });
 // Wing presets: each is a distinct silhouette, not new numbers on one template.
 const WG = (r, kind, o) => ({ type: 'dragonWings', kind, at: r.range(0.72, 0.86), ...o });
 const heraldic = (r, o = {}) => WG(r, 'membrane', { size: r.range(3, 3.7), fingers: r.int(4, 5), W: [0.5, -0.04], tilt: r.range(0.45, 0.65), f0: r.range(-0.25, -0.05), f1: r.range(2.1, 2.3), l0: 0.82, l1: 0.5, scallop: r.range(0.5, 0.6), hook: r.range(0.5, 1), farA: r.range(0.25, 0.4), farS: 0.85, ...o });
@@ -546,57 +546,57 @@ const species = [
   { name: 'bestiary draco', w: 3, genes: r => ({ // Aberdeen/Harley: winged, two-legged, small eared head, long looping tail
     chassis: beast(r, { legs: 'biped', pitch: r.range(-0.05, 0.12), r: r.range(6.8, 7.8), len: r.range(19, 23), headS: r.range(0.62, 0.72), legAt: 0.35, tailLift: r.range(-0.1, 0.15) }),
     head: dog(r, { neck: sneck(r, 2.8, 3.8), mz: r.range(1.35, 1.75) }),
-    limbs: legs(r, { lift: r.range(0.9, 1.1) }), tail: r.wpick([[3, tl(r, { len: r.range(10, 12.5), w1: 0.22, curl: r.range(0.3, 0.7), wave: r.range(0.3, 0.7), up: false })], [1.5, tl(r, { len: r.range(9.5, 12), w1: 0.24, curl: r.range(0.4, 0.8), wave: 0.4, up: false, tip: 'dragonScroll', tipS: r.range(1, 1.25) })]]),
+    limbs: legs(r, { lift: r.range(0.9, 1.1) }), tail: r.wpick([[3, tl(r, { tailLen: r.range(10, 12.5), w1: 0.22, curl: r.range(0.3, 0.7), wave: r.range(0.3, 0.7), up: false })], [1.5, tl(r, { tailLen: r.range(9.5, 12), w1: 0.24, curl: r.range(0.4, 0.8), wave: 0.4, up: false, tip: 'dragonScroll', tipS: r.range(1, 1.25) })]]),
     dorsal: feather(r, { tilt: r.range(0.3, 0.5), size: r.range(3, 3.5), feathers: r.int(5, 6) }), crown: ears(r), surface: eye(),
   }) },
   { name: 'wyvern', w: 3.4, genes: r => ({
     chassis: beast(r, { legs: 'biped', pitch: r.range(0.85, 1.05), len: r.range(15, 19), legAt: 0.05, neckA: r.range(-1.4, -1.1), tailLift: -0.4 }),
     head: r.wpick([[2, dog(r, { neck: sneck(r, 1.6, 2.6), gape: r.range(0.35, 0.55), tongue: 'barb' })], [1, longjaw(r, { neck: sneck(r, 1.4, 2.2) })]]),
-    limbs: legs(r, { lift: r.range(0.9, 1.2) }), tail: r.wpick([[2, coil(r, { len: r.range(9, 12), up: false })], [2, tl(r, { up: false, curl: r.range(2, 3), len: r.range(8, 10) })]]),
+    limbs: legs(r, { lift: r.range(0.9, 1.2) }), tail: r.wpick([[2, coil(r, { tailLen: r.range(9, 12), up: false })], [2, tl(r, { up: false, curl: r.range(2, 3), tailLen: r.range(8, 10) })]]),
     dorsal: batw(r, { size: r.range(4.2, 5), tilt: r.range(0.9, 1.2), at: r.range(0.6, 0.72) }), crown: r.wpick([[2, horns(r)], [2, ears(r)]]), surface: eye(),
   }) },
   { name: 'heraldic dragon passant', w: 3, genes: r => ({
     chassis: beast(r, { legs: 'quad', pawUp: true, pitch: r.range(-0.04, 0.06), len: r.range(21, 26), liftK: 1.6 }),
     head: dog(r, { neck: sneck(r, 1.5, 2.4), gape: r.range(0.35, 0.5), tongue: 'barb', beard: r.chance(0.4) ? 0.8 : 0 }),
-    limbs: legs(r, { len: r.range(2.4, 2.8) }), tail: tl(r, { curl: r.range(2.2, 3), wave: r.range(0.8, 1.3), len: r.range(9, 12) }),
+    limbs: legs(r, { len: r.range(2.4, 2.8) }), tail: tl(r, { curl: r.range(2.2, 3), wave: r.range(0.8, 1.3), tailLen: r.range(9, 12) }),
     dorsal: folded(r, { at: r.range(0.55, 0.65) }), crown: horns(r), surface: eye(),
   }) },
   { name: 'dragon rampant', w: 2, genes: r => ({
     chassis: beast(r, { legs: 'rampant', pitch: r.range(1.0, 1.22), len: r.range(17, 21), neckA: r.range(-1.35, -1.1), tailLift: -0.3 }),
     head: dog(r, { neck: sneck(r, 1.4, 2.2), gape: r.range(0.35, 0.55), tongue: r.pick(['barb', 'flame']) }),
-    limbs: legs(r, { lift: r.range(0.75, 1), arm: 0.9 }), tail: tl(r, { up: true, curl: r.range(1.8, 2.6), wave: 0.5, len: r.range(8, 10) }),
+    limbs: legs(r, { lift: r.range(0.75, 1), arm: 0.9 }), tail: tl(r, { up: true, curl: r.range(1.8, 2.6), wave: 0.5, tailLen: r.range(8, 10) }),
     dorsal: heraldic(r, { at: r.range(0.6, 0.74) }), crown: r.wpick([[2, horns(r)], [1, ears(r)]]), surface: eye(),
   }) },
   { name: 'dragon sejant', w: 1.6, genes: r => ({ // sits like a dog, forelegs straight
     chassis: beast(r, { legs: 'sejant', pitch: r.range(0.8, 1.0), len: r.range(14, 17), r: r.range(6.6, 8), neckA: r.range(-1.3, -1), tailLift: -0.2, belly: 1.08 }),
     head: r.wpick([[2, dog(r, { neck: sneck(r, 1, 1.8) })], [1, pug(r, { neck: sneck(r, 0.8, 1.2) })]]),
-    limbs: legs(r, { lift: 0.14, w: 0.44, stance: 0.5 }), tail: r.wpick([[2, tl(r, { up: false, curl: 0.3, wave: 1.4, len: r.range(7, 9) })], [1, coil(r, { len: r.range(8, 10) })]]),
+    limbs: legs(r, { lift: 0.14, w: 0.44, stance: 0.5 }), tail: r.wpick([[2, tl(r, { up: false, curl: 0.3, wave: 1.4, tailLen: r.range(7, 9) })], [1, coil(r, { tailLen: r.range(8, 10) })]]),
     dorsal: r.wpick([[2, folded(r, { at: r.range(0.62, 0.76) })], [1, batw(r, { at: r.range(0.62, 0.76) })]]), crown: r.wpick([[2, ears(r)], [1, horns(r)]]), surface: eye(),
   }) },
   { name: 'saint george dragon', w: 2.6, genes: r => ({ // small, squat, pug-faced, glaring up
     chassis: beast(r, { legs: 'quad', len: r.range(14, 18), r: r.range(7, 8.6), pitch: r.range(0.05, 0.25), headS: r.range(0.8, 0.92), neckA: r.range(-1.1, -0.7), face: r.range(-0.5, -0.15), belly: 1.08 }),
     head: pug(r, { neck: r.chance(0.5) ? sneck(r, 0.8, 1.4) : null }),
-    limbs: legs(r, { lift: r.range(0.4, 0.6), len: r.range(1.6, 2) }), tail: r.wpick([[3, coil(r, { len: r.range(8, 11) })], [1.5, knot(r, { len: r.range(5, 7) })]]),
+    limbs: legs(r, { lift: r.range(0.4, 0.6), len: r.range(1.6, 2) }), tail: r.wpick([[3, coil(r, { tailLen: r.range(8, 11) })], [1.5, knot(r, { tailLen: r.range(5, 7) })]]),
     dorsal: r.wpick([[3, roundw(r, { size: r.range(2.6, 3.2) })], [1, stub(r)]]), crown: r.wpick([[2, ears(r, { len: r.range(1, 1.5) })], [1, horns(r, { len: r.range(0.9, 1.4) })], [1, none()]]), surface: eye(),
   }) },
   { name: 'saint margaret dragon', w: 1.6, genes: r => ({ // all belly and gaping mouth
     chassis: beast(r, { legs: 'quad', len: r.range(15, 19), r: r.range(8.2, 9.6), pitch: r.range(0, 0.12), arch: r.range(0.4, 0.7), headS: r.range(0.95, 1.1), neckA: r.range(-0.6, -0.3), neckL: 1.1, neckW: 0.7, face: r.range(-0.25, 0) }),
     head: dog(r, { gape: r.range(0.7, 0.95), jawK: r.range(0.9, 1), mz: r.range(1.5, 1.9), tipR: r.range(0.42, 0.5), tongue: r.pick(['barb', null]) }),
-    limbs: legs(r, { lift: r.range(0.3, 0.5), len: r.range(1.5, 1.9) }), tail: r.wpick([[2, knot(r, { len: r.range(4.5, 6.5) })], [1, tl(r, { len: r.range(6, 8), curl: 2.2 })]]),
+    limbs: legs(r, { lift: r.range(0.3, 0.5), len: r.range(1.5, 1.9) }), tail: r.wpick([[2, knot(r, { tailLen: r.range(4.5, 6.5) })], [1, tl(r, { tailLen: r.range(6, 8), curl: 2.2 })]]),
     dorsal: r.wpick([[2, stub(r)], [1.5, ridge(r, 'saw')], [1, none()]]), crown: ears(r, { len: r.range(0.9, 1.3) }), surface: eye(),
   }) },
   { name: 'luttrell dragonet', w: 3.2, genes: r => ({ // Gothic margin two-legger: long ears, foliate tail
     chassis: beast(r, { legs: 'biped', pitch: r.range(0.15, 0.45), len: r.range(13, 17), r: r.range(6, 7.4), headS: r.range(0.72, 0.85), legAt: 0.3 }),
     head: r.wpick([[1.5, beak(r, { neck: sneck(r, 1.6, 2.8) })], [1, dog(r, { neck: sneck(r, 1.6, 2.8), mz: r.range(1.2, 1.6) })], [1.5, beak(r, { regard: true, neck: sneck(r, 2.6, 3.4), lookDown: r.range(-0.1, 0.3) })]]), // regardant: looks back over its shoulder
     limbs: legs(r, { lift: r.range(0.8, 1.1) }),
-    tail: r.wpick([[2, tl(r, { tip: 'dragonTrefoil', curl: r.range(1.2, 2.4), w1: 0.2 })], [1.5, knot(r, { tip2: 'trefoil' })], [1.5, tl(r, { len: r.range(4, 6), w1: 0.22, tip: 'dragonScroll', curl: 0.8 })]]),
+    tail: r.wpick([[2, tl(r, { tip: 'dragonTrefoil', curl: r.range(1.2, 2.4), w1: 0.2 })], [1.5, knot(r, { tip2: 'trefoil' })], [1.5, tl(r, { tailLen: r.range(4, 6), w1: 0.22, tip: 'dragonScroll', curl: 0.8 })]]),
     dorsal: r.wpick([[2, none()], [1.2, stub(r)], [1, leafy(r, { size: r.range(2.2, 2.8) })], [1, ridge(r, 'scallop')]]), crown: longEars(r), surface: eye(),
   }) },
   { name: 'cockatrice', w: 2.6, genes: r => ({ // a cock with a serpent tail: upright, combed and wattled, wing raised
     chassis: beast(r, { legs: 'biped', pitch: r.range(0.75, 0.95), len: r.range(10, 12), r: r.range(7, 7.8), headS: r.range(0.8, 0.9), legAt: 0.3, chest: r.range(1.3, 1.45), belly: r.range(1.15, 1.25), arch: 0.1, neckW: 0.6, neckA: r.range(-1.6, -1.35), tailLift: r.range(0.1, 0.4) }),
     head: beak(r, { neck: sneck(r, 0.8, 1.3), mz: r.range(1, 1.3), wattle: r.range(1.5, 1.9), gape: r.chance(0.6) ? r.range(0.25, 0.45) : 0.02 }),
     limbs: legs(r, { len: r.range(2.4, 2.8), w: 0.46, hindW: 1, lift: 1, stance: 0.15, toeLen: r.range(0.9, 1.05) }),
-    tail: tl(r, { len: r.range(7, 8.5), up: true, curl: r.range(2, 2.8), wave: 0.3, w1: 0.24, tip: 'dragonBarb' }),
+    tail: tl(r, { tailLen: r.range(7, 8.5), up: true, curl: r.range(2, 2.8), wave: 0.3, w1: 0.24, tip: 'dragonBarb' }),
     dorsal: r.wpick([[2, stub(r, { at: r.range(0.55, 0.65), size: r.range(2, 2.5), far: false })], [1, feather(r, { at: 0.6, size: r.range(1.9, 2.3), feathers: 4, tilt: r.range(0.9, 1.2), far: false })]]), crown: { type: 'dragonComb', len: r.range(1.5, 1.9), n: r.int(4, 5), y0: -1.9, y1: -0.3 }, surface: eye(),
   }) },
   { name: 'basilisk', w: 1.6, genes: r => r.chance(0.5) ? ({ // the crowned king of serpents: coiled and reared, crowned
@@ -607,31 +607,31 @@ const species = [
   }) : ({ // or reared on a cock's legs
     chassis: serpent(r, { mode: 'wave', len: r.range(12, 15), r: r.range(5.8, 6.6), amp: 0, humps: 1, rise: r.range(4.5, 5.5), riseA: r.range(1.35, 1.55), clear: r.range(2.4, 2.8), clearT: [0.1, 0.4], legsAt: [{ t: 0.45, role: 'hind' }], legS: 1.1, headS: r.range(0.95, 1.05), backT: [0.3, 0.7], radKeys: [[0, 0.5], [0.3, 1], [0.55, 1.05], [0.8, 0.75], [1, 0.62]] }),
     head: dog(r, { neck: sneck(r, 0.5, 0.9), mz: r.range(1.1, 1.3), tongue: 'fork', gape: r.range(0.35, 0.55), brow: 0.3 }),
-    limbs: legs(r, { len: r.range(2.4, 2.8), w: 0.52, hindW: 1, lift: 1, stance: 0.15, toeLen: r.range(0.85, 1) }), tail: coil(r, { len: r.range(9, 11), w0: 0.85, up: true, tip: 'point' }),
+    limbs: legs(r, { len: r.range(2.4, 2.8), w: 0.52, hindW: 1, lift: 1, stance: 0.15, toeLen: r.range(0.85, 1) }), tail: coil(r, { tailLen: r.range(9, 11), w0: 0.85, up: true, tip: 'point' }),
     dorsal: r.wpick([[2, stub(r, { at: 0.6, size: r.range(2.8, 3.3), far: false })], [1, ridge(r, 'saw', { n: r.int(5, 7), h: 0.7 })]]), crown: { type: 'dragonCrown', len: r.range(1.6, 2) }, surface: eye(),
   }) },
   { name: 'lindworm', w: 2.2, genes: r => ({ // wingless, two stout forelegs, the rest serpent tied in a loop
     chassis: serpent(r, { mode: r.wpick([[2, 'loop'], [1, 'wave']]), r: r.range(6, 7), len: r.range(26, 34), amp: r.range(0.6, 1.4), humps: r.int(1, 2), loopR: r.range(0.2, 0.6), rise: r.range(2.4, 3.2), riseA: r.range(0.9, 1.2), clear: r.range(1.1, 1.4), clearT: [0.6, 0.78], legsAt: [{ t: 0.84, role: 'fore' }], legS: 1.1, headS: r.range(0.8, 0.92), loopAt: r.range(0.25, 0.4), radKeys: [[0, 0.3], [0.25, 0.75], [0.6, 0.95], [0.85, 1], [1, 0.7]] }),
     head: r.wpick([[2, dog(r, { neck: sneck(r, 0.9, 1.5), beard: r.chance(0.4) ? 0.9 : 0 })], [1, longjaw(r, { neck: sneck(r, 0.8, 1.3) })]]),
-    limbs: legs(r, { lift: 1, w: 0.6, hindW: 1, len: r.range(2, 2.4) }), tail: r.wpick([[2, tl(r, { len: r.range(4, 6), up: true, curl: r.range(1, 2), tip: 'dragonBarb', w1: 0.24 })], [1, knot(r, { len: r.range(3, 4.5) })]]),
+    limbs: legs(r, { lift: 1, w: 0.6, hindW: 1, len: r.range(2, 2.4) }), tail: r.wpick([[2, tl(r, { tailLen: r.range(4, 6), up: true, curl: r.range(1, 2), tip: 'dragonBarb', w1: 0.24 })], [1, knot(r, { tailLen: r.range(3, 4.5) })]]),
     dorsal: r.wpick([[2, ridge(r, 'mane', { n: r.int(5, 8), h: r.range(0.6, 0.85) })], [1.5, ridge(r, 'saw', { n: r.int(8, 12), h: 0.6 })], [1, none()]]), crown: r.wpick([[2, ears(r)], [1, horns(r)]]), surface: eye(),
   }) },
   { name: 'amphisbaena', w: 2, genes: r => ({ // a low two-legged dragon whose tail, held high, ends in a second head
     chassis: beast(r, { legs: 'biped', pitch: r.range(-0.05, 0.1), r: r.range(6.6, 7.4), len: r.range(17, 20), headS: r.range(0.68, 0.78), legAt: 0.4, tailLift: r.range(0.1, 0.3) }),
     head: dog(r, { neck: { ...sneck(r, 2.2, 2.8), sway: r.range(-0.6, -0.2) }, tilt: r.range(-2.75, -2.5), gape: r.range(0.45, 0.65) }),
-    limbs: legs(r, { lift: 1, w: 0.55, len: r.range(2.3, 2.7) }), tail: tl(r, { len: r.range(5.5, 7), w0: 1, w1: 0.6, mid: 0.4, up: true, curl: r.range(1.2, 1.6), wave: 0.2, tip: 'dragonHead2', tipS: r.range(1.3, 1.5), gape2: r.range(0.6, 0.8), face2: r.range(0.3, 0.9) }),
+    limbs: legs(r, { lift: 1, w: 0.55, len: r.range(2.3, 2.7) }), tail: tl(r, { tailLen: r.range(5.5, 7), w0: 1, w1: 0.6, mid: 0.4, up: true, curl: r.range(1.2, 1.6), wave: 0.2, tip: 'dragonHead2', tipS: r.range(1.3, 1.5), gape2: r.range(0.6, 0.8), face2: r.range(0.3, 0.9) }),
     dorsal: r.wpick([[1, stub(r, { at: 0.6, far: false })], [2, none()]]), crown: ears(r), surface: eye(),
   }) },
   { name: 'fire salamander', w: 1.5, genes: r => ({ // the salamander that lives in fire: a low crested newt, its crest and tail all flame
     chassis: { type: 'dragonNewt', r: r.range(7.3, 8.4), len: r.range(15, 17.5), tailL: r.range(1.1, 1.3), tailUp: r.range(0.7, 1.3), arch: r.range(0.1, 0.3), headS: r.range(0.85, 0.95), liftK: 1.3, neckA: r.range(-0.55, -0.3) },
     head: dog(r, { mz: r.range(0.95, 1.2), tipR: r.range(0.5, 0.58), skull: r.range(0.85, 0.95), up: -0.05, gape: 0, tongue: null, nose: 0, brow: 0, beard: 0 }),
-    limbs: legs(r, { len: r.range(2, 2.3), w: 0.62, lift: 0.7, stance: 0.4, hindW: 1.15 }), tail: tl(r, { len: 1, w0: 0.3, w1: 0.2, curl: 0, wave: 0, tip: 'dragonFlame', tipS: r.range(1.2, 1.5) }),
+    limbs: legs(r, { len: r.range(2, 2.3), w: 0.62, lift: 0.7, stance: 0.4, hindW: 1.15 }), tail: tl(r, { tailLen: 1, w0: 0.3, w1: 0.2, curl: 0, wave: 0, tip: 'dragonFlame', tipS: r.range(1.2, 1.5) }),
     dorsal: { type: 'dragonFlames', n: r.int(5, 7), h: r.range(2.5, 3.1), wid: 0.5, lean: r.range(0.45, 0.7), base: 0.32, tall: r.int(2, 3) }, crown: none(), surface: eye(),
   }) },
   { name: 'jaculus', w: 1.5, genes: r => ({ // the javelin-snake that flies
     chassis: serpent(r, { mode: 'wave', len: r.range(24, 32), amp: r.range(2.4, 3.6), humps: 1, rise: r.range(3, 4.5), riseA: r.range(0.7, 1.1), backT: [0.5, 0.92], r: r.range(4.2, 5) }),
     head: dog(r, { mz: r.range(1.3, 1.7), tongue: 'fork', gape: r.range(0.3, 0.45), neck: sneck(r, 0.6, 1.2) }),
-    limbs: none(), tail: tl(r, { len: r.range(5, 8), up: r.chance(0.5), curl: r.range(0.6, 1.4), tip: r.pick(['dragonBarb', 'point']) }),
+    limbs: none(), tail: tl(r, { tailLen: r.range(5, 8), up: r.chance(0.5), curl: r.range(0.6, 1.4), tip: r.pick(['dragonBarb', 'point']) }),
     dorsal: r.wpick([[2, feather(r, { at: 0.72, size: r.range(5, 6), tilt: r.range(0.3, 0.55) })], [1, batw(r, { at: 0.72, size: r.range(5, 6) })]]), crown: r.wpick([[1, ears(r)], [1, none()]]), surface: eye(),
   }) },
   { name: 'hydra', w: 2, genes: r => ({
@@ -643,13 +643,13 @@ const species = [
   { name: 'sea serpent', w: 2, genes: r => ({ // arches rising from the line
     chassis: serpent(r, { mode: 'wave', len: r.range(28, 36), amp: r.range(3.2, 4.2), humps: r.wpick([[3, 2], [1, 1]]), rise: r.range(4, 5.5), riseA: r.range(1.1, 1.4), backT: [0.1, 0.95], r: r.range(6.4, 7.4), headS: r.range(0.9, 1) }),
     head: r.wpick([[2, longjaw(r, { neck: sneck(r, 0.8, 1.4) })], [1, dog(r, { neck: sneck(r, 0.8, 1.4) })]]),
-    limbs: none(), tail: tl(r, { len: r.range(3.5, 5.5), up: true, curl: r.range(1.2, 2), wave: 0, tip: 'dragonFluke', w1: 0.3 }),
+    limbs: none(), tail: tl(r, { tailLen: r.range(3.5, 5.5), up: true, curl: r.range(1.2, 2), wave: 0, tip: 'dragonFluke', w1: 0.3 }),
     dorsal: r.wpick([[2, ridge(r, 'fin', { n: r.int(5, 8), h: r.range(0.8, 1.1), wid: 0.36 })], [1, ridge(r, 'saw', { n: r.int(7, 10), wid: 0.34 })], [1, none()]]), crown: r.wpick([[1, ears(r)], [1, horns(r)], [1, none()]]), surface: eye(),
   }) },
   { name: 'serra', w: 1.2, genes: r => ({ // the bestiary's winged saw-fish that races ships
     chassis: beast(r, { lie: true, legs: 'none', len: r.range(18, 24), r: r.range(7, 8.4), arch: r.range(0.3, 0.5), headS: r.range(0.78, 0.9), neckA: r.range(-0.25, 0.05), neckL: 1.1, neckW: 0.75, tailLift: 0.45, face: 0 }),
     head: dog(r, { mz: r.range(1.3, 1.7), gape: r.chance(0.6) ? r.range(0.3, 0.5) : 0, tongue: null }),
-    limbs: none(), tail: tl(r, { len: r.range(4, 6), up: true, curl: r.range(0.8, 1.6), wave: 0, w1: 0.34, tip: 'dragonFluke', tipS: 1.2 }),
+    limbs: none(), tail: tl(r, { tailLen: r.range(4, 6), up: true, curl: r.range(0.8, 1.6), wave: 0, w1: 0.34, tip: 'dragonFluke', tipS: 1.2 }),
     dorsal: r.wpick([[3, batw(r, { size: r.range(3.6, 4.4), at: r.range(0.6, 0.75), far: false })], [1.5, feather(r, { size: r.range(3.6, 4.4), at: r.range(0.6, 0.75), far: false })]]), crown: r.wpick([[1, ears(r, { len: r.range(0.9, 1.3) })], [1, none()]]), surface: eye(),
   }) },
   { name: 'ouroboros', w: 2, genes: r => r.chance(0.6) ? ({ // the tail-biter: the jaws close on the thin tail tip
@@ -667,19 +667,19 @@ const species = [
   { name: 'interlace beast', w: 1.6, genes: r => ({ // Insular / Romanesque initial: knotted, biting back, leaf-tailed
     chassis: beast(r, { legs: 'quad', len: r.range(20, 26), r: r.range(4.6, 5.6), arch: r.range(0.3, 0.6), headS: r.range(0.78, 0.9), neckA: r.range(-1.25, -1), neckW: 0.6, haunch: true }),
     head: longjaw(r, { regard: true, neck: sneck(r, 3.2, 4.2), lookDown: r.range(0.2, 0.5), mz: r.range(1.8, 2.3), tongue: null }),
-    limbs: legs(r, { w: 0.42, lift: r.range(0.9, 1.2) }), tail: knot(r, { tip2: 'trefoil', len: r.range(6, 8), knotR: 1.7, up: true }),
+    limbs: legs(r, { w: 0.42, lift: r.range(0.9, 1.2) }), tail: knot(r, { tip2: 'trefoil', tailLen: r.range(6, 8), knotR: 1.7, up: true }),
     dorsal: none(), crown: r.wpick([[2, { type: 'dragonLappet', len: r.range(2.2, 3.2) }], [1, ears(r)]]), surface: eye(),
   }) },
   { name: 'urnes ribbon beast', w: 1.5, genes: r => ({ // slender Norse greyhound-serpent, all loops
     chassis: beast(r, { legs: 'quad', pawUp: r.chance(0.5), len: r.range(22, 28), r: r.range(3.6, 4.4), arch: r.range(0.5, 1), headS: r.range(0.9, 1.05), neckA: r.range(-1.2, -0.9), neckW: 0.62, belly: 0.85, haunch: true }),
     head: longjaw(r, { neck: { len: r.range(3, 4.2), sway: r.range(0.9, 1.3), w0: 0.6, w1: 0.45 }, mz: r.range(2, 2.5), gape: r.range(0.25, 0.4), tongue: null, nose: 0.7 }),
-    limbs: legs(r, { w: 0.5, len: r.range(2.6, 3.2), lift: r.range(1.5, 2), hindW: 1.3 }), tail: knot(r, { len: r.range(9, 12), w0: 0.8, w1: 0.26, knotR: 1.5, knotOut: r.range(3, 4.5), tip2: r.pick(['trefoil', 'barb']), up: true, curl: r.range(1, 1.8) }),
+    limbs: legs(r, { w: 0.5, len: r.range(2.6, 3.2), lift: r.range(1.5, 2), hindW: 1.3 }), tail: knot(r, { tailLen: r.range(9, 12), w0: 0.8, w1: 0.26, knotR: 1.5, knotOut: r.range(3, 4.5), tip2: r.pick(['trefoil', 'barb']), up: true, curl: r.range(1, 1.8) }),
     dorsal: none(), crown: { type: 'dragonLappet', len: r.range(2.6, 3.6) }, surface: eye(),
   }) },
   { name: 'prow wyrm', w: 1.2, genes: r => ({ // longship: tall maned neck at one end, a great spiral at the other
     chassis: serpent(r, { mode: 'wave', stern: r.range(4, 5.5), len: r.range(20, 26), amp: 0, humps: 1, rise: r.range(8, 10), riseA: r.range(1.5, 1.7), r: r.range(5.6, 6.6), headS: r.range(0.8, 0.9), backT: [0.62, 0.97], radKeys: [[0, 0.75], [0.3, 1.05], [0.6, 1], [0.85, 0.74], [1, 0.62]] }),
     head: dog(r, { neck: { len: r.range(1.2, 1.8), sway: 1.3, w0: 0.66, w1: 0.5 }, gape: r.range(0.35, 0.55), tongue: r.pick(['barb', null]) }),
-    limbs: none(), tail: tl(r, { len: r.range(7, 9), w0: 1.05, w1: 0.3, up: true, curl: r.range(5.4, 6.6), spiral: true, wave: 0, tip: 'point', curlSign: 1 }),
+    limbs: none(), tail: tl(r, { tailLen: r.range(7, 9), w0: 1.05, w1: 0.3, up: true, curl: r.range(5.4, 6.6), spiral: true, wave: 0, tip: 'point', curlSign: 1 }),
     dorsal: ridge(r, 'scallop', { n: r.int(6, 9), h: r.range(0.8, 1), wid: 0.36 }), crown: r.wpick([[2, { type: 'dragonLappet', len: r.range(2.4, 3.2) }], [1, ears(r)]]), surface: eye(),
   }) },
   { name: 'coiled wyrm', w: 2.2, genes: r => ({ // flat spiral coil, head up; winged it is the alchemists' serpent
@@ -691,19 +691,19 @@ const species = [
   { name: 'long', w: 1.4, genes: r => ({ // a compact Chinese dragon: humped, maned, antlered, whiskered
     chassis: serpent(r, { mode: 'wave', len: r.range(28, 34), amp: r.range(2, 2.8), humps: 2, rise: r.range(2.8, 3.6), riseA: r.range(0.8, 1.1), clear: r.range(0.7, 1), clearT: [0.05, 0.2], legsAt: [{ t: 0.24, role: 'hind' }, { t: 0.8, role: 'fore' }], legS: 1.1, r: r.range(6, 6.8), backT: [0.12, 0.92], headS: r.range(1.1, 1.25) }),
     head: dog(r, { mz: r.range(1.4, 1.8), tipR: r.range(0.44, 0.52), beard: r.range(0.9, 1.2), gape: r.range(0.3, 0.45), tongue: null, neck: sneck(r, 0.8, 1.4) }),
-    limbs: legs(r, { lift: 1, len: r.range(1.5, 1.9), hindW: 1.1 }), tail: tl(r, { len: r.range(5, 7), up: true, curl: r.range(1, 2), tip: 'dragonFlame', w1: 0.3 }),
+    limbs: legs(r, { lift: 1, len: r.range(1.5, 1.9), hindW: 1.1 }), tail: tl(r, { tailLen: r.range(5, 7), up: true, curl: r.range(1, 2), tip: 'dragonFlame', w1: 0.3 }),
     dorsal: ridge(r, 'mane', { n: r.int(6, 8), h: r.range(0.9, 1.15), wid: 0.4 }), crown: { type: 'dragonAntler', len: r.range(1.8, 2.5), pair: true }, surface: eye(),
   }) },
   { name: 'tarasque', w: 1.2, genes: r => ({ // six-legged, lion-headed, under a spiked shell
     chassis: beast(r, { legs: 'six', shell: r.range(0.55, 0.85), len: r.range(18, 23), r: r.range(7, 8.2), arch: 0.2, headS: r.range(0.8, 0.92), neckA: r.range(-0.5, -0.2), neckL: 1.3, neckW: 0.7, haunch: false }),
     head: pug(r, { beard: r.range(0.8, 1.1) }),
-    limbs: legs(r, { lift: r.range(0.35, 0.5), len: r.range(1.5, 1.8), hindW: 1.1 }), tail: tl(r, { len: r.range(5, 7), up: r.chance(0.5), curl: r.range(0.8, 1.6) }),
+    limbs: legs(r, { lift: r.range(0.35, 0.5), len: r.range(1.5, 1.8), hindW: 1.1 }), tail: tl(r, { tailLen: r.range(5, 7), up: r.chance(0.5), curl: r.range(0.8, 1.6) }),
     dorsal: ridge(r, 'saw', { n: r.int(6, 9), h: r.range(0.6, 0.9), wid: 0.34, lean: 0 }), crown: r.wpick([[2, { type: 'tuft', n: r.int(3, 4), spread: 1, len: r.range(0.9, 1.3) }], [1, ears(r, { len: 1 })]]), surface: eye(),
   }) },
   { name: 'sleeping drake', w: 1.5, genes: r => ({
     chassis: beast(r, { lie: true, legs: 'lie', len: r.range(16, 20), r: r.range(7.4, 8.8), arch: r.range(0.5, 0.8), headS: r.range(0.74, 0.84), neckA: r.range(0.2, 0.35), neckL: 1.1, neckW: 0.7, face: 0.02, tailLift: 0.2 }),
     head: dog(r, { gape: 0, tongue: null, mz: r.range(1.3, 1.7), up: 0 }),
-    limbs: none(), tail: r.wpick([[2, coil(r, { len: r.range(8, 10) })], [1, tl(r, { up: false, curl: 0.2, wave: 1.2, len: r.range(6, 9) })]]),
+    limbs: none(), tail: r.wpick([[2, coil(r, { tailLen: r.range(8, 10) })], [1, tl(r, { up: false, curl: 0.2, wave: 1.2, tailLen: r.range(6, 9) })]]),
     dorsal: r.wpick([[3, folded(r, { far: false, at: r.range(0.6, 0.75) })], [1, ridge(r, 'saw')]]), crown: r.wpick([[2, ears(r)], [1, horns(r)]]), surface: { eyes: 'none' },
   }) },
 ];

@@ -799,30 +799,30 @@ const species = [
   // ---- tadpoles ----
   { name: 'tadpole', w: 2.5, genes: r => ({
     chassis: { type: 'amphibianTadpole', view: 'top', r: r.range(8.5, 10.5), len: r.range(12, 17), headS: 0.75 }, head: { type: 'amphibianNone' }, limbs: legs(r, 'frog', { ownNone: true }),
-    tail: { len: r.range(6.5, 9.5), w0: r.range(0.62, 0.75), mid: 0.5, w1: 0.07, curl: r.range(0, 1.3), wave: r.range(1.4, 3.2), freq: r.range(0.9, 1.4), tip: 'point' },
+    tail: { tailLen: r.range(6.5, 9.5), w0: r.range(0.62, 0.75), mid: 0.5, w1: 0.07, curl: r.range(0, 1.3), wave: r.range(1.4, 3.2), freq: r.range(0.9, 1.4), tip: 'point' },
     dorsal: none(), crown: none(), surface: { eyes: 'none' },
   }) },
   { name: 'tadpole profile', w: 1.3, genes: r => ({
     chassis: { type: 'amphibianTadpole', view: 'side', r: r.range(8, 9.5), len: r.range(13, 17), headS: 0.75 }, head: { type: 'amphibianNone' }, limbs: legs(r, 'frog', { ownNone: true }),
-    tail: { len: r.range(6, 8), w0: r.range(0.75, 0.9), mid: r.range(1.3, 1.5), w1: 0.05, curl: r.range(0.1, 0.7), up: true, wave: r.range(0.3, 1.2), freq: 1, tip: 'point' },
+    tail: { tailLen: r.range(6, 8), w0: r.range(0.75, 0.9), mid: r.range(1.3, 1.5), w1: 0.05, curl: r.range(0.1, 0.7), up: true, wave: r.range(0.3, 1.2), freq: 1, tip: 'point' },
     dorsal: none(), crown: none(), surface: { eyes: r.chance(0.5) ? 'dot' : 'none' },
   }) },
   { name: 'tadpole with hind legs', w: 1.5, genes: r => ({
     chassis: { type: 'amphibianTadpole', view: 'top', r: r.range(8.5, 10), len: r.range(14, 18), headS: 0.75, limbS: r.range(0.55, 0.75) }, head: { type: 'amphibianNone' },
     limbs: legs(r, 'frog', { only: 'hind', pose: 'sit', hl: r.range(0.6, 0.75), hw: 0.42, toeLen: 0.4, toes: 3, loose: 0.2 }),
-    tail: { len: r.range(6, 8.5), w0: r.range(0.8, 0.92), mid: 0.5, w1: 0.07, curl: r.range(0, 1.2), wave: r.range(1.4, 3), freq: r.range(0.9, 1.4), tip: 'point' },
+    tail: { tailLen: r.range(6, 8.5), w0: r.range(0.8, 0.92), mid: 0.5, w1: 0.07, curl: r.range(0, 1.2), wave: r.range(1.4, 3), freq: r.range(0.9, 1.4), tip: 'point' },
     dorsal: none(), crown: none(), surface: { eyes: 'none' },
   }) },
   { name: 'four-legged tadpole', w: 1.3, genes: r => ({
     chassis: topBody(r, { r: r.range(9.5, 11), len: r.range(11, 14), headS: 0.8, prof: [[0, 0.62], [0.3, 0.98], [0.65, 1.08], [1, 0.92]] }), head: frogHead(r, { snout: r.range(0.8, 0.95), point: 0, wide: 1.1 }),
     limbs: legs(r, 'frog', { pose: 'sit', hl: r.range(0.58, 0.68), hw: 0.4, fl: 0.55, fw: 0.22, toeLen: 0.3, toes: 3, loose: 0.08 }),
-    tail: { len: r.range(7, 9), w0: r.range(1.25, 1.45), mid: 0.75, w1: 0.08, curl: r.range(0, 1.2), wave: r.range(1.2, 2.6), freq: r.range(0.9, 1.3), tip: 'point' },
+    tail: { tailLen: r.range(7, 9), w0: r.range(1.25, 1.45), mid: 0.75, w1: 0.08, curl: r.range(0, 1.2), wave: r.range(1.2, 2.6), freq: r.range(0.9, 1.3), tip: 'point' },
     dorsal: none(), crown: popEyes(r), surface: look(r, 0.1, 0),
   }) },
   { name: 'froglet', w: 1.5, genes: r => ({ // just out of the pond: frog in front, tail stub behind
     chassis: sit(r, { r: r.range(8.5, 10), len: r.range(15, 19), pitch: r.range(0.45, 0.62), headS: 1, tailS: 0.5 }), head: frogHead(r, { eye: r.range(0.34, 0.4) }),
     limbs: legs(r, 'frog', { hl: r.range(1.15, 1.3) }),
-    tail: { len: r.range(3, 6), w0: 0.8, mid: 0.6, w1: 0.1, curl: r.range(0.2, 1), wave: r.range(0.3, 1.2), up: false, tip: 'point' },
+    tail: { tailLen: r.range(3, 6), w0: 0.8, mid: 0.6, w1: 0.1, curl: r.range(0.2, 1), wave: r.range(0.3, 1.2), up: false, tip: 'point' },
     dorsal: none(), crown: popEyes(r), surface: look(r, 0.4, 0),
   }) },
   // ---- caecilians ----
@@ -839,7 +839,7 @@ const species = [
     chassis: sit(r, { seat: null, r: r.range(5.8, 6.6), len: r.range(28, 34), pitch: r.range(0.02, 0.1), rump: 0.7, belly: 1, chest: 0.88, neck: 0.74, hump: 0, arch: r.range(0.1, 0.4), rearLift: 1, headS: 0.95, tailS: 0.62, face: r.range(-0.1, 0.2) }),
     head: frogHead(r, { snout: r.range(1.3, 1.5), point: 0.3, deep: 0.6, eye: r.range(0.2, 0.25), eyeUp: 0.1 }),
     limbs: legs(r, 'newt', { stride: true, ankleX: r.range(-0.6, 0.2), farDX: r.range(0.6, 1), reach: r.range(0.3, 0.7), farReach: r.range(-0.9, -0.5) }),
-    tail: { len: r.range(9, 12), w0: 0.85, mid: r.range(1.1, 1.3), w1: 0.06, curl: r.range(0.2, 0.8), wave: r.range(0.5, 1.5), freq: 1, up: r.chance(0.3), tip: 'point' },
+    tail: { tailLen: r.range(9, 12), w0: 0.85, mid: r.range(1.1, 1.3), w1: 0.06, curl: r.range(0.2, 0.8), wave: r.range(0.5, 1.5), freq: 1, up: r.chance(0.3), tip: 'point' },
     dorsal: { type: 'amphibianCrest', h: r.range(1.5, 1.9), n: r.int(5, 7) }, crown: none(), surface: look(r, 0.2, 0.5),
   }) },
 ];

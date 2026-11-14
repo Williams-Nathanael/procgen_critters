@@ -56,7 +56,7 @@ definitions in `src/gen/tags/legacy.js` show every built-in in use with sensible
 - **limbs**: one spec for all limb sockets: `len, w, taper, bend, foot, toes, toeLen,
   lift (stance height), fold (frog hind legs), angular (jointed), joints, foreFoot`.
   Feet: `toes, web, paw, pad, claw, pincer, root, point`.
-- **tail**: `len, w0, mid, w1, curl, wave, freq, spiral, up, tip`.
+- **tail**: `tailLen, w0, mid, w1, curl, wave, freq, spiral, up, tip`.
   Tips: `point, tuft, spade, pom, club, fan, sting, leaf, fork, bud`.
 - **dorsal**: `spines, crest, wings, leaves, shrooms, plates, fur, tendrils`.
 - **crown**: `ears, horns, gills, antennae, tuft, sprout, minicap, bloom`.

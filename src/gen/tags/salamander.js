@@ -512,7 +512,7 @@ function tailG(r, pose, T) {
   if (side.keys) full.keys = side.keys; // a pose that needs a thinner tail wins over the species
   if (T.curlMax != null) full.curl = Math.max(-T.curlMax, Math.min(T.curlMax, full.curl ?? 0));
   if (T.curlK != null) { full.curl = (full.curl ?? 0) * T.curlK; full.coil = (full.coil ?? 0) * T.curlK; }
-  return { len: 0.15, w0: 0.4, mid: 0.5, w1: 0.4, curl: 0, wave: 0, curlSign: 1, up: false, tip: 'salamanderTail', T: full };
+  return { tailLen: 0.15, w0: 0.4, mid: 0.5, w1: 0.4, curl: 0, wave: 0, curlSign: 1, up: false, tip: 'salamanderTail', T: full };
 }
 // tail length as a fraction of snout-vent length
 const tl = (frac, len, rr, k0 = 0.7) => frac * (len + 1.6 * rr) / (k0 * rr);

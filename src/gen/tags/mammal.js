@@ -628,9 +628,9 @@ const head = (o = {}) => ({ type: 'mammalHead', skull: 1, snoutLen: 1.45, tipR: 
 const ear = (shape, len, wid, o = {}) => ({ type: 'mammalEar', shape, len, wid, pair: true, ...o });
 const limbs = (o = {}) => ({ mOwn: true, len: 1.5, w: 0.42, taper: 0.6, bend: 0.8, foot: 'paw', lift: 0.4, stance: 0.3, hindW: 1.5, arm: 0.8, ...o });
 const SQ = [[0, 0.3], [0.25, 0.8], [0.7, 1], [1, 0.62]], FOX = [[0, 0.3], [0.45, 0.8], [0.8, 0.62], [1, 0.12]], CLUB = [[0, 0.28], [0.3, 0.5], [0.8, 0.6], [1, 0.42]], BOTTLE = [[0, 0.4], [0.4, 0.95], [0.8, 1.1], [1, 0.55]];
-const tThin = (r, len, o = {}) => ({ len: len * r.range(0.85, 1.15), w0: 0.2, mid: 0.5, w1: 0.05, curl: r.range(0.8, 2), wave: r.range(0.8, 2), freq: 1, up: r.chance(0.7), tip: 'point', ...o });
-const tBrush = (o = {}) => ({ len: 0.3, w0: 0.3, mid: 0.5, w1: 0.3, curl: 0, wave: 0, tip: 'mammalBrush', pl: 6, pw: 1, pk: SQ, ptarget: -PI / 2 + 0.1, precurve: -1.2, fluff: 3, ...o });
-const tScut = (o = {}) => ({ len: 0.35, w0: 0.45, mid: 0.5, w1: 0.35, curl: 0, wave: 0, tip: 'pom', tipS: 0.75, ...o });
+const tThin = (r, len, o = {}) => ({ tailLen: len * r.range(0.85, 1.15), w0: 0.2, mid: 0.5, w1: 0.05, curl: r.range(0.8, 2), wave: r.range(0.8, 2), freq: 1, up: r.chance(0.7), tip: 'point', ...o });
+const tBrush = (o = {}) => ({ tailLen: 0.3, w0: 0.3, mid: 0.5, w1: 0.3, curl: 0, wave: 0, tip: 'mammalBrush', pl: 6, pw: 1, pk: SQ, ptarget: -PI / 2 + 0.1, precurve: -1.2, fluff: 3, ...o });
+const tScut = (o = {}) => ({ tailLen: 0.35, w0: 0.45, mid: 0.5, w1: 0.35, curl: 0, wave: 0, tip: 'pom', tipS: 0.75, ...o });
 
 // pose builders: B is a species "build"
 const walk = (r, B, o = {}) => ({
@@ -686,7 +686,7 @@ const species = [
     return {
       chassis: ch, head: head({ snoutLen: r.range(1.0, 1.2), tipR: 0.26, nose: 0.13, eyeR: 0.17 }),
       crown: ear('round', r.range(0.75, 0.95), r.range(0.8, 1), { lean: 0.2 }),
-      tail: onStalk ? { len: r.range(7, 9.5), w0: 0.2, mid: 0.5, w1: 0.07, curl: r.range(3.2, 4.4), wave: 0, up: true, spiral: true, tip: 'point' } : tThin(r, 8, { up: true, curl: 2.2 }),
+      tail: onStalk ? { tailLen: r.range(7, 9.5), w0: 0.2, mid: 0.5, w1: 0.07, curl: r.range(3.2, 4.4), wave: 0, up: true, spiral: true, tip: 'point' } : tThin(r, 8, { up: true, curl: 2.2 }),
     };
   }),
 
@@ -729,7 +729,7 @@ const species = [
       chassis: walk(r, B, { gait: 'biped', pitch: r.range(0.35, 0.7), neckAng: r.range(0.1, 0.5), face: r.range(-0.15, 0.1), tailA: PI - r.range(0.1, 0.5) }),
       head: head({ snoutLen: r.range(0.95, 1.15), tipR: 0.3, eyeR: 0.2, nose: 0.12, whiskers: r.chance(0.5) ? 2 : 0 }),
       crown: r.chance(0.6) ? ear('long', r.range(2.1, 2.9), r.range(0.85, 1.05), { lean: r.range(-0.1, 0.3), farLean: -0.25 }) : ear('round', r.range(1.1, 1.4), 1, { lean: 0.1 }),
-      tail: { len: r.range(13, 17), w0: 0.17, mid: 0.5, w1: 0.11, curl: r.range(1.6, 2.4), wave: r.range(0, 0.8), freq: 0.7, up: true, tip: 'mammalFlag', tipS: r.range(0.85, 1.1) },
+      tail: { tailLen: r.range(13, 17), w0: 0.17, mid: 0.5, w1: 0.11, curl: r.range(1.6, 2.4), wave: r.range(0, 0.8), freq: 0.7, up: true, tip: 'mammalFlag', tipS: r.range(0.85, 1.1) },
     };
   }),
 
@@ -740,7 +740,7 @@ const species = [
       chassis: walk(r, B, { gait: 'biped', pitch: r.range(0.25, 0.5), neckAng: r.range(0, 0.3), face: r.range(0, 0.15), tailA: PI - r.range(0, 0.3), neckW: 0.9 }),
       head: head({ snoutLen: r.range(1.05, 1.2), tipR: 0.28, eyeR: 0.2, nose: 0.12, cheek: 0.6 }),
       crown: ear('round', 0.55, 0.7, { lean: 0.4 }),
-      tail: { len: r.range(12, 15), w0: 0.2, mid: 0.5, w1: 0.13, curl: r.range(0.5, 1.5), wave: r.range(0.5, 1.2), freq: 0.8, up: r.chance(0.7), tip: 'mammalFlag', tipS: r.range(0.9, 1.15) },
+      tail: { tailLen: r.range(12, 15), w0: 0.2, mid: 0.5, w1: 0.13, curl: r.range(0.5, 1.5), wave: r.range(0.5, 1.2), freq: 0.8, up: r.chance(0.7), tip: 'mammalFlag', tipS: r.range(0.9, 1.15) },
     };
   }),
 
@@ -888,7 +888,7 @@ const species = [
     return {
       chassis: ch, head: head({ skull: 0.95, skullL: 1.12, skullH: 0.92, snoutLen: r.range(0.95, 1.15), tipR: 0.34, mid: 0.5, droop: 0.1, eyeR: 0.14, eyeX: 0.5, nose: 0.12, whiskers: r.chance(0.3) ? 2 : 0, whiskerL: 0.7 }),
       crown: ear('round', 0.55, 0.65, { lean: 0.35 }),
-      tail: ferret ? tBrush({ pk: FOX, pl: r.range(5.5, 7), pw: 0.6, ptarget: PI - 0.1, precurve: r.range(0, 0.8), fluff: 0 }) : { len: r.range(6, 8), w0: 0.3, mid: 0.4, w1: 0.2, curl: r.range(0.4, 1.4), wave: r.range(0.3, 1), freq: 0.8, up: r.chance(0.6), tip: 'mammalFlag', tipS: 0.6 },
+      tail: ferret ? tBrush({ pk: FOX, pl: r.range(5.5, 7), pw: 0.6, ptarget: PI - 0.1, precurve: r.range(0, 0.8), fluff: 0 }) : { tailLen: r.range(6, 8), w0: 0.3, mid: 0.4, w1: 0.2, curl: r.range(0.4, 1.4), wave: r.range(0.3, 1), freq: 0.8, up: r.chance(0.6), tip: 'mammalFlag', tipS: 0.6 },
     };
   }),
 
@@ -912,7 +912,7 @@ const species = [
       chassis: ch, head: head({ skull: 0.9, snoutLen: r.range(1.9, 2.3), tipR: 0.16, mid: 0.55, droop: 0.05, eyeR: 0.14, eyeX: 0.6 }),
       crown: none(),
       dorsal: { type: 'mammalScales', n: rolled ? r.int(13, 16) : r.int(11, 14), k: r.range(0.3, 0.38) },
-      tail: { len: 0.3, w0: 1.1, mid: 0.5, w1: 1, curl: 0, wave: 0, tip: 'mammalScaleTail', tl: r.range(3.6, 4.4), tw: r.range(1.05, 1.25), droop: r.range(0.6, 1.1), ns: r.int(5, 7), wrap: [2.4, 2 * PI - 0.45, 1.7, 0.75] },
+      tail: { tailLen: 0.3, w0: 1.1, mid: 0.5, w1: 1, curl: 0, wave: 0, tip: 'mammalScaleTail', tl: r.range(3.6, 4.4), tw: r.range(1.05, 1.25), droop: r.range(0.6, 1.1), ns: r.int(5, 7), wrap: [2.4, 2 * PI - 0.45, 1.7, 0.75] },
     };
   }),
 
@@ -924,7 +924,7 @@ const species = [
       head: head({ skull: 0.9, snoutLen: r.range(2.0, 2.4), tipR: 0.2, mid: 0.6, droop: 0.05, eyeR: 0.14, eyeX: 0.6, earX: -0.1 }),
       crown: ear('point', r.range(1.4, 1.8), 0.75, { lean: r.range(-0.3, 0), farLean: -0.4 }),
       dorsal: { type: 'mammalShell', h: r.range(0.6, 0.75), bands: r.int(6, 8) },
-      tail: { len: r.range(5, 6.5), w0: 0.7, mid: 0.4, w1: 0.15, curl: 0.1, wave: 0.2, freq: 0.6, up: false, tip: 'point' },
+      tail: { tailLen: r.range(5, 6.5), w0: 0.7, mid: 0.4, w1: 0.15, curl: 0.1, wave: 0.2, freq: 0.6, up: false, tip: 'point' },
     };
   }),
 
@@ -935,7 +935,7 @@ const species = [
       head: head({ snoutLen: r.range(1.9, 2.2), tipR: 0.18, mid: 0.62, droop: 0.06, nose: 0.15, eyeR: 0.13, whiskers: r.chance(0.4) ? 2 : 0 }),
       crown: ear('round', 0.75, 0.8, { lean: 0.1 }),
       dorsal: r.chance(0.5) ? { type: 'mammalBabies', n: r.int(1, 2), size: r.range(0.5, 0.6) } : none(),
-      tail: { len: r.range(9, 12), w0: 0.34, mid: 0.4, w1: 0.1, curl: r.range(2.6, 3.6), wave: 0, up: true, spiral: true, tip: 'point' },
+      tail: { tailLen: r.range(9, 12), w0: 0.34, mid: 0.4, w1: 0.1, curl: r.range(2.6, 3.6), wave: 0, up: true, spiral: true, tip: 'point' },
     };
   }),
 
@@ -958,7 +958,7 @@ const species = [
       chassis: { type: 'mammalClimb', r: rr, len: rr * 1.35, stalkH: r.range(58, 70), stalkR: r.range(2, 2.8), bendX: r.range(-0.1, 0.1), top: 'branch', at: r.range(0.5, 0.62), turn: r.range(0.8, 1.3), face: r.range(-0.15, 0.25), headS: 1.02, fold: r.range(1.7, 2.1), hug: 0.9, tailA: PI / 2 + r.range(-0.1, 0.25), legW: 0.26 },
       head: head({ snoutLen: 0.45, tipR: 0.38, mid: 0.5, droop: 0.25, eyeR: 0.36, eyeX: 0.3, eyeY: 0.15 }),
       crown: ear('round', 0.85, 0.75, { lean: 0.1 }),
-      tail: { len: r.range(9, 11), w0: 0.14, mid: 0.5, w1: 0.1, curl: r.range(0, 0.5), wave: 0.5, freq: 0.6, up: r.chance(0.5), tip: 'mammalFlag', tipS: 0.5 },
+      tail: { tailLen: r.range(9, 11), w0: 0.14, mid: 0.5, w1: 0.1, curl: r.range(0, 0.5), wave: 0.5, freq: 0.6, up: r.chance(0.5), tip: 'mammalFlag', tipS: 0.5 },
       surface: { eyes: 'dot', eyeS: 1.1 },
     };
   }),
@@ -971,7 +971,7 @@ const species = [
     return {
       chassis: ch, head: head({ snoutLen: r.range(0.85, 1), tipR: 0.44, mid: 0.5, droop: 0.12, eyeR: 0.15, eyeX: 0.4, eyeY: 0.4 }),
       crown: ear('round', 0.32, 0.5, { lean: 0.7 }),
-      tail: marmot ? tBrush({ pk: CLUB, pl: 3.6, pw: 0.85, ptarget: PI, precurve: 0.3, fluff: 2 }) : { len: r.range(3, 4.2), w0: 0.34, mid: 0.4, w1: 0.2, curl: 0.4, wave: 0.4, up: r.chance(0.5), tip: 'point' },
+      tail: marmot ? tBrush({ pk: CLUB, pl: 3.6, pw: 0.85, ptarget: PI, precurve: 0.3, fluff: 2 }) : { tailLen: r.range(3, 4.2), w0: 0.34, mid: 0.4, w1: 0.2, curl: 0.4, wave: 0.4, up: r.chance(0.5), tip: 'point' },
     };
   }),
 
@@ -982,7 +982,7 @@ const species = [
       chassis: up ? sit(r, B, 'hold', { item: 'stick', lean: r.range(0.2, 0.4) }) : walk(r, B, { gait: r.pick(['stand', 'walk']) }),
       head: head({ skullL: 1.05, snoutLen: 0.95, tipR: 0.52, mid: 0.5, droop: 0.15, eyeR: 0.13, eyeX: 0.5, carry: !up && r.chance(0.4) ? 'stick' : null }),
       crown: ear('round', 0.36, 0.5, { lean: 0.6 }),
-      tail: { len: 0.4, w0: 0.5, mid: 0.5, w1: 0.4, curl: 0, wave: 0, tip: 'mammalPaddle', tipS: r.range(1.9, 2.3), padA: r.range(0.1, 0.28) },
+      tail: { tailLen: 0.4, w0: 0.5, mid: 0.5, w1: 0.4, curl: 0, wave: 0, tip: 'mammalPaddle', tipS: r.range(1.9, 2.3), padA: r.range(0.1, 0.28) },
     };
   }),
 
@@ -994,7 +994,7 @@ const species = [
     return {
       chassis: ch, head: head({ skullL: 1.1, skullH: 0.92, snoutLen: r.range(0.85, 1), tipR: 0.46, mid: 0.5, droop: 0.1, eyeR: 0.13, eyeX: 0.5, nose: 0.13, whiskers: r.chance(0.5) ? 2 : 0, whiskerL: 0.75 }),
       crown: pose === 'float' ? none() : ear('round', 0.34, 0.45, { lean: 0.7 }),
-      tail: { len: r.range(7.5, 10), w0: 0.85, mid: 0.4, w1: 0.12, curl: r.range(0.1, 0.5), wave: r.range(0.2, 0.7), freq: 0.6, up: pose === 'float' ? r.chance(0.6) : false, tip: 'point' },
+      tail: { tailLen: r.range(7.5, 10), w0: 0.85, mid: 0.4, w1: 0.12, curl: r.range(0.1, 0.5), wave: r.range(0.2, 0.7), freq: 0.6, up: pose === 'float' ? r.chance(0.6) : false, tip: 'point' },
     };
   }),
 

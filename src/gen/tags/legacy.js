@@ -13,7 +13,7 @@ export const LEGACY = {
     chassis: r => ({ type: 'crawler', len: r.range(40, 54), r: r.range(5.6, 7), wave: r.range(4, 9), belly: r.range(1, 1.15), neckW: 0.7, headS: 1 }),
     head: r => ({ type: 'snout', skull: r.range(1, 1.12), snoutLen: r.range(1, 1.4), tipR: r.range(0.68, 0.85), mid: 0.4, droop: 0.1, bulge: r.chance(0.5) ? r.range(0.2, 0.3) : 0, eyeX: 0.45, eyeY: 0.55, eyeR: 0.17, crownX: -0.35 }),
     limbs: r => ({ len: r.range(2.3, 3), w: 0.62, taper: 0.7, bend: r.range(0.6, 1.1), foot: 'toes', toes: r.int(4, 5), toeLen: r.range(0.75, 1), spread: 1.7, tipDot: true, lift: 0.9, stance: 0.5, arm: 0.8 }),
-    tail: r => ({ len: r.range(9, 13), w0: 1, mid: 0.55, w1: 0.06, curl: r.range(0.4, 2.2), wave: r.range(1, 2.6), freq: r.range(0.8, 1.3), tip: 'point' }),
+    tail: r => ({ tailLen: r.range(9, 13), w0: 1, mid: 0.55, w1: 0.06, curl: r.range(0.4, 2.2), wave: r.range(1, 2.6), freq: r.range(0.8, 1.3), tip: 'point' }),
     dorsal: r => r.wpick([[5, none()], [1, { type: 'crest', h: r.range(0.5, 0.9), wave: 0.15, freq: 3 }]]),
     crown: r => r.wpick([[3, none()], [1.2, { type: 'gills', len: r.range(1.2, 1.7), feather: r.chance(0.5), pair: true }]]),
     surface: r => ({ eyes: r.wpick([[3, 'none'], [1, 'dot']]), spots: r.chance(0.3) ? r.int(5, 9) : 0 }),
@@ -29,7 +29,7 @@ export const LEGACY = {
     ]),
     head: r => ({ type: 'snout', skull: r.range(1, 1.1), snoutLen: r.range(0.6, 0.95), tipR: r.range(0.7, 0.85), mid: 0.35, droop: 0.12, bulge: r.range(0.3, 0.42), eyeX: 0.15, eyeY: 0.6, eyeR: 0.2, crownX: -0.3 }),
     limbs: r => ({ len: r.range(2.2, 2.8), w: 0.5, taper: 0.6, bend: r.range(1.2, 1.7), foot: r.wpick([[2, 'web'], [2, 'toes']]), toes: r.int(3, 4), toeLen: r.range(0.9, 1.2), spread: 1.6, tipDot: true, fold: true, hind: 1.7, hindW: 1.5, lift: 0.25, stance: 0.5, arm: 0.8 }),
-    tail: r => r.wpick([[3, none()], [1, { len: r.range(5, 9), w0: 0.95, mid: 0.3, w1: 0.25, curl: r.range(0.3, 1.2), wave: r.range(1, 2), tip: 'point' }]]), // tadpole-ish paddle tail
+    tail: r => r.wpick([[3, none()], [1, { tailLen: r.range(5, 9), w0: 0.95, mid: 0.3, w1: 0.25, curl: r.range(0.3, 1.2), wave: r.range(1, 2), tip: 'point' }]]), // tadpole-ish paddle tail
     dorsal: r => r.wpick([[3, none()], [1, { type: 'crest', h: r.range(0.5, 1), wave: 0.3, freq: r.range(3, 5) }], [0.6, { type: 'plates', n: r.int(5, 8), len: 0.35, wid: 0.2 }]]), // warts
     crown: r => r.wpick([[4, none()], [1, { type: 'gills', len: r.range(1.1, 1.6), feather: true, pair: true }]]),
     surface: r => ({ eyes: r.wpick([[1, 'none'], [2, 'dot'], [1, 'ring']]), spots: r.chance(0.3) ? r.int(4, 8) : 0 }),
@@ -47,7 +47,7 @@ export const LEGACY = {
     ]),
     head: r => ({ type: 'capsule', len: r.range(0.9, 1.4), wid: r.range(0.75, 1), mand: r.chance(0.55) ? r.range(0.6, 1.3) : 0, stalk: r.chance(0.3) ? r.range(0.5, 0.9) : 0, bulge: r.chance(0.5) ? 0.28 : 0 }),
     limbs: r => ({ len: r.range(2.6, 3.8), w: 0.24, taper: 0.55, bend: r.range(0.9, 1.4), joints: r.pick([2, 3]), angular: true, foot: 'point', foreFoot: r.wpick([[2, 'pincer'], [3, 'point']]), toeLen: 0.8, lift: 0.8, stance: 0.8, arm: 0.9, kneeFlip: true }),
-    tail: r => r.wpick([[3, none()], [1.2, { len: r.range(5, 8), w0: 0.8, mid: 0.6, w1: 0.3, curl: r.range(2.5, 4), wave: 0, tip: 'sting' }], [1, { len: r.range(2, 4), w0: 0.9, mid: 0.8, w1: 0.6, curl: 0, wave: 0.3, tip: 'fan' }], [1, { len: r.range(3, 5), w0: 0.3, mid: 0.5, w1: 0.08, curl: 0.3, wave: 0.5, tip: 'fork' }]]),
+    tail: r => r.wpick([[3, none()], [1.2, { tailLen: r.range(5, 8), w0: 0.8, mid: 0.6, w1: 0.3, curl: r.range(2.5, 4), wave: 0, tip: 'sting' }], [1, { tailLen: r.range(2, 4), w0: 0.9, mid: 0.8, w1: 0.6, curl: 0, wave: 0.3, tip: 'fan' }], [1, { tailLen: r.range(3, 5), w0: 0.3, mid: 0.5, w1: 0.08, curl: 0.3, wave: 0.5, tip: 'fork' }]]),
     dorsal: r => r.wpick([[3, none()], [1, { type: 'spines', n: r.int(4, 7), len: r.range(0.5, 0.9), wid: 0.35, lean: 0.3 }]]),
     crown: r => r.wpick([[1, none()], [4, { type: 'antennae', len: r.range(2, 4.5), curve: r.range(0.15, 0.6), club: r.chance(0.3), pair: true }]]),
     surface: r => ({ eyes: 'none', seams: r.chance(0.7), stripe: r.chance(0.3) }),
@@ -66,7 +66,7 @@ export const LEGACY = {
       [1, { type: 'cap', shape: 'morel', w: r.range(1.3, 1.7), h: r.range(2.2, 3) }],
     ]),
     limbs: r => ({ len: r.range(1, 1.6), w: 0.3, taper: 0.5, bend: 0.5, foot: 'root', toes: r.int(2, 3), toeLen: r.range(0.5, 0.9), lift: 0, arm: 0.7 }),
-    tail: r => r.wpick([[4, none()], [1, { len: r.range(2, 4), w0: 0.25, mid: 0.5, w1: 0.06, curl: 1.5, wave: 2, tip: 'point' }]]),
+    tail: r => r.wpick([[4, none()], [1, { tailLen: r.range(2, 4), w0: 0.25, mid: 0.5, w1: 0.06, curl: 1.5, wave: 2, tip: 'point' }]]),
     dorsal: r => r.wpick([[2.5, none()], [2, { type: 'shrooms', n: r.int(2, 4), len: r.range(1.2, 2.2), shape: r.pick(['dome', 'cone', 'bell']) }], [0.8, { type: 'plates', n: r.int(3, 5), len: 0.8, wid: 0.5 }]]),
     crown: r => r.wpick([[5, none()], [1, { type: 'minicap', len: r.range(0.8, 1.2), shape: 'dome' }]]),
     surface: r => ({ eyes: 'none', capSpots: r.chance(0.45) ? r.int(4, 7) : 0, gills: r.chance(0.5) }),
@@ -82,9 +82,9 @@ export const LEGACY = {
     head: r => ({ type: 'snout', skull: r.range(0.95, 1.05), snoutLen: r.range(1.2, 2), tipR: r.range(0.16, 0.32), mid: 0.62, droop: r.range(0.05, 0.25), eyeX: 0.4, eyeY: 0.35, eyeR: 0.15, crownX: -0.3, whiskers: r.chance(0.6) }),
     limbs: r => ({ len: r.range(1.3, 1.7), w: 0.42, taper: 0.6, bend: 0.8, foot: 'paw', lift: r.range(0.3, 0.55), stance: 0.3, hindW: 1.5, arm: 0.8 }),
     tail: r => r.wpick([
-      [3, { len: r.range(9, 14), w0: 0.22, mid: 0.5, w1: 0.05, curl: r.range(0.5, 2), wave: r.range(1, 2.5), tip: 'point' }], // mouse
-      [1.5, { len: r.range(5, 7), w0: 0.6, mid: -0.9, w1: 0.5, curl: r.range(1.8, 2.8), wave: 0.5, tip: 'pom', tipS: 1.5 }], // squirrel-ish
-      [1, { len: 0.5, w0: 0.4, mid: 0.5, w1: 0.3, curl: 0, wave: 0, tip: 'pom', tipS: 0.8 }], // bun
+      [3, { tailLen: r.range(9, 14), w0: 0.22, mid: 0.5, w1: 0.05, curl: r.range(0.5, 2), wave: r.range(1, 2.5), tip: 'point' }], // mouse
+      [1.5, { tailLen: r.range(5, 7), w0: 0.6, mid: -0.9, w1: 0.5, curl: r.range(1.8, 2.8), wave: 0.5, tip: 'pom', tipS: 1.5 }], // squirrel-ish
+      [1, { tailLen: 0.5, w0: 0.4, mid: 0.5, w1: 0.3, curl: 0, wave: 0, tip: 'pom', tipS: 0.8 }], // bun
       [0.7, none()],
     ]),
     dorsal: r => r.wpick([[4, none()], [1.5, { type: 'spines', n: r.int(12, 18), len: r.range(0.55, 0.85), wid: 0.3, lean: 0.6 }], [0.6, { type: 'fur', n: 14, len: 0.5 }]]),
@@ -105,7 +105,7 @@ export const LEGACY = {
     ]),
     head: r => ({ type: 'snout', skull: r.range(0.9, 1), snoutLen: r.range(1.7, 2.4), tipR: r.range(0.42, 0.55), mid: 0.75, droop: r.range(0, 0.15), eyeX: 0.3, eyeY: 0.4, eyeR: 0.15, crownX: -0.4, jaw: r.chance(0.4), bulge: r.chance(0.5) ? 0.22 : 0 }),
     limbs: r => ({ len: r.range(2, 2.6), w: 0.5, taper: 0.5, bend: 1, foot: 'claw', toeLen: r.range(0.6, 0.85), lift: r.range(0.7, 1.1), stance: 0.35, hindW: 1.5, arm: 0.7 }),
-    tail: r => ({ len: r.range(9, 14), w0: 0.9, mid: 0.45, w1: 0.07, curl: r.range(0.8, 2.6), wave: r.range(1, 2.5), freq: 1, tip: r.wpick([[3, 'spade'], [1, 'point'], [1, 'fork'], [0.6, 'club']]), tipS: 0.8 }),
+    tail: r => ({ tailLen: r.range(9, 14), w0: 0.9, mid: 0.45, w1: 0.07, curl: r.range(0.8, 2.6), wave: r.range(1, 2.5), freq: 1, tip: r.wpick([[3, 'spade'], [1, 'point'], [1, 'fork'], [0.6, 'club']]), tipS: 0.8 }),
     dorsal: r => r.wpick([
       [3, { type: 'wings', size: r.range(2.6, 4.2), fingers: r.int(3, 4), fan: r.range(1, 1.5), at: r.range(0.62, 0.8) }],
       [1.5, { type: 'spines', n: r.int(6, 10), len: r.range(0.5, 0.9), wid: 0.45, lean: 0.5 }],
@@ -127,7 +127,7 @@ export const LEGACY = {
       [1, { type: 'flower', petals: 1, spread: 0, pl: r.range(2.2, 3), pw: r.range(1.3, 1.8), disc: 0.5, fat: 0.4 }], // pod
     ]),
     limbs: r => ({ len: r.range(1.5, 2.6), w: 0.4, taper: 0.4, bend: 0.5, foot: 'root', toes: r.int(2, 3), toeLen: r.range(1, 1.8), lift: 0, arm: 0.8 }),
-    tail: r => r.wpick([[2, none()], [2, { len: r.range(8, 14), w0: 0.3, mid: 0.5, w1: 0.08, curl: r.range(1.5, 2.5), wave: 0.5, tip: r.pick(['point', 'leaf', 'bud']), spiral: true }]]),
+    tail: r => r.wpick([[2, none()], [2, { tailLen: r.range(8, 14), w0: 0.3, mid: 0.5, w1: 0.08, curl: r.range(1.5, 2.5), wave: 0.5, tip: r.pick(['point', 'leaf', 'bud']), spiral: true }]]),
     dorsal: r => r.wpick([
       [3, { type: 'leaves', n: r.int(3, 6), len: r.range(4, 7), wid: r.range(1.6, 3) }],
       [1.5, { type: 'tendrils', n: r.int(3, 5), len: r.range(5, 9) }],
@@ -151,7 +151,7 @@ export const LEGACY = {
       [1.2, { type: 'snout', skull: r.range(1, 1.15), snoutLen: 0.35, tipR: 0.9, mid: 0.5, droop: 0, eyeX: 0.45, eyeY: 0.15, eyeR: 0.24, crownX: 0 }], // round noseless
     ]),
     limbs: r => ({ len: r.range(1.1, 1.6), w: r.range(0.36, 0.5), taper: 0.8, bend: r.range(0.3, 0.9), foot: 'pad', lift: r.range(0.15, 0.4), stance: 0.25, arm: 0.95 }),
-    tail: r => r.wpick([[2.5, { len: r.range(6, 10), w0: 0.2, mid: 0.5, w1: 0.1, curl: r.range(0.8, 2), wave: r.range(0.8, 2), tip: 'tuft', tipS: 0.9 }], [1.5, none()], [1, { len: r.range(4, 7), w0: 0.25, mid: 0.5, w1: 0.1, curl: 1.5, wave: 1, tip: 'point' }]]),
+    tail: r => r.wpick([[2.5, { tailLen: r.range(6, 10), w0: 0.2, mid: 0.5, w1: 0.1, curl: r.range(0.8, 2), wave: r.range(0.8, 2), tip: 'tuft', tipS: 0.9 }], [1.5, none()], [1, { tailLen: r.range(4, 7), w0: 0.25, mid: 0.5, w1: 0.1, curl: 1.5, wave: 1, tip: 'point' }]]),
     dorsal: r => r.wpick([[4, none()], [1.2, { type: 'fur', n: r.int(10, 16), len: r.range(0.45, 0.8) }]]),
     crown: r => r.wpick([
       [2.5, { type: 'ears', len: r.range(0.7, 1.1), wid: 0.6, lean: 0, fat: 0.35, pair: true }], // small pointed ears

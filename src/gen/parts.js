@@ -271,10 +271,11 @@ export function tail(C, sock, g, lent = false) {
   const { ink, rng } = C, side = C.plan.view === 'side';
   let s = sock.s;
   if (lent && C.plan.r) {
-    const reach = (g.len + (g.pl ?? 0) + 2.2 * (g.tipS ?? 1)) * s, cap = C.plan.r * LENT_TAIL_MAX;
+    const reach = (g.tailLen + (g.pl ?? 0) + 2.2 * (g.tipS ?? 1)) * s, cap = C.plan.r * LENT_TAIL_MAX;
     if (reach > cap) s *= cap / reach;
   }
-  const n = 20, L = g.len * s;
+  // the tail's own length is `tailLen` (not `len`), so tip genes are free to use `len`
+  const n = 20, L = g.tailLen * s;
   let h = sock.dir, p = sock.p;
   const pts = [p], ph = sock.wavePhase ?? rng.range(0, 6.28), cs = (g.curlSign ?? rng.sign());
   // in side view prefer curling up

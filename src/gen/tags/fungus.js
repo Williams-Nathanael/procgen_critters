@@ -842,7 +842,7 @@ function lite(fb) {
 function lends(r, fb, o = {}) {
   const small = lite(o.small ?? fb);
   return {
-    tail: { len: r.range(5, 8), w0: r.range(0.2, 0.28), mid: 0.5, w1: 0.15, curl: r.range(1.2, 2.4), wave: r.range(0.3, 1), up: true, tip: 'fungusFB', fb: small, size: (o.tipS ?? 1) * r.range(0.7, 0.95) },
+    tail: { tailLen: r.range(5, 8), w0: r.range(0.2, 0.28), mid: 0.5, w1: 0.15, curl: r.range(1.2, 2.4), wave: r.range(0.3, 1), up: true, tip: 'fungusFB', fb: small, size: (o.tipS ?? 1) * r.range(0.7, 0.95) },
     dorsal: o.dorsal ?? { type: 'fungusGrowth', n: r.int(3, 5), size: r.range(0.8, 1.15), stem: o.stem ?? r.range(0.5, 1.2), stemW: o.stemW ?? 0.16, hw: (o.hw ?? 0.6) * 0.72, rake: o.rake ?? 0, fb: small },
     crown: o.crown ?? { type: 'fungusSprout', n: o.cn ?? r.int(1, 3), stem: (o.stem ?? r.range(0.5, 1.2)) * 1.1, stemW: o.stemW ?? 0.15, spread: r.range(0.7, 1.3), hw: (o.hw ?? 0.6) * 1.05, pair: !!o.pair, fb: small },
   };
