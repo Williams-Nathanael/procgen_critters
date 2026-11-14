@@ -24,6 +24,23 @@ animals: caps as heads or hats, little mushrooms or brackets growing from a back
 gills/frills, puffball tails and coral antlers read well. Default eyes: none.
 
 ## State (update this section when you work on the tag)
+
+### M3 taste run (2026-11-14)
+- **43 species** (was 41; liberty caps cut; jelly ear, hare's ear, snow fungus added).
+- Chicken of the woods: a rosette of thick scalloped fans rising from the top of a fallen log
+  (new `lobe` drawer; bases buried, no stump joins). Oyster: drooping overlapping tongues
+  sprayed from the cut end of a log. Stumps also gained `smooth` (rounded, toothless top).
+- Lattice cage: rebuilt `cage` as a real meshed sphere (pole pentagon, triangles, pentagons and
+  the mirrored southern half), tilted 0.45-0.75 rad so the pattern sits off-centre; back holes
+  and near-silhouette slivers skipped. Reads as a ball of bars at print size.
+- New `ear` drawer (lobe with notch, white rim fold, white wrinkle veins). Jelly ear: 2-3 big
+  ears on a branch. Hare's ear (Otidea): 3-5 tall split ears in a clump. Snow fungus: a frilly
+  ball of 8-11 small crinkled ears on a twig.
+- Tried and cut: beefsteak fungus (tongue on a trunk read as a tap), stalked puffball (read as
+  a lollipop tree).
+- Weak: oyster (fan of shells can read as a wing), snow fungus (cloud-like mound), hare's ear
+  (fleur-de-lis at print size when 5 ears), jelly ear (white folds lost at print size, ears
+  overlap and cut each other), giant puffball / earthball still blobby.
 Updated 2026-11-13 (species-builder run on main; review rounds done). Sheets:
 `out/roads/03-fungus-species.png`, `out/roads/03-fungus-mixes.png`.
 
