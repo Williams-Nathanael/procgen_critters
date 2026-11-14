@@ -2,7 +2,8 @@
 // usage: node tools/sheet.mjs out/name.png "salamander" "fungus+jansson" "fungus@*" "fungus@morel" ... [--n 10] [--seed 1] [--cell 150] [--detail 0.3]  [--pairs]
 // rows: a tag, a +mix of tags, tag@* (one row per species), or tag@<species name>. Mix cells are captioned with
 // the donor initials for chassis/head/limbs/tail/dorsal/crown.
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { TAG_NAMES, TAGS } from '../src/gen/tags/index.js';
 
@@ -34,6 +35,7 @@ for (let i = rows.length - 1; i >= 0; i--) if (rows[i].endsWith('@*')) { const t
 import { sheetSvg, parseRow } from './sheet-lib.mjs';
 let svg = sheetSvg(rows, opt);
 const svgPath = out.replace(/\.png$/, '.svg');
+mkdirSync(dirname(svgPath), { recursive: true });
 writeFileSync(svgPath, svg);
 if (out.endsWith('.png')) execFileSync('magick', ['-density', '96', svgPath, out]);
 console.log('wrote', out);
