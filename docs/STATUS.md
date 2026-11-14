@@ -84,6 +84,32 @@ mammal 35, plant 51.
   still a little flag-like and the whole reads somewhat like a signpost; ivy small at print
   size; vine parts lent into mixes were only glanced at (three pairs, nothing broken).
 
+**M4 result (2026-11-14)**: mixing quality done in two engineer (Opus) runs plus a sheet-tool
+run (Sonnet), a `critic` look at the 28-pair sheet at `--cell 60`, one fix round, and an
+overseer look. Detail is in the "M4 phase 1" and "M4 phase 2" paragraphs under queue item 4.
+Kept sheet: `out/roads/04-pairs.png`, tag `road-04-pairs`.
+- Mechanics: lent tails capped at 3.2x the receiving body radius; `plan.tag` / `hd.tag` /
+  `C.head` say whose chassis and head a part sits on; empty lent head or limbs re-rolled;
+  tail length gene is `tailLen` everywhere; soften arc tolerance 0.08*S (9.2 to 8.6 ms per
+  critter, so the big speed-up is still M5's job). `ptarget` was not a bug (documented in
+  `mammal.js`).
+- Mix rules now live in per-partner `mix` tables in the tag files. Rooted tags lend one cap
+  or flower head to salamanders; amphibian, arthropod and dragon bodies lead over their
+  weaker partners; no bug legs or feelers lent to mushrooms or salamanders; jansson folk get
+  only the near salamander arm; funnel-cap crowns and plant-body tails sit on the body.
+- Sheet tool: unmatched species or unknown tag exits 1 with the valid names;
+  `tag@species+othertag` pins the body of a mix row; `--pairs` renders all 28 pairs.
+- Critic after phase 2: nothing below the line, nothing detached. Its five "would bother"
+  pairs (arthropod+fungus, fungus+dragon, arthropod+plant, salamander+fungus,
+  salamander+arthropod) got one fix round; not re-judged by the critic, the overseer look
+  found the sheet coherent. Watch: arthropod+fungus and arthropod+plant are now mostly
+  plain bugs with a subtle lent part; salamander+fungus caps small; fungus+plant still a
+  collage of sticks; triples (amphibian+arthropod+plant gave worm or bean blobs) untuned.
+  Best pairs per the critic: dragon+plant, amphibian+mammal, arthropod+mammal,
+  mammal+jansson.
+- Not done: per-border tag weights (only if the user wants them; UI work, belongs in M6).
+  `tools/review-page.mjs` also imports `sheet-lib.mjs` and was not re-run after the change.
+
 **M2 result**: the final critic pass ranks nothing "would bother the user" in dragon,
 salamander, jansson and plant. Seven items remain in the other four (capped at two fix
 rounds per tag to bound cost; they go to the user at M3 as cut-or-fix choices):
@@ -132,7 +158,8 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
      climbing only; house mouse no standing pose). **plant** optional: a few vines, kept
      only if coherent.
    [each changed tag passes a `critic` look at `--cell 60`; sheets regenerated]
-4. **M4 Mixing quality** (engineer, model opus; no tag workers running). Lent parts scaled
+4. **M4 Mixing quality. DONE 2026-11-14** (see "M4 result" above; text kept for
+   reference). (engineer, model opus; no tag workers running). Lent parts scaled
    to the receiving body; `sig` weights tuned; mixes coherent across all 28 tag pairs and
    some triples; per-border tag weights (e.g. mostly fungus, a little dragon) if the user
    wants them. Known: lent tails scale with the receiving chassis's tail-socket size, so e.g.
