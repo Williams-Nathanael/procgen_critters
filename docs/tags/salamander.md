@@ -80,3 +80,8 @@ weighted down), newt larva (busy at print size), web-footed (close to arboreal),
 - Slender salamander: body radius 3.6-4 -> 5.4-6, shorter, longer/thicker legs (limbS 1.4); reads as a salamander at 60px.
 - Siren: eelcoil (vertical hook) pose removed; eel/ess only.
 - Still minor: ensatina tall pose, hellbender/tiger side-view sausages.
+
+### M3 taste run (2026-11-14): sturdier legs
+- New species gene `stout` (in `make`): limb width x stout, length x(1-0.3(stout-1)), taper >= 0.8; side view keeps 95% width (not 78%) and 0.85 length so stubs show.
+- 14 of 29 species stout, chosen where thick limbs are true to the animal: fire, spotted, tiger (1.4), mole, giant, hellbender (1.3), mudpuppy, axolotl (1.5), cave (1.35), great crested, red eft, rough-skinned, ribbed, crocodile newt (1.4). Plethodontids (red-backed, slender, long-tailed, arboreal, ensatina...), eels and larvae keep slender limbs.
+- Still weak: mole salamander top view (fat, occasional curled-tail trap), hellbender/giant side view sausage, amphiuma, siren top gills, newt larva.
