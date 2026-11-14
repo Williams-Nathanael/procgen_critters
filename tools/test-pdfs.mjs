@@ -6,7 +6,7 @@ import { PDFDocument, StandardFonts, degrees } from 'pdf-lib';
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { placeBorder } from '../src/place.js';
 import { exportPdf } from '../src/export.js';
-import { friendlyPdfError, looksLikePdf } from '../src/pdfio.js';
+import { friendlyPdfError, looksLikePdf, looksEncrypted } from '../src/pdfio.js';
 
 const DIR = 'out/tmp/pdfs';
 mkdirSync(DIR, { recursive: true });
@@ -79,6 +79,7 @@ async function run([name, file, pw, expect]) {
   }
   if (expect === 'open-fails') return fail('opened but should not have');
   const N = doc.numPages;
+  if (looksEncrypted(bytes) !== (expect === 'export-fails')) return fail('looksEncrypted gave the wrong answer');
   // ---- place on a spread of pages
   const picks = N <= 12 ? Array.from({ length: N }, (_, i) => i + 1) : [...new Set([1, 2, Math.ceil(N / 2), N])];
   const pages = [];

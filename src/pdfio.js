@@ -24,3 +24,12 @@ export function looksLikePdf(bytes) {
   for (let i = 0; i + 4 <= n; i++) if (bytes[i] === 0x25 && bytes[i + 1] === 0x50 && bytes[i + 2] === 0x44 && bytes[i + 3] === 0x46) return true;
   return false;
 }
+
+// Is this PDF encrypted? Looks for a /Encrypt key in the head and tail of the file, where the
+// trailer (or the cross-reference stream dictionary) lives. Cheap even for huge files.
+export function looksEncrypted(bytes) {
+  const dec = new TextDecoder('latin1'), W = 32768;
+  const chunks = [dec.decode(bytes.subarray(0, W))];
+  if (bytes.length > W) chunks.push(dec.decode(bytes.subarray(Math.max(W, bytes.length - W))));
+  return chunks.some(c => /\/Encrypt\b/.test(c));
+}

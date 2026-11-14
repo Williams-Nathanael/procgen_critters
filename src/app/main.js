@@ -6,6 +6,7 @@ import { ringsToPath } from '../gen/core.js';
 import { makeCritter } from '../gen/critter.js';
 import { DEFAULTS, placeBorder, placeInteractive, bandOutline, borderPolyline, simplify } from '../place.js';
 import { exportPdf, hexToRgb } from '../export.js';
+import { friendlyPdfError, looksLikePdf, looksEncrypted } from '../pdfio.js';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL('./dist/pdf.worker.min.mjs', document.baseURI).href;
 const $ = s => document.querySelector(s);
@@ -16,6 +17,7 @@ const el = (tag, attrs = {}, ...kids) => {
   return e;
 };
 
+const MAX_CANVAS_PX = 12e6;
 const DEFAULT_INK = '#000000';
 const state = {
   name: 'blank page', bytes: null, doc: null, numPages: 1,
@@ -26,21 +28,61 @@ const state = {
 };
 window.__critters = state; // handy for debugging from the console and the UI tests
 
+// ------------------------------------------------------------------ messages and dialogs
+// In-app notices instead of alert(): kind is 'error' | 'warn' | 'info'. `progress` shows a bar (0..1).
+let msgTimer = 0;
+function showMessage(text, kind = 'error', { progress = null, sticky = kind !== 'info' } = {}) {
+  const box = $('#msg'); clearTimeout(msgTimer);
+  box.className = kind; box.hidden = false;
+  box.replaceChildren(el('span', { class: 'mtext' }, text),
+    progress != null ? el('progress', { max: 1, value: progress }) : null,
+    sticky && progress == null ? el('button', { class: 'mclose', title: 'Dismiss', onclick: hideMessage }, '×') : null);
+  if (!sticky) msgTimer = setTimeout(hideMessage, 5000);
+}
+function hideMessage() { clearTimeout(msgTimer); $('#msg').hidden = true; }
+// Ask for a PDF password; resolves to the text, or null if cancelled.
+function askPassword(wrong) {
+  return new Promise(res => {
+    const done = v => { dlg.remove(); res(v); };
+    const input = el('input', { type: 'password', id: 'pwinput', autocomplete: 'off', onkeydown: e => { if (e.key === 'Enter') done(input.value); else if (e.key === 'Escape') done(null); } });
+    const dlg = el('div', { id: 'pwdlg', class: 'overlay-dlg' }, el('div', { class: 'card' },
+      el('h2', {}, 'Password needed'),
+      el('p', {}, wrong ? 'That password was not right. Try again.' : 'This PDF is password protected. Type the password to open it. It is only used in this tab.'),
+      input,
+      el('div', { class: 'row' }, el('button', { class: 'primary', id: 'pwok', onclick: () => done(input.value) }, 'Open'), el('button', { id: 'pwcancel', onclick: () => done(null) }, 'Cancel'))));
+    document.body.append(dlg); input.focus();
+  });
+}
+
 // ------------------------------------------------------------------ document
 async function blankPdf() {
   const d = await PDFDocument.create(); d.addPage([612, 792]);
   return d.save();
 }
+const tick = () => new Promise(r => setTimeout(r, 0));
+class CancelledError extends Error {}
 async function loadBytes(bytes, name) {
-  const doc = await pdfjs.getDocument({
-    data: bytes.slice(),
+  if (!bytes.length) throw Object.assign(new Error('empty'), { name: 'InvalidPDFException' });
+  if (!looksLikePdf(bytes)) throw Object.assign(new Error('no PDF header'), { name: 'InvalidPDFException' });
+  const task = pdfjs.getDocument({
+    data: bytes.slice(), isEvalSupported: false,
     cMapUrl: new URL('../node_modules/pdfjs-dist/cmaps/', document.baseURI).href, cMapPacked: true,
     standardFontDataUrl: new URL('../node_modules/pdfjs-dist/standard_fonts/', document.baseURI).href,
     wasmUrl: new URL('../node_modules/pdfjs-dist/wasm/', document.baseURI).href,
-  }).promise;
+  });
+  task.onPassword = async (give, reason) => { const pw = await askPassword(reason === pdfjs.PasswordResponses.INCORRECT_PASSWORD); if (pw == null) { task.destroy(); } else give(pw); };
+  let doc;
+  try { doc = await task.promise; }
+  catch (e) { if (e?.name === 'PasswordException' || /destroyed/i.test(e?.message || '')) throw new CancelledError(); throw e; }
+  const old = state.doc; // free the previous document's worker memory
   state.bytes = bytes; state.doc = doc; state.name = name; state.numPages = doc.numPages; state.page = 1;
+  state.encrypted = looksEncrypted(bytes);
   state.borders = []; state.selected = null; state.history = [];
+  if (old) old.destroy().catch(() => {});
   $('#docname').textContent = name;
+  for (const b of [$('#export'), $('#exportpage')]) { b.disabled = state.encrypted; b.title = state.encrypted ? 'This PDF is encrypted, so critters cannot be written into it' : b.dataset.title; }
+  if (state.encrypted) showMessage('This PDF is encrypted. You can place critters and preview them, but Export is switched off: pdf-lib cannot write into encrypted files. Remove the protection first (for example qpdf --decrypt in.pdf out.pdf) and open that copy.', 'warn');
+  else hideMessage();
   restoreSession();
   buildThumbs();
   await showPage();
@@ -56,10 +98,14 @@ async function showPage() {
     state.zoom = Math.max(0.2, Math.min((st.clientWidth - 48) / vp1.width, (st.clientHeight - 60) / vp1.height));
   }
   const dpr = window.devicePixelRatio || 1;
-  const vp = page.getViewport({ scale: state.zoom * dpr });
+  let sc = state.zoom * dpr; // cap the canvas (zoomed-in huge pages would otherwise eat memory)
+  const px = vp1.width * vp1.height * sc * sc; if (px > MAX_CANVAS_PX) sc *= Math.sqrt(MAX_CANVAS_PX / px);
+  const vp = page.getViewport({ scale: sc });
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(vp.width); canvas.height = Math.round(vp.height);
-  await page.render({ canvasContext: canvas.getContext('2d'), canvas, viewport: vp }).promise;
+  try { await page.render({ canvasContext: canvas.getContext('2d'), canvas, viewport: vp }).promise; }
+  catch (e) { if (token === state.renderToken) showMessage('Could not draw page ' + state.page + ': ' + (e?.message || e)); return; }
+  finally { page.cleanup(); }
   if (token !== state.renderToken) return;
   const shown = $('#pdf');
   shown.width = canvas.width; shown.height = canvas.height;
@@ -585,25 +631,36 @@ function saveProject() { download(JSON.stringify({ app: 'procgen-critters', vers
 async function loadProject(e) {
   const f = e.target.files[0]; if (!f) return;
   try { const j = JSON.parse(await f.text()); pushHistory(); state.borders = j.borders || []; state.nextId = Math.max(1, ...state.borders.map(b => b.id + 1)); if (j.defaults) state.defaults = j.defaults; state.selected = null; changed(); }
-  catch (err) { alert('Could not read that file: ' + err.message); }
+  catch (err) { showMessage('Could not read that borders file. It should be a .critters.json file saved from this app.'); }
 }
 
-async function buildExport(only = 0) {
-  const pages = [];
-  for (let n = only || 1; n <= (only || state.numPages); n++) {
-    const bs = state.borders.filter(b => appliesTo(b, n)); if (!bs.length) continue;
-    const vp = (await state.doc.getPage(n)).getViewport({ scale: 1 });
-    const critters = bs.flatMap(b => { const ink = hexToRgb(b.settings.ink || DEFAULT_INK); return placeBorder(b, pageKey(b, n)).map(c => ({ rings: c.rings, ink })); });
-    const strokes = bs.filter(b => b.showLine).map(b => { const p = borderPolyline(b); return { pts: p.pts, closed: p.closed, width: 0.6, ink: hexToRgb(b.settings.ink || DEFAULT_INK) }; });
-    pages.push({ index: n - 1, toPdf: pt => vp.convertToPdfPoint(pt[0], pt[1]), critters, strokes });
+async function buildExport(only = 0, onProgress = () => {}) {
+  const first = only || 1, last = only || state.numPages, total = last - first + 1;
+  async function* pageStream() { // one page at a time, so finished pages' geometry can be freed
+    for (let n = first; n <= last; n++) {
+      const bs = state.borders.filter(b => appliesTo(b, n));
+      onProgress('Placing critters, page ' + n + ' of ' + last, (n - first + 1) / total * 0.9);
+      if (!bs.length) continue;
+      const page = await state.doc.getPage(n), vp = page.getViewport({ scale: 1 }); page.cleanup();
+      const critters = bs.flatMap(b => { const ink = hexToRgb(b.settings.ink || DEFAULT_INK); return placeBorder(b, pageKey(b, n)).map(c => ({ rings: c.rings, ink })); });
+      const strokes = bs.filter(b => b.showLine).map(b => { const p = borderPolyline(b); return { pts: p.pts, closed: p.closed, width: 0.6, ink: hexToRgb(b.settings.ink || DEFAULT_INK) }; });
+      yield { index: n - 1, toPdf: pt => vp.convertToPdfPoint(pt[0], pt[1]), critters, strokes };
+      if (n % 4 === 0) await tick();
+    }
   }
-  return exportPdf(state.bytes, pages, only ? { onlyIndex: only - 1 } : {});
+  return exportPdf(state.bytes, pageStream(), { ...(only ? { onlyIndex: only - 1 } : {}), total, onProgress: (label, f) => { if (f >= 1) onProgress(label, 0.95); }, yieldUi: tick });
 }
 state.buildExport = buildExport;
 async function doExport(only = 0) {
+  if (state.encrypted) { showMessage('This PDF is encrypted, so critters cannot be written into it. Remove the protection first (for example qpdf --decrypt in.pdf out.pdf).', 'warn'); return; }
   const btn = $(only ? '#exportpage' : '#export'), label = btn.textContent; btn.disabled = true; btn.textContent = 'Exporting…';
-  try { download(await buildExport(only), state.name.replace(/\.pdf$/i, '').replace(/ /g, '-') + (only ? `-p${only}` : '') + '-critters.pdf', 'application/pdf'); }
-  catch (err) { console.error(err); alert('Export failed: ' + err.message); }
+  const big = state.numPages > 30 && !only;
+  try {
+    const out = await buildExport(only, (t, f) => { btn.textContent = 'Exporting ' + Math.round(f * 100) + '%'; if (big) showMessage(t, 'info', { progress: f, sticky: true }); });
+    download(out, state.name.replace(/\.pdf$/i, '').replace(/ /g, '-') + (only ? `-p${only}` : '') + '-critters.pdf', 'application/pdf');
+    if (big) showMessage('Export finished.', 'info');
+  }
+  catch (err) { console.error(err); showMessage(friendlyPdfError(err, 'export')); }
   btn.disabled = false; btn.textContent = label;
 }
 
@@ -611,7 +668,7 @@ async function doExport(only = 0) {
 async function openFile(f) {
   if (!f) return;
   try { await loadBytes(new Uint8Array(await f.arrayBuffer()), f.name); }
-  catch (err) { console.error(err); alert('Could not open that PDF: ' + err.message); }
+  catch (err) { if (!(err instanceof CancelledError)) { console.error(err); showMessage(friendlyPdfError(err, 'open')); } }
 }
 async function init() {
   $('#open').onclick = () => $('#file').click();
@@ -622,6 +679,7 @@ async function init() {
   $('#zoomout').onclick = () => { state.fit = false; state.zoom = Math.max(state.zoom / 1.25, 0.2); showPage(); };
   $('#zoomfit').onclick = () => { state.fit = true; showPage(); };
   $('#undo').onclick = undo;
+  for (const b of [$('#export'), $('#exportpage')]) b.dataset.title = b.title;
   $('#export').onclick = () => doExport();
   $('#exportpage').onclick = () => doExport(state.page);
   $('#helpbtn').onclick = () => toggleHelp(true);
@@ -634,7 +692,7 @@ async function init() {
   setupPointer(); setTool('free');
 
   const q = new URLSearchParams(location.search);
-  if (q.get('pdf')) { const r = await fetch(q.get('pdf')); await loadBytes(new Uint8Array(await r.arrayBuffer()), q.get('pdf').split('/').pop()); }
+  if (q.get('pdf')) { try { const r = await fetch(q.get('pdf')); await loadBytes(new Uint8Array(await r.arrayBuffer()), q.get('pdf').split('/').pop()); } catch (err) { showMessage(friendlyPdfError(err, 'open')); await loadBytes(await blankPdf(), 'blank page'); } }
   else await loadBytes(await blankPdf(), 'blank page');
   if (q.get('demo')) { // scripted state for screenshots / smoke tests
     localStorage.clear(); state.borders = []; state.defaults = structuredClone(DEFAULTS);

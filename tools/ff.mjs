@@ -21,7 +21,7 @@ export async function launch({ width = 1400, height = 900, port = 9333 } = {}) {
     if (m.id && pending.has(m.id)) { const { res, rej } = pending.get(m.id); pending.delete(m.id); m.type === 'error' ? rej(new Error(m.error + ': ' + m.message)) : res(m.result); }
     else if (m.method === 'log.entryAdded') logs.push(`[${m.params.level}] ${m.params.text}`);
   };
-  const send = (method, params = {}) => new Promise((res, rej) => { const my = ++id; pending.set(my, { res, rej }); ws.send(JSON.stringify({ id: my, method, params })); setTimeout(() => { if (pending.has(my)) { pending.delete(my); rej(new Error('timeout in ' + method)); } }, 30000); });
+  const send = (method, params = {}) => new Promise((res, rej) => { const my = ++id; pending.set(my, { res, rej }); ws.send(JSON.stringify({ id: my, method, params })); setTimeout(() => { if (pending.has(my)) { pending.delete(my); rej(new Error('timeout in ' + method)); } }, Number(process.env.FF_TIMEOUT) || 30000); });
   if (process.env.FF_DEBUG) console.log('connected');
   await send('session.new', { capabilities: {} });
   await send('session.subscribe', { events: ['log.entryAdded'] });
