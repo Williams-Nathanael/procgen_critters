@@ -192,10 +192,14 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    mushrooms. Salamander legs on another tag's side-view body keep the near arm only
    (`sprawl` gene flag, `limb()`). Funnel caps mount crowns on the dish surface; lent tails on
    rooted bodies snap onto the body (`onBody` in critter.js; covers baobab, radish, carrot,
-   cacti, vines). Sheet: `out/roads/04-pairs.png`. Still weak at cell 60: fungus+dragon and
-   fungus+plant (two rooted/winged outlines compete, often collage-like); arthropod+plant
-   (thin plant bodies with bug parts); salamander+fungus caps on top-view bodies read small
-   and sometimes messy (feathery caps); some amphibian+arthropod+plant triples are messy.
+   cacti, vines). Critic fix round: arthropod leads arthropod+fungus (0.4:1) and arthropod+plant (2.5:1)
+   and dragon leads fungus+dragon (2.5:1), each lending/receiving one feature only (no legs,
+   feelers, wings or leafy strips on mushrooms/stems); salamander cap back to 1.3x; arthropods
+   lend salamanders plating/tail/head, not legs or feelers. Sheet: `out/roads/04-pairs.png`.
+   Still weak at cell 60: arthropod+plant and arthropod+fungus now mostly look like plain
+   bugs (plant/fungus part subtle); salamander+fungus caps are small; salamander+arthropod
+   still gets thin stag-beetle/mantis-shrimp dorsal bits on slender salamanders;
+   fungus+plant collage-like; some amphibian+arthropod+plant triples messy.
 
 5. **M5 Placement polish** (engineer). No identical species adjacent; spacing by actual
    critter width; corners of boxes and tight curves handled; "both sides" staggered;
