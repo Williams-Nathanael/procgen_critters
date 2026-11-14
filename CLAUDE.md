@@ -20,6 +20,8 @@ them along borders drawn on PDF pages, then exports the PDF with the critters as
 2. **The expensive model plans and judges; cheaper models build.** Opus 5.5 does geometry
    and species work, Sonnet 5.5 does UI, tooling, tests and research. Use the agents in
    `.claude/agents/`. Fable does not write bulk code.
+   Never spawn `general-purpose` agents (they run on the session's model). Use `engineer`
+   (Sonnet) for searches and general work, `species-builder` / `critic` otherwise.
 3. **At most 3 workers at once**, each with a bounded task (one tag, or one review round).
 4. **Workers commit after every review round** (`git commit -- <their paths>`), so a usage
    limit or crash loses minutes, not hours.
@@ -43,7 +45,7 @@ them along borders drawn on PDF pages, then exports the PDF with the critters as
   commit -m ... -- <paths>`. If `index.lock` exists, wait a few seconds and retry.
 - All randomness through the seeded rng. Same seed, same critter, always.
 - Never put anything below the border line except a sliver of root on rooted forms.
-- Never commit to anything but `main` or a `wip/*` / `road/*` branch; never push.
+- Never commit to anything but main or a wip/* / road/* branch. The overseer pushes at clean stopping points (every tag renders, npm run test:export and npm run build pass, checked on a clean copy of HEAD), over SSH: git push git@github.com:Williams-Nathanael/procgen_critters.git <commit>:refs/heads/main plus --tags. Workers never push.
 - Commit trailer: `Co-Authored-By:` line for the model you are.
 
 ## Commands
