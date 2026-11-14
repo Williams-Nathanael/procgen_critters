@@ -1185,6 +1185,8 @@ export default {
     // legs and feelers on a mushroom read spindly and collage-like: bug bodies lead this pair,
     // and a mushroom body only gets one sturdy tail or plating
     fungus: { sig: { tail: 2, dorsal: 1.5 }, want: [[1, 1]] },
+    // thin plant stems with bug parts read as a collage: bug bodies lead, plants get plating
+    plant: { lead: 2.5, sig: { dorsal: 2, crown: 1 }, want: [[1, 1]] },
   },
   species,
 };
