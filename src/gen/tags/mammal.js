@@ -923,9 +923,9 @@ const species = [
     return {
       chassis: walk(r, B, { face: r.range(0.1, 0.4), b0: 0.0, b1: 0.72, gait: r.pick(['walk', 'stand', 'trot']) }),
       head: head({ skull: 0.9, snoutLen: r.range(2.0, 2.4), tipR: 0.2, mid: 0.6, droop: 0.05, eyeR: 0.14, eyeX: 0.6, earX: -0.1 }),
-      crown: ear('long', r.range(1.5, 1.9), 0.7, { lean: r.range(-0.1, 0.3), farLean: -0.25 }),
-      dorsal: { type: 'mammalShell', h: r.range(0.3, 0.4), bands: r.int(3, 5) },
-      tail: { len: r.range(6.5, 8.5), w0: 0.55, mid: 0.4, w1: 0.08, curl: 0.3, wave: 0.5, freq: 0.6, up: false, tip: 'point' },
+      crown: ear('point', r.range(1.4, 1.8), 0.75, { lean: r.range(-0.3, 0), farLean: -0.4 }),
+      dorsal: { type: 'mammalShell', h: r.range(0.6, 0.75), bands: r.int(6, 8) },
+      tail: { len: r.range(5, 6.5), w0: 0.7, mid: 0.4, w1: 0.15, curl: 0.1, wave: 0.2, freq: 0.6, up: false, tip: 'point' },
     };
   }),
 
@@ -983,7 +983,7 @@ const species = [
       chassis: up ? sit(r, B, 'hold', { item: 'stick', lean: r.range(0.2, 0.4) }) : walk(r, B, { gait: r.pick(['stand', 'walk']) }),
       head: head({ skullL: 1.05, snoutLen: 0.95, tipR: 0.52, mid: 0.5, droop: 0.15, eyeR: 0.13, eyeX: 0.5, carry: !up && r.chance(0.4) ? 'stick' : null }),
       crown: ear('round', 0.36, 0.5, { lean: 0.6 }),
-      tail: { len: 0.4, w0: 0.5, mid: 0.5, w1: 0.4, curl: 0, wave: 0, tip: 'mammalPaddle', tipS: r.range(1.15, 1.4), padA: r.range(-0.12, 0.02) },
+      tail: { len: 0.4, w0: 0.5, mid: 0.5, w1: 0.4, curl: 0, wave: 0, tip: 'mammalPaddle', tipS: r.range(1.9, 2.3), padA: r.range(-0.05, 0.05) },
     };
   }),
 
@@ -1021,10 +1021,12 @@ const species = [
   }),
 
   sp('badger', 2, r => {
-    const B = { r: r.range(12, 13.5), len: r.range(22, 26), clr: r.range(0.55, 0.7), headS: 0.62, arch: 0.08, neckW: 0.8, chest: 1.05, rump: 0.9, footL: 0.9, neckAng: -0.35, neckLen: 0.2, legW: 0.5, pawS: 1.5 };
+    const B = { r: r.range(9, 10.5), len: r.range(27, 32), clr: r.range(0.5, 0.65), headS: r.range(0.7, 0.8), arch: r.range(-0.15, 0.1), neckW: 0.85, chest: 0.95, rump: 0.92, footL: 0.9, neckAng: -0.3, neckLen: 0.3, legW: 0.5, pawS: 1.5 };
+    const pose = r.wpick([[2, 'walk'], [1.5, 'dig'], [1, 'stand']]);
     return {
-      chassis: r.chance(0.6) ? walk(r, B, { face: r.range(0.25, 0.5), gait: r.pick(['walk', 'stand']) }) : sniff(r, B, { pitch: -0.05, neckAng: 0.6, face: -0.2 }),
-      head: head({ skull: 0.95, skullL: 1.1, snoutLen: r.range(1.7, 2), tipR: 0.24, mid: 0.5, droop: 0.1, nose: 0.17, eyeR: 0.12, eyeX: 0.55 }),
+      chassis: pose === 'dig' ? sniff(r, B, { pitch: r.range(0.15, 0.3), neckAng: -0.4, face: r.range(0.4, 0.8) })
+        : walk(r, B, { face: r.range(0.1, 0.45), gait: pose === 'stand' ? 'stand' : r.pick(['walk', 'trot']), pitch: r.range(-0.1, 0.08) }),
+      head: head({ skull: 0.9, skullL: 1.15, snoutLen: r.range(2.1, 2.6), tipR: 0.2, mid: 0.5, droop: 0.1, nose: 0.17, eyeR: 0.12, eyeX: 0.55 }),
       crown: ear('round', 0.42, 0.55, { lean: 0.5 }),
       tail: tBrush({ pk: CLUB, pl: r.range(2.6, 3.4), pw: 0.75, ptarget: PI - 0.2, precurve: 0.2, fluff: 2 }),
       dorsal: r.chance(0.3) ? { type: 'fur', n: r.int(8, 11), len: 0.3 } : none(),
@@ -1039,17 +1041,6 @@ const species = [
       chassis: ch, head: head({ skullL: 1.08, snoutLen: r.range(1.2, 1.4), tipR: 0.22, mid: 0.45, droop: 0.12, nose: 0.15, eyeR: 0.13, cheek: 0.55 }),
       crown: ear('point', r.range(0.85, 1.05), 0.8, { lean: 0 }),
       tail: tBrush({ pk: [[0, 0.45], [0.4, 0.75], [0.85, 0.7], [1, 0.4]], pl: r.range(5, 6.2), pw: 0.95, ptarget: PI - r.range(0.05, 0.3), precurve: r.range(0.2, 1.2), fluff: 0, bands: 5 }),
-    };
-  }),
-
-  sp('red panda', 1.5, r => {
-    const B = { r: r.range(10, 11.5), len: r.range(20, 24), clr: 0.3, headS: 0.8, arch: 0.45, neckW: 0.85, footL: 0.65, neckAng: 0.15, neckLen: 0.1, legW: 0.4, standH: 23, upShoulder: 0.82, upNeck: 0.74, tailA: PI - 0.1 };
-    const stand2 = r.chance(0.3);
-    return {
-      chassis: stand2 ? stand(r, B, { lean: r.range(0, 0.15), arms: 'hang' }) : walk(r, B),
-      head: head({ skullL: 1.05, snoutLen: 0.9, tipR: 0.34, mid: 0.4, droop: 0.15, nose: 0.14, eyeR: 0.13, cheek: 0.7 }),
-      crown: ear('point', r.range(1, 1.2), 1, { lean: 0.05 }),
-      tail: tBrush({ pk: [[0, 0.45], [0.35, 0.8], [0.85, 0.75], [1, 0.4]], pl: r.range(6.5, 8), pw: 1.05, ptarget: PI - r.range(0, 0.25), precurve: r.range(0.1, 0.9), fluff: 0, bands: r.pick([4, 5]) }),
     };
   }),
 

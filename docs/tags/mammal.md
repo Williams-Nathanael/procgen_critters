@@ -75,3 +75,10 @@ Addressed the critic's "would bother" items; 38 -> 36 species.
   not saw teeth. Otter float shortened (19-23) so it is not a log.
 - Still weak: rolled pangolin (big curl), red panda (raccoon clone), mole vs star-nosed
   mole heaps, tarsier/bushbaby same clinging pose, shrew vs otter walk somewhat alike.
+
+### M2 fix run 2 (2026-11-13)
+- Badger: slimmer (r 9-10.5), longer (27-32), flat back (arch -0.15..0.1), long wedge snout; poses walk/trot/stand plus a head-down dig. No longer a tortoise.
+- Red panda CUT: it was a raccoon clone, and the climb/arched-tail variants did not read at 60px. Raccoon keeps the ringed tail.
+- Beaver: paddle tipS 1.9-2.3, flat; the tail reads in every seed.
+- Armadillo: tall 6-8 banded shell, upright pointed ears, shorter, thicker tail.
+- Still weak: beaver walk (a low lozenge apart from the tail), badger legs short at print size, star-nosed mole, kangaroo rat/elephant shrew scale (minor items not touched).
