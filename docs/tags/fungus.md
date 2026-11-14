@@ -54,3 +54,11 @@ Updated 2026-11-13 (species-builder run on main; review rounds done). Sheets:
   by the host tag (salamander/dragon bodies with many polygons).
 - **Next**: a log substrate with shelves (turkey tail on a fallen log), jelly antler,
   hairy-curtain crust (lichen) forms, slime-mould-like extras if wanted; improve the blobs above.
+
+### M2 fix run (2026-11-13)
+- Cut: stinkhorn (plain rod; veiled lady covers the family), truffle (read as rocks), hoof fungus (on any stump it read as a horse/llama head), cauliflower fungus (blob or splat, never a ribbon mass). 45 -> 41 species.
+- Stumps (`stub`) thinner (w 3.2-4) and shorter (24-30); turkey tail, chicken, oyster shelves larger, lion's mane stump slimmer. Fungus now carries the silhouette.
+- Witch's hat: wider conical cap with bent tip (strong skew), wavy hem, rounder rim; always 2-3 caps so a lone cap never reads as an arrow.
+- Giant puffball: small pear foot, plated/cracked top warts, optional crater. Earthball: taller, mostly split-cratered, bigger scales.
+- `ruffle` gained `core`/`lw` genes (unused now cauliflower is cut).
+- Still weak: lion's mane (stump still heavy), earthball and giant puffball (better but blobby at print size), liberty caps thin stems, false morel broccoli-like (critic minor items not addressed).
