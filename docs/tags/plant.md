@@ -34,6 +34,19 @@ for a head, root feet, thorns, a sprout on the crown. Default eyes: none.
 ## State
 - 2026-11-13 M2 fix run 2: monkey puzzle rebuilt as tall thick bare trunk with an asymmetric dome of 6-7 tiers of drooping spiky rope branches (skewed per side, some skipped) and an upward tuft at the top; no longer an aerial. Teasel and thistle separated: teasel is a tall narrow egg of spines with long thin bracts sweeping out and up past it; thistle is a round spiny bulb pinched to a neck with a wide flaring shaving-brush tuft. Judged at --cell 60. Still weak (unchanged): lotus, barrel/old man/pincushion, nepenthes, foxglove, titan arum symmetry.
 - 2026-11-13 M2 fix run (critic list): cut honesty and bleeding heart (stalk-plus-blobs template, scribbles at print size); now 45 species. Thistle and teasel: one big head (optional single side head), thicker stems, fewer prickles. Chinese lanterns: 2-3 large lanterns on a thick arching stem. Titan arum: new wide frilled spathe skirt with tilted asymmetric rim and blunt curled lip, spadix rising from it. Monkey puzzle: thick ropey arms that droop then upturn, random lengths, 3-4 tiers. Lotus: one big round-petalled bloom (or pod) plus 1-2 tilted pads, optional bud, no stick fence. Poppy stems thickened. Still weak: lotus pads read as lens leaves, foxglove spike, living stones/welwitschia small, nepenthes berry-bush look, poppy capsules busy, barrel/pincushion/old man similar.
+- 2026-11-14 M3b vine run: 47 -> 52 species. New `vine` form (one main stem: `arch`,
+  `cordon` trunk+trained arm, or `twine` up a stake; nodes carry a leaf on a petiole, optional
+  coiled tendril; hanging fruit and side flowers; the growing tip curls unless it carries a
+  unit) and units `ivy`, `trilobe`, `grapes`, `raceme`, `gourd`, `passion`. Species: ivy
+  (arch, palmate leaves, optional berry umbel tip), grapevine (thick trunk, horizontal cane,
+  leaves up, 1-2 bunches down, tendrils), wisteria (twisted woody arch, 3-5 long racemes
+  hanging, small leaflet fans on top; strongest), passionflower (arch, 3-lobed leaves below,
+  1-2 face-on fringed flowers above; weakest, flowers read as spiky balls), bottle gourd (arch,
+  3-lobed leaves on top, one big hanging bottle gourd, optional trumpet flower). All judged at
+  --cell 60. Cut/abandoned: `twine`-on-a-stake for passionflower and gourd (stake and wraps
+  merged into a lumpy column at print size; the code path stays, unused). Morning glory not
+  added (too close to the existing bindweed). Vine lends (plantLeaf heads with the new units)
+  not individually checked on animals: the sheet tool cannot pin a species inside a mix row.
 - 2026-11-13: 47 species, reviewed over 3 rounds plus stacking checks. Sheets:
   `out/roads/03-plant-species.png`, `out/roads/03-plant-mixes.png`.
 - Architecture (in `plant.js`): one chassis `plant` with body FORMS: `stems` (the workhorse:
