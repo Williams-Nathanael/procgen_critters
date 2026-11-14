@@ -1,4 +1,4 @@
-// Margin folk: an ORIGINAL cast of small storybook marginalia creatures in the Nordic
+// Little folk: an ORIGINAL cast of small storybook marginalia creatures in the Nordic
 // picture-book tradition (round low bodies, big ringed eyes, tiny hands and feet, tufts,
 // tasselled tails, small props, huddles and processions), plus a family of "word-creatures":
 // stray handwriting come alive (pen-stroke loops, hooks, ascenders and ball terminals on
@@ -946,8 +946,8 @@ const species = [
 
 export default {
   id: 'jansson',
-  label: 'Jansson-ish marginalia folk',
-  short: 'Margin folk',
+  label: 'Little folk',
+  short: 'Folk',
   sig: { head: 3, tail: 2, crown: 1.5, dorsal: 0.7 },
   species,
 };

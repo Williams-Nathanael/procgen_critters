@@ -138,7 +138,7 @@ export const LEGACY = {
   },
 
   jansson: {
-    label: 'Jansson-ish marginalia folk',
+    label: 'Little folk',
     sig: { head: 3, tail: 2, crown: 1 },
     chassis: r => r.wpick([
       [3, { type: 'upright', h: r.range(13, 24), r: r.range(9, 12), lean: r.range(-0.1, 0.35), shoulder: r.range(0.6, 0.8), headS: r.range(0.85, 1.05) }],

@@ -1,6 +1,6 @@
-# Tag: jansson ("Margin folk")
+# Tag: jansson ("Little folk")
 
-File `src/gen/tags/jansson.js` · id `jansson` · label "Jansson-ish marginalia folk" · short "Margin folk"
+File `src/gen/tags/jansson.js` · id `jansson` · label "Little folk" · short "Folk"
 
 User: "small Tove Jansson-style marginalia entities"; and later: "of course one can look
 into what's (freely, permissibly) available; I'd especially be interested in the small
