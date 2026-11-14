@@ -1182,8 +1182,9 @@ export default {
   // M4: on amphibian bodies insect legs give centipede/cricket looks; lend armour and feelers
   mix: {
     amphibian: { sig: { crown: 3, tail: 2, dorsal: 2 }, want: [[3, 1], [2, 2]] },
-    // thin legs under a mushroom read spindly; keep the fungus outline, add feelers and tails
-    fungus: { sig: { crown: 3, tail: 2, dorsal: 1 }, want: [[3, 1], [1, 2]] },
+    // legs and feelers on a mushroom read spindly and collage-like: bug bodies lead this pair,
+    // and a mushroom body only gets one sturdy tail or plating
+    fungus: { sig: { tail: 2, dorsal: 1.5 }, want: [[1, 1]] },
   },
   species,
 };

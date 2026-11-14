@@ -1217,7 +1217,7 @@ export default {
     salamander: { lead: 0.15, sig: { head: 3 }, headS: 1.6 },
     amphibian: { sig: { head: 3, crown: 0.8 }, want: [[3, 1], [1, 2]], headS: 1.25 },
     // on bug bodies a lone cap reads as a blob: lend cap and back growths together
-    arthropod: { lead: 1.5, sig: { head: 2, dorsal: 3, crown: 1 }, want: [[1, 1], [3, 2]], headS: 1.2 },
+    arthropod: { lead: 0.4, sig: { head: 2, dorsal: 3, crown: 1 }, want: [[1, 1], [3, 2]], headS: 1.2 },
   },
   species,
 };
