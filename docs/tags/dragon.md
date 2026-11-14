@@ -65,3 +65,10 @@ done). Sheets: `out/roads/03-dragon-species.png`, `out/roads/03-dragon-mixes.png
 - **Next**: give the feather/leafy wing a clearer gap from the body; a winged amphiptere;
   biting-own-tail and St George pinned-under-spear poses; more distinct heads (beaked eagle,
   horse-headed).
+
+### M2 fix run (2026-11-13)
+- 27 -> 25 species. Winged-biped cluster merged: foliate wyvern folded into bestiary draco (scroll-tail option, upswept feather wing); regardant dragonet folded into luttrell dragonet (beaked head, regardant option). Remaining winged forms differ by pose/head: draco (feather wing, eared), wyvern (bat wing, horns, gaping), passant (quad), St George (squat pug), luttrell (beak, long ears), cockatrice.
+- Cockatrice: wing set back and not far-side, long bird legs (basilisk-style), bigger 3-4 lobe comb.
+- Sea serpent: body r 6.4-7.4, shorter, 1-2 humps, fewer bigger fins. Long: thicker, bigger head, hairline whiskers removed, 6-8 bold mane lobes.
+- Fire salamander: shorter and plumper, head raised, big flame tail tuft, fewer bigger flame spines.
+- Still weak (minor, not addressed): jaculus (crumpled wings), sleeping drake/serra (heads unclear), ouroboros plain rings (small head).
