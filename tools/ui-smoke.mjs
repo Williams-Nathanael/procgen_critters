@@ -81,6 +81,7 @@ export default async function (ff) {
   await drag('Critter size', 'size', 10, 16);
   await drag('Tilt', 'tilt', 0, 0.5);
   await drag('Plumpness', 'plump', 0.8, 1.3);
+  await drag('Hybrid', 'hybrid', 0, 0.85);
   console.log('3 borders after drags, critters:', await ff.eval(`document.querySelectorAll('#overlay .critter').length`));
   // screen and export must agree
   const same = await ff.eval(`(() => { const s = window.__critters; return s.borders.length === 3 && document.querySelectorAll('#overlay .critter').length > 100; })()`);

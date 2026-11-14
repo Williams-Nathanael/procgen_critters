@@ -452,13 +452,14 @@ const MORE = [
   ['startOffset', 'Start offset', 0, 1, 0.01, pct],
   ['detail', 'White detail', 0, 1, 0.01, v => (v < 0.05 ? 'none' : v < 0.5 ? 'eyes' : 'eyes + marks')],
   ['chaos', 'Mix wildness', 0, 1, 0.01, pct],
+  ['hybrid', 'Hybrid', 0, 1, 0.01, pct, 'How often a critter melds several species of its tag (0: one catalogue species each)'],
   ['plump', 'Plumpness', 0.7, 1.4, 0.01, v => v.toFixed(2)],
 ];
 
 function slider([key, label, min, max, step, fmt, title]) {
-  const st = target();
-  const out = el('output', {}, fmt(st[key]));
-  const input = el('input', { type: 'range', min, max, step, value: st[key], title: title || label,
+  const st = target(), v0 = st[key] ?? DEFAULTS[key];
+  const out = el('output', {}, fmt(v0));
+  const input = el('input', { type: 'range', min, max, step, value: v0, title: title || label,
     onpointerdown: () => { if (selected()) pushHistory(); },
     oninput: e => { target()[key] = +e.target.value; out.textContent = fmt(+e.target.value); drawSoon(); },
     onchange: () => saveSession() });
@@ -476,7 +477,7 @@ function sampleStrip(st) {
   const fill = () => {
     let h = '';
     for (let i = 0; i < 8; i++) {
-      let c; try { c = makeCritter(st.tags, (state.sampleSeed ?? 7) * 100 + i, { detail: st.detail, chaos: st.chaos, plump: st.plump }); } catch { continue; }
+      let c; try { c = makeCritter(st.tags, (state.sampleSeed ?? 7) * 100 + i, { detail: st.detail, chaos: st.chaos, plump: st.plump, hybrid: st.hybrid }); } catch { continue; }
       const b = c.bbox, m = Math.max(b.w, b.h) * 0.06;
       h += `<svg viewBox="${(b.x0 - m).toFixed(1)} ${(b.y0 - m).toFixed(1)} ${(b.w + 2 * m).toFixed(1)} ${(b.h + 2 * m).toFixed(1)}"><title>${Object.values(c.species || {}).join(' + ')}</title><path d="${ringsToPath(c.rings, null, 1)}"/></svg>`;
     }
@@ -494,7 +495,7 @@ function describe(b) {
 }
 
 // ------------------------------------------------------------------ presets
-const PRESET_KEYS = ['tags', 'side', 'radius', 'spacing', 'size', 'facing', 'sizeVar', 'spacingVar', 'lift', 'tilt', 'startOffset', 'detail', 'chaos', 'plump', 'avoidOverlap', 'ink'];
+const PRESET_KEYS = ['tags', 'side', 'radius', 'spacing', 'size', 'facing', 'sizeVar', 'spacingVar', 'lift', 'tilt', 'startOffset', 'detail', 'chaos', 'plump', 'hybrid', 'avoidOverlap', 'ink'];
 const BUILTIN_PRESETS = {
   'Tidy row': { tags: ['salamander'], side: 'left', radius: 40, spacing: 72, size: 40, sizeVar: 0.1, spacingVar: 0.1, tilt: 0, lift: 0 },
   'Dense hedge': { tags: ['plant', 'fungus'], side: 'both', radius: 50, spacing: 24, size: 24, sizeVar: 0.35, spacingVar: 0.4, tilt: 0.2 },

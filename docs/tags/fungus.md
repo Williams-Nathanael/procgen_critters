@@ -104,3 +104,18 @@ liberty caps, earthstar) untouched.
 - Giant puffball: small pear foot, plated/cracked top warts, optional crater. Earthball: taller, mostly split-cratered, bigger scales.
 - `ruffle` gained `core`/`lw` genes (unused now cauliflower is cut).
 - Still weak: lion's mane (stump still heavy), earthball and giant puffball (better but blobby at print size), liberty caps thin stems, false morel broccoli-like (critic minor items not addressed).
+
+### Hybrids (M8 phase 1, 2026-11-14, automated scan, not yet judged by eye)
+
+Within-tag hybrids are on by default (`hybrid` 0.85, see AUTHORING.md "Within-tag hybrids"). No throws over 2000 seeds. Worst combinations found by a heuristic over 3000 seeds (base + borrowed slot; "detached" = the silhouette falls into separate pieces where the pure base does not; "very long/tall" = aspect over 5:1):
+
+- coral fungus + head of morel: 3/3 detached
+- bird's nest fungus + limbs of morel: 5/5 detached
+- scarlet elf cup + tail of penny bun: 3/3 detached
+- stag's horn + dorsal of shaggy inkcap: 3/3 detached
+- scarlet elf cup + tail of bird's nest fungus: 4/4 detached
+- earthball + dorsal of devil's fingers: 3/3 detached
+- earthball + dorsal of fly agaric: 3/3 detached
+- chanterelle + crown of honey fungus tuft: 3/3 detached
+
+Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.

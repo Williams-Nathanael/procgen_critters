@@ -16,6 +16,34 @@ from one of its own species (`src/gen/critter.js`).
 Everything is black polygons unioned into a single silhouette (`Ink` in `core.js`), with
 optional white shapes cut out. No strokes, no greys.
 
+## Within-tag hybrids
+
+By default most critters are meldings of several species of one tag (`makeCritter` option
+`hybrid`, 0..1, default `HYBRID` = 0.85 in `critter.js`; it is the chance a critter
+hybridizes and scales how far genes blend). The primary tag's species is the visible
+**base**; then, on a separate rng stream (so `hybrid: 0` is bit-identical to pure output):
+
+- 1-3 of `head`, `limbs`, `tail`, `dorsal`, `crown` (only slots the primary tag still owns;
+  slots lent by another tag in a mix stay lent) are taken from other species of the same
+  tag. Empty slots are rarely borrowed. `surface` follows the head.
+- One sibling is picked as a mate, and every numeric gene of a slot where base and mate
+  use the same part `type` (chassis included, one level of nested objects) moves
+  0.2-0.55 x `hybrid` of the way toward the mate's. Integers stay integers.
+
+The result's `species[tag]` reads `base × donor × ...` (base first), `base` is the base
+name and `hybrid` maps slot (or `blend`) to the sibling used, or is null.
+
+Optional hints on a species object, read from the tag file:
+
+```js
+{ name: 'earthstar', hybrid: { never: true }, genes(r) { ... } }    // never a base or a donor
+{ name: 'snail', hybrid: { keep: ['head', 'chassis'] } }            // as base: these slots stay its own, unblended
+{ name: 'hydra', hybrid: { noLend: ['head'] } }                     // never lends (or blends) these slots
+```
+
+Sheets: `tag` rows use the default; `tag@species` rows are pure unless `--hybrid` is given
+(`--hybrid 0` gives pure tag rows). Cells caption the melded name.
+
 ## Coordinates and conventions
 
 - Units: a critter is roughly 40-100 units across. `MINW` (0.75) is the thinnest stroke

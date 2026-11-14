@@ -46,6 +46,64 @@ function onBody(plan, sock) {
   return { ...sock, p: [q[0] + dx * k, q[1] + dy * k] };
 }
 
+// ---- within-tag hybrids ----
+// The default share of single-tag critters (and primaries of mixes) that are meldings of
+// several species of their tag rather than one catalogue species.
+export const HYBRID = 0.85;
+const LENDABLE = ['head', 'limbs', 'tail', 'dorsal', 'crown'];
+const none = x => !x || x.type === 'none';
+// t of the way from a toward b for every numeric gene both share (top level and one level
+// of nested plain objects); integers stay integers. Booleans, strings, arrays untouched.
+function blend(a, b, t) {
+  for (const k of Object.keys(a)) {
+    const x = a[k], y = b[k];
+    if (typeof x === 'number' && typeof y === 'number' && Number.isFinite(x) && Number.isFinite(y)) {
+      const v = x + (y - x) * t;
+      a[k] = Number.isInteger(x) && Number.isInteger(y) ? Math.round(v) : v;
+    } else if (x && y && typeof x === 'object' && typeof y === 'object' && !Array.isArray(x) && !Array.isArray(y) && x.type === y.type) {
+      blend(x, y, t);
+    }
+  }
+}
+// Meld species of one tag: the base species `sp0` (genes g) takes 1-3 slots from siblings
+// and blends its numeric genes toward one sibling wherever both use the same part type.
+// Uses its own rng stream (seeded from the critter seed), so hybrid 0 leaves output untouched.
+// Species hints (optional, on the species object): hybrid: { never, keep: [slots], noLend: [slots] }.
+// Returns [[slot | 'blend', sibling name], ...] in order.
+function hybridize(tag, sp0, g, donors, seed, amount) {
+  const hr = makeRng((Math.imul(typeof seed === 'number' ? seed : String(seed).length, 2654435761) ^ 0x5bd1e995) >>> 0);
+  if (!hr.chance(amount) || sp0.hybrid?.never) return [];
+  const sibs = TAGS[tag].species.filter(sp => sp !== sp0 && !sp.hybrid?.never);
+  if (!sibs.length) return [];
+  const pick = () => hr.wpick(sibs.map(sp => [sp.w ?? 1, sp]));
+  const used = [];
+  // slots still the primary's own (lent slots of a mix stay with their tag)
+  const open = LENDABLE.filter(s => donors[s] === tag && !sp0.hybrid?.keep?.includes(s));
+  const want = Math.min(open.length, hr.wpick([[4, 1], [4, 2], [2, 3]]));
+  for (const s of hr.shuffle(open).slice(0, want)) {
+    for (let k = 0; k < 8; k++) {
+      const sp = pick();
+      if (sp.hybrid?.noLend?.includes(s)) continue;
+      const sg = sp.genes(hr.fork());
+      if (none(sg[s]) && k < 7) continue; // borrowing nothing is no melding
+      g[s] = sg[s];
+      if (s === 'head') g.surface = sg.surface; // surface follows head
+      used.push([s, sp.name]);
+      break;
+    }
+  }
+  // numeric blend toward one sibling, slot by slot where the part types agree
+  const mate = pick(), mg = mate.genes(hr.fork()), t = hr.range(0.2, 0.55) * amount;
+  let blended = false;
+  for (const s of ['chassis', ...LENDABLE]) {
+    if (s !== 'chassis' && donors[s] !== tag) continue;
+    if (sp0.hybrid?.keep?.includes(s) || mate.hybrid?.noLend?.includes(s)) continue;
+    if (g[s] && mg[s] && !none(g[s]) && g[s].type === mg[s].type) { g[s] = { ...g[s] }; blend(g[s], mg[s], t); blended = true; }
+  }
+  if (blended) used.push(['blend', mate.name]);
+  return used;
+}
+
 export function makeCritter(tags, seed, opts = {}) {
   const rng = makeRng(seed);
   const detail = opts.detail ?? 0.6;
@@ -71,6 +129,13 @@ export function makeCritter(tags, seed, opts = {}) {
     g[s] = gene;
   }
   if (donors.head !== (donors.primary ?? donors.chassis) && lent[donors.head]) g.surface = lent[donors.head].surface;
+  const hy = opts.hybrid ?? HYBRID;
+  let hybrid = null;
+  if (hy > 0) {
+    const mix = hybridize(donors.primary ?? donors.chassis, sp0, g, donors, seed, hy);
+    if (mix.length) names[donors.primary ?? donors.chassis] = [sp0.name, ...new Set(mix.map(m => m[1]))].join(' × ');
+    hybrid = Object.fromEntries(mix);
+  }
   for (const s of SLOTS) if (g[s] == null) g[s] = { type: 'none' };
   const ink = new Ink();
   const C = { ink, rng, plump: (opts.plump ?? 1) * rng.range(0.92, 1.1), lift: g.limbs?.lift ?? 0.5, plan: null };
@@ -103,5 +168,5 @@ export function makeCritter(tags, seed, opts = {}) {
   const dy = plan.view === 'top' ? -b.y1 : (b.y1 > allow ? allow - b.y1 : 0);
   rings = rings.map(r => r.map(([x, y]) => [x + dx, y + dy]));
   b = ringsBBox(rings);
-  return { rings, bbox: b, view: plan.view, donors, tags, seed, species: names };
+  return { rings, bbox: b, view: plan.view, donors, tags, seed, species: names, base: sp0.name, hybrid };
 }

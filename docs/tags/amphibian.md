@@ -98,3 +98,11 @@ Surinam fingers; a lily flower on the pad.
 - Tadpoles with legs: short stubby 3-toed hind legs, fatter tail fin. Four-legged tadpole still slightly lizard-like (weakest).
 - Hairy frog: fewer, longer flank tufts. Midwife toad: bigger eggs. Crested newt: chunkier body, taller wavy crest.
 - Not done: amphibian+salamander mix contribution (queued for M4 with mount/scaling work).
+
+### Hybrids (M8 phase 1, 2026-11-14, automated scan, not yet judged by eye)
+
+Within-tag hybrids are on by default (`hybrid` 0.85, see AUTHORING.md "Within-tag hybrids"). No throws over 2000 seeds. Worst combinations found by a heuristic over 3000 seeds (base + borrowed slot; "detached" = the silhouette falls into separate pieces where the pure base does not; "very long/tall" = aspect over 5:1):
+
+- looped caecilian + dorsal of midwife toad: 2/4 detached
+
+Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.

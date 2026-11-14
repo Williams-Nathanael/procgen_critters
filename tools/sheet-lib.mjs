@@ -15,7 +15,7 @@ export function parseRow(row) {
   return { tags: [head, ...rest.slice(plus + 1).split('+')], species: rest.slice(0, plus), pinned: true };
 }
 
-// rows: array of "tag", "a+b", or "tag@species". opt: n, seed, cell, detail, labels, bg, scale (output pixel multiplier)
+// rows: array of "tag", "a+b", or "tag@species". opt: n, seed, cell, detail, labels, bg, scale, hybrid (0..1; default: makeCritter's, 0 for tag@species) (output pixel multiplier)
 export function sheetSvg(rows, opt) {
   const { n, cell } = opt, sk = opt.scale || 1, labelW = opt.labels ? 110 : 0, W = labelW + n * cell, H = rows.length * cell;
   const bg = opt.bg || '#f6f1e4';
@@ -27,7 +27,8 @@ export function sheetSvg(rows, opt) {
     const seed = opt.seed * 1000 + ri * 100 + ci;
     let c;
     try {
-      const o = { detail: opt.detail, species };
+      // tag@species rows show the species itself unless --hybrid is given
+      const o = { detail: opt.detail, species, hybrid: opt.hybrid ?? (species && !pinned ? 0 : undefined) };
       if (pinned) {
         // chooseDonors with the same rng stream makeCritter would use, then make the pinned tag primary
         const d = chooseDonors(makeRng(seed), tags), pin = tags[0];
@@ -39,6 +40,9 @@ export function sheetSvg(rows, opt) {
     const b = c.bbox, pad = 14, sc = Math.min((cell - 2 * pad) / b.w, (cell - 2 * pad) / b.h, 1.6);
     const ox = labelW + ci * cell + cell / 2 - (b.x0 + b.w / 2) * sc, oy = ri * cell + cell / 2 - (b.y0 + b.h / 2) * sc;
     svg += `<path fill="#111" fill-rule="evenodd" d="${ringsToPath(c.rings, p => [p[0] * sc + ox, p[1] * sc + oy], 1)}"/>`;
+    const name = Object.values(c.species).join(' + ');
+    svg += `<title>${name}</title>`;
+    if (opt.labels && c.hybrid) svg += `<text x="${labelW + ci * cell + 3}" y="${ri * cell + 9}" font-family="sans-serif" font-size="${cell < 100 ? 5 : 7}" fill="#aaa">${name.slice(0, Math.floor(cell / (cell < 100 ? 2.6 : 3.6)))}</text>`;
     if (opt.labels) svg += `<text x="${labelW + ci * cell + 3}" y="${ri * cell + cell - 3}" font-family="sans-serif" font-size="7" fill="#aaa">${seed}${tags.length > 1 ? ' ' + ['chassis', 'head', 'limbs', 'tail', 'dorsal', 'crown'].map(s => c.donors[s][0]).join('') : ''}</text>`;
   }
 });

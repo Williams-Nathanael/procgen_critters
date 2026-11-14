@@ -93,3 +93,18 @@ weighted down), newt larva (busy at print size), web-footed (close to arboreal),
 - Axolotl: 3 gill fringe lobes (was 5), shorter gills and legs; no more spider reads.
 - Crocodile newt: rib knobs sunk into the body (out -0.2/-0.1), smoother joins.
 - Still weak: mole salamander side view (legs barely show), amphiuma, siren, newt larva, hellbender fold subtle at 60px.
+
+### Hybrids (M8 phase 1, 2026-11-14, automated scan, not yet judged by eye)
+
+Within-tag hybrids are on by default (`hybrid` 0.85, see AUTHORING.md "Within-tag hybrids"). No throws over 2000 seeds. Worst combinations found by a heuristic over 3000 seeds (base + borrowed slot; "detached" = the silhouette falls into separate pieces where the pure base does not; "very long/tall" = aspect over 5:1):
+
+- ribbed newt + tail of slender salamander: 0/3 detached, 2 very long/tall
+- ribbed newt + head of rough-skinned newt: 0/3 detached, 2 very long/tall
+- spectacled salamander + dorsal of hellbender: 0/5 detached, 3 very long/tall
+- great crested newt + dorsal of crocodile newt: 0/7 detached, 4 very long/tall
+- great crested newt + dorsal of ribbed newt: 0/9 detached, 5 very long/tall
+- hellbender + head of red-backed salamander: 0/4 detached, 2 very long/tall
+- ribbed newt + tail of long-tailed salamander: 0/4 detached, 2 very long/tall
+- great crested newt + head of ribbed newt: 0/4 detached, 2 very long/tall
+
+Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.

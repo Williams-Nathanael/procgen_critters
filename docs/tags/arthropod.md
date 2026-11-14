@@ -131,3 +131,14 @@ arms / proboscis), acorn barnacles (small), hairy caterpillar (spiky rather than
 - Squat lobster: short, chunky, spread claws. Spiny lobster: side spines removed (`antB` gene), thick antenna-base leaves, antennae w 0.85.
 - Camel spider: big cephalothorax, larger and wider jaws, narrow pointed abdomen, thinner legs.
 - Watch: old trilobite reads as a blob; woodlouse and pill bug plain; mantis shrimp head.
+
+### Hybrids (M8 phase 1, 2026-11-14, automated scan, not yet judged by eye)
+
+Within-tag hybrids are on by default (`hybrid` 0.85, see AUTHORING.md "Within-tag hybrids"). No throws over 2000 seeds. Worst combinations found by a heuristic over 3000 seeds (base + borrowed slot; "detached" = the silhouette falls into separate pieces where the pure base does not; "very long/tall" = aspect over 5:1):
+
+- triops + crown of spiny lobster: 3/3 detached
+- triops + tail of lobster: 3/3 detached
+- triops + dorsal of spider crab: 3/3 detached
+- triops + tail of spiny lobster: 3/3 detached
+
+Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.

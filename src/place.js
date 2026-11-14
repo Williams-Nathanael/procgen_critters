@@ -18,6 +18,7 @@ export const DEFAULTS = {
   detail: 0.3,         // white interior detail 0..1
   chaos: 0.12,         // how wild tag mixes get 0..1
   plump: 1,
+  hybrid: 0.85,        // share of single-tag critters melded from several species of the tag
   seed: 1,
   startOffset: 0.5,    // first critter position, fraction of spacing
   avoidOverlap: true,
@@ -158,12 +159,12 @@ export function placeInteractive(border, pageKey, ms) { // -> { items, stale }
   } catch (e) { if (e === DEFER && m) return { items: m.items, stale: true, memo: m }; throw e; }
 }
 function cachedCritter(tags, seed, st) {
-  const key = tags.join('+') + '|' + seed + '|' + st.detail + '|' + st.chaos + '|' + st.plump;
+  const key = tags.join('+') + '|' + seed + '|' + st.detail + '|' + st.chaos + '|' + st.plump + '|' + st.hybrid;
   let c = critterCache.get(key);
   if (!c) {
     if (deadline && performance.now() > deadline) throw DEFER;
     stats.made++;
-    c = makeCritter(tags, seed, { detail: st.detail, chaos: st.chaos, plump: st.plump });
+    c = makeCritter(tags, seed, { detail: st.detail, chaos: st.chaos, plump: st.plump, hybrid: st.hybrid });
     if (critterCache.size > 4000) critterCache.clear();
     critterCache.set(key, c);
   }

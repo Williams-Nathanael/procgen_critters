@@ -1,5 +1,6 @@
 // Contact-sheet renderer for reviewing generator output.
-// usage: node tools/sheet.mjs out/name.png "salamander" "fungus+jansson" "fungus@*" "fungus@morel" ... [--n 10] [--seed 1] [--cell 150] [--detail 0.3]  [--pairs]
+// usage: node tools/sheet.mjs out/name.png "salamander" "fungus+jansson" "fungus@*" "fungus@morel" ... [--n 10] [--seed 1] [--cell 150] [--detail 0.3] [--hybrid 0..1] [--pairs]
+// --hybrid: share of within-tag meldings (default the generator's, 0 for tag@species rows)
 // rows: a tag, a +mix of tags, tag@* (one row per species), or tag@<species name>. Mix cells are captioned with
 // the donor initials for chassis/head/limbs/tail/dorsal/crown.
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -19,7 +20,7 @@ const die = msg => { console.error('sheet: ' + msg); process.exit(1); };
 const mixable = TAG_NAMES.filter(t => TAGS[t].sig);
 if (opt.pairs) for (let a = 0; a < mixable.length; a++) for (let b = a + 1; b < mixable.length; b++) rows.push(`${mixable[a]}+${mixable[b]}`);
 if (!rows.length) rows.push(...TAG_NAMES);
-if (!out) die('usage: node tools/sheet.mjs out.png [rows...] [--pairs] [--n N] [--cell PX] [--seed S] [--detail D]');
+if (!out) die('usage: node tools/sheet.mjs out.png [rows...] [--pairs] [--n N] [--cell PX] [--seed S] [--detail D] [--hybrid H]');
 // validate every row before rendering
 for (const row of rows) {
   const r = parseRow(row);

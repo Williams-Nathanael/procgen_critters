@@ -89,3 +89,13 @@ for a head, root feet, thorns, a sprout on the crown. Default eyes: none.
   sea holly, burdock (heads exist: `plantBur` seaholly/burdock), pinecone twig, ginkgo, hops,
   bindweed, strawberry runner, squirting cucumber, touch-me-not, sensitive plant, maidenhair,
   moonwort/adder's tongue (heads exist), clubmoss (head exists).
+
+### Hybrids (M8 phase 1, 2026-11-14, automated scan, not yet judged by eye)
+
+Within-tag hybrids are on by default (`hybrid` 0.85, see AUTHORING.md "Within-tag hybrids"). No throws over 2000 seeds. Worst combinations found by a heuristic over 3000 seeds (base + borrowed slot; "detached" = the silhouette falls into separate pieces where the pure base does not; "very long/tall" = aspect over 5:1):
+
+- dandelion clock + head of baobab: 2/3 detached
+- baobab + tail of onion and garlic: 2/3 detached
+- carrot + dorsal of mandrake: 2/4 detached
+
+Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.

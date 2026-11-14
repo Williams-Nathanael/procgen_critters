@@ -122,3 +122,13 @@ done). Sheets: `out/roads/03-dragon-species.png`, `out/roads/03-dragon-mixes.png
   more (turns 1.05-2, rise, gap, thickness).
 - Still weak: salamander body is a heavy lump under the flames; cockatrice beak small at
   print size.
+
+### Hybrids (M8 phase 1, 2026-11-14, automated scan, not yet judged by eye)
+
+Within-tag hybrids are on by default (`hybrid` 0.85, see AUTHORING.md "Within-tag hybrids"). No throws over 2000 seeds. Worst combinations found by a heuristic over 3000 seeds (base + borrowed slot; "detached" = the silhouette falls into separate pieces where the pure base does not; "very long/tall" = aspect over 5:1):
+
+- sleeping drake + crown of basilisk: 2/3 detached
+- sleeping drake + head of heraldic dragon passant: 2/4 detached
+- sleeping drake + dorsal of heraldic dragon passant: 2/4 detached
+
+Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.

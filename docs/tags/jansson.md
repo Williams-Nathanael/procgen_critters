@@ -95,3 +95,18 @@ tasselled tail, tufts and single hairs, small props, the upright pear body.
 - Burrow peeper: head rises well above the mound, bigger eyes and side mounds, thicker ground line.
 - Removed dead duplicate `tail` key in `glyph()`.
 - Still weak: shaggy mop's shag barely reads at 60px; pot dweller without handles can still look like a blob; asterisk mite with strong curl is busy.
+
+### Hybrids (M8 phase 1, 2026-11-14, automated scan, not yet judged by eye)
+
+Within-tag hybrids are on by default (`hybrid` 0.85, see AUTHORING.md "Within-tag hybrids"). No throws over 2000 seeds. Worst combinations found by a heuristic over 3000 seeds (base + borrowed slot; "detached" = the silhouette falls into separate pieces where the pure base does not; "very long/tall" = aspect over 5:1):
+
+- bracket peeper + head of pear sitter: 3/3 detached
+- bracket peeper + tail of hunched troll: 3/3 detached
+- back-turned sitter + limbs of curled sleeper: 2/3 detached
+- stone peeper + dorsal of spiral snail: 2/3 detached
+- stone peeper + limbs of spiral snail: 2/3 detached
+- back-turned sitter + limbs of lantern bearer: 2/4 detached
+- back-turned sitter + limbs of bracket peeper: 2/4 detached
+- curled sleeper + head of snail folk: 2/4 detached
+
+Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.
