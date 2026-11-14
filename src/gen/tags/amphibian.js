@@ -352,7 +352,7 @@ chassis.amphibianPipa = (C, g) => {
     const s = h, A = t => sd * t; // angle measured from forward (+x)
     // arm: from the shoulder out sideways, elbow, forearm reaching forward-out
     const sh = [xf * 0.55, sd * h * 0.8], el = polar(sh, A(g.armOut + j() * 0.12), s * g.arm * 0.5);
-    const hand = polar(el, A(g.armFwd + j() * 0.15), s * g.arm * 0.55), fw = Math.max(0.15 * s, MINW);
+    const hand = polar(el, A(g.armFwd + j() * 0.15), s * g.arm * 0.55), fw = Math.max(0.19 * s, MINW);
     seg(C, [sh, el, hand], fw * 1.15, fw * 0.8);
     fingersOf(hand, A(g.armFwd), s, 4, g.finger, 1.35);
     // hind leg: thigh out-back, shin back, a big webbed fan of five toes behind
@@ -631,10 +631,10 @@ dorsals.amphibianHair = (C, plan, st, sd, si, g) => {
     // shaggy fringe round the back of the haunch, and a few down the lower flank
     const c = hip ? hip.p : pathAt(plan.path, 0.1).p, G = hip?.ground ?? 0;
     for (let i = 0; i < g.n; i++) {
-      const u = (i + rng.range(0.2, 0.8)) / g.n, a = mix(PI * 0.5, PI * 1.04, u), len = r * g.len * rng.range(0.75, 1.15);
+      const u = (i + rng.range(0.2, 0.8)) / g.n, a = mix(PI * 0.32, PI * 1.06, u), len = r * g.len * rng.range(0.75, 1.15);
       const b = polar(c, a, r * 0.46), h = a + 0.45;
       const e = polar(b, h, len); e[1] = Math.min(e[1], G - MINW);
-      ink.poly(tube(spline([b, polar(lerp(b, e, 0.5), h + PI / 2, len * 0.1), e], 4), profile([[0, Math.max(r * 0.1, MINW * 0.75)], [1, MINW / 2]])));
+      ink.poly(tube(spline([b, polar(lerp(b, e, 0.5), h + PI / 2, len * 0.1), e], 4), profile([[0, Math.max(r * 0.16, MINW * 0.9)], [0.6, Math.max(r * 0.08, MINW * 0.7)], [1, MINW * 0.55]])));
     }
     return;
   }
@@ -642,6 +642,24 @@ dorsals.amphibianHair = (C, plan, st, sd, si, g) => {
     const k = st[Math.round(mix(0, st.length - 1, (i + 0.5) / Math.ceil(g.n / 2)))], a = k.dir + sd * rng.range(0.2, 0.6) * 0, len = r * g.len * rng.range(0.6, 1);
     ink.poly(tube(spline([polar(k.p, k.dir, -r * 0.1), polar(k.p, a, len * 0.5), polar(polar(k.p, a, len), a + PI / 2, len * 0.2 * sd)], 4), profile([[0, Math.max(r * 0.09, MINW * 0.7)], [1, MINW / 2]])));
   }
+};
+
+// Newt crest: a strip along the back with broad sawteeth (wide bases, blunt tips), so the
+// teeth survive print size.
+dorsals.amphibianCrest = (C, plan, st, sd, si, g) => {
+  if (si > 0) return;
+  const { ink, rng } = C, r = plan.r, n = st.length, at = u => { const x = clamp(u, 0, 1) * (n - 1), i = Math.min(Math.floor(x), n - 2); return { p: lerp(st[i].p, st[i + 1].p, x - i), dir: st[i].dir }; };
+  const pts = [];
+  for (let t = 0; t < g.n; t++) {
+    const u0 = t / g.n, w = 1 / g.n, hk = rng.range(0.92, 1.1);
+    for (const [f, hh] of [[0, 0.5], [0.38, hk], [0.62, hk * 0.93]]) {
+      const u = u0 + f * w, k = at(u);
+      pts.push(polar(k.p, k.dir, r * g.h * Math.sin(PI * u) ** 0.6 * hh));
+    }
+  }
+  pts.push(at(1).p);
+  const bot = []; for (let i = 20; i >= 0; i--) { const k = at(i / 20); bot.push(polar(k.p, k.dir, -r * 0.3)); }
+  ink.poly(pts.concat(bot));
 };
 
 // Warts: a handful of distinct round bumps along the back.
@@ -706,7 +724,7 @@ const species = [
   { name: 'hairy frog', w: 1, genes: r => ({ // Trichobatrachus: breeding males grow hair-like filaments on flanks and thighs
     chassis: sit(r, { r: r.range(9.5, 11), len: r.range(18, 22), pitch: r.range(0.42, 0.56), belly: 0.92 }),
     head: frogHead(r, { snout: r.range(0.95, 1.08), point: 0.05, deep: 0.7, eye: r.range(0.28, 0.33) }),
-    limbs: legs(r, 'frog', { hw: r.range(0.46, 0.52) }), tail: none(), dorsal: { type: 'amphibianHair', n: r.int(8, 11), len: r.range(0.7, 0.95) }, crown: popEyes(r), surface: look(r, 0.3, 0),
+    limbs: legs(r, 'frog', { hw: r.range(0.46, 0.52) }), tail: none(), dorsal: { type: 'amphibianHair', n: r.int(13, 17), len: r.range(1.05, 1.35) }, crown: popEyes(r), surface: look(r, 0.3, 0),
   }) },
   { name: 'calling frog', w: 2, genes: r => ({
     chassis: sit(r, { r: r.range(8, 9.5), len: r.range(18, 22), pitch: r.range(0.58, 0.75) }),
@@ -736,13 +754,13 @@ const species = [
   { name: 'walking toad', w: 1.2, genes: r => ({
     chassis: sit(r, { seat: null, r: r.range(8.5, 9.5), len: r.range(23, 27), pitch: r.range(0.06, 0.16), rump: 0.66, belly: 0.94, chest: 0.86, neck: 0.8, hump: 0, arch: r.range(0.02, 0.12), rearLift: 1, headS: 1, neckLen: 0.55, face: r.range(-0.05, 0.12) }),
     head: frogHead(r, { snout: r.range(0.9, 1.02), point: 0, deep: 0.72, eye: r.range(0.25, 0.3), parotoid: r.range(0.8, 1.1), neck: 0.78 }),
-    limbs: legs(r, 'toad', { stride: true, lift: r.range(0.5, 0.7), ankleX: r.range(-0.7, -0.3), farDX: r.range(0.9, 1.3), reach: r.range(0.5, 0.8), farReach: r.range(-1.1, -0.7), hl: 0.95, fl: 1.5 }),
+    limbs: legs(r, 'toad', { stride: true, lift: r.range(1.15, 1.45), ankleX: r.range(-1.1, -0.7), farDX: r.range(1.6, 2.1), reach: r.range(0.8, 1.1), farReach: r.range(-1.7, -1.3), hl: r.range(1.25, 1.4), fl: r.range(2.0, 2.3), hw: 0.36, fw: 0.24 }),
     tail: none(), dorsal: warts(r, { n: r.int(4, 6), size: r.range(0.11, 0.15) }), crown: popEyes(r), surface: look(r, 0.35, 0.5),
   }) },
   { name: 'midwife toad', w: 1.2, genes: r => ({
     chassis: sit(r, { seat: r.range(0.38, 0.5), r: r.range(9.5, 11), len: r.range(15, 19), pitch: r.range(0.26, 0.4), rump: 0.7, belly: 1.04, chest: 0.9, neck: 0.78, hump: 0, headS: 0.86 }),
     head: frogHead(r, { snout: r.range(0.9, 1.05), point: 0.05, deep: 0.68, eye: r.range(0.3, 0.36) }),
-    limbs: legs(r, 'toad'), tail: none(), dorsal: { type: 'amphibianEggs', n: r.int(4, 6), rows: r.int(2, 3), size: r.range(0.38, 0.45) }, crown: popEyes(r), surface: look(r, 0.3, 0),
+    limbs: legs(r, 'toad'), tail: none(), dorsal: { type: 'amphibianEggs', n: r.int(4, 6), rows: r.int(2, 3), size: r.range(0.55, 0.65) }, crown: popEyes(r), surface: look(r, 0.3, 0),
   }) },
   // ---- other postures ----
   { name: 'leaping frog', w: 2, genes: r => ({
@@ -773,9 +791,9 @@ const species = [
     tail: none(), dorsal: none(), crown: popEyes(r), surface: look(r, 0.1, 0),
   }) },
   { name: 'Surinam toad', w: 1.5, genes: r => ({ // flat as a dead leaf
-    chassis: { type: 'amphibianPipa', r: r.range(8.5, 10), len: r.range(15, 19), square: r.range(0, 1), headL: r.range(0.75, 1), headW: r.range(0.7, 0.85),
-      arm: r.range(1.15, 1.4), armOut: r.range(1.25, 1.5), armFwd: r.range(0.3, 0.6), finger: r.range(0.5, 0.65),
-      thigh: r.range(0.5, 0.62), hipA: r.range(1.7, 2.0), shinA: r.range(2.5, 2.8), footA: r.range(2.1, 2.45), toe: r.range(1.35, 1.6), footSpread: r.range(1.4, 1.65) },
+    chassis: { type: 'amphibianPipa', r: r.range(9.5, 11), len: r.range(19, 23), square: r.range(0.5, 1), headL: r.range(0.7, 0.85), headW: r.range(0.5, 0.62),
+      arm: r.range(1.2, 1.45), armOut: r.range(0.8, 1.05), armFwd: r.range(0.05, 0.3), finger: r.range(0.5, 0.62),
+      thigh: r.range(0.42, 0.52), hipA: r.range(1.8, 2.1), shinA: r.range(2.4, 2.7), footA: r.range(2.3, 2.6), toe: r.range(1.8, 2.1), footSpread: r.range(1.6, 1.85) },
     head: { type: 'amphibianNone' }, limbs: legs(r, 'claw', { ownNone: true }), tail: none(), dorsal: none(), crown: none(), surface: { eyes: 'none' },
   }) },
   // ---- tadpoles ----
@@ -796,9 +814,9 @@ const species = [
     dorsal: none(), crown: none(), surface: { eyes: 'none' },
   }) },
   { name: 'four-legged tadpole', w: 1.3, genes: r => ({
-    chassis: topBody(r, { r: r.range(8, 9.5), len: r.range(16, 20), headS: 0.98 }), head: frogHead(r, { snout: r.range(0.95, 1.1), point: 0.1 }),
-    limbs: legs(r, 'frog', { pose: 'sit', hl: r.range(0.7, 0.85), hw: 0.46, fl: 0.9, fw: 0.24, toeLen: 0.4, toes: 3, loose: 0.08 }),
-    tail: { len: r.range(5, 7), w0: 1.0, mid: 0.5, w1: 0.08, curl: r.range(0, 1.2), wave: r.range(1.2, 2.6), freq: r.range(0.9, 1.3), tip: 'point' },
+    chassis: topBody(r, { r: r.range(9.5, 11), len: r.range(11, 14), headS: 0.8, prof: [[0, 0.62], [0.3, 0.98], [0.65, 1.08], [1, 0.92]] }), head: frogHead(r, { snout: r.range(0.8, 0.95), point: 0, wide: 1.1 }),
+    limbs: legs(r, 'frog', { pose: 'sit', hl: r.range(0.58, 0.68), hw: 0.4, fl: 0.55, fw: 0.22, toeLen: 0.3, toes: 3, loose: 0.08 }),
+    tail: { len: r.range(7, 9), w0: r.range(1.25, 1.45), mid: 0.75, w1: 0.08, curl: r.range(0, 1.2), wave: r.range(1.2, 2.6), freq: r.range(0.9, 1.3), tip: 'point' },
     dorsal: none(), crown: popEyes(r), surface: look(r, 0.1, 0),
   }) },
   { name: 'froglet', w: 1.5, genes: r => ({ // just out of the pond: frog in front, tail stub behind
@@ -822,7 +840,7 @@ const species = [
     head: frogHead(r, { snout: r.range(1.3, 1.5), point: 0.3, deep: 0.6, eye: r.range(0.2, 0.25), eyeUp: 0.1 }),
     limbs: legs(r, 'newt', { stride: true, ankleX: r.range(-0.6, 0.2), farDX: r.range(0.6, 1), reach: r.range(0.3, 0.7), farReach: r.range(-0.9, -0.5) }),
     tail: { len: r.range(9, 12), w0: 0.85, mid: r.range(1.1, 1.3), w1: 0.06, curl: r.range(0.2, 0.8), wave: r.range(0.5, 1.5), freq: 1, up: r.chance(0.3), tip: 'point' },
-    dorsal: { type: 'crest', h: r.range(1.5, 2), wave: r.range(0.45, 0.7), freq: r.range(4, 6) }, crown: none(), surface: look(r, 0.2, 0.5),
+    dorsal: { type: 'amphibianCrest', h: r.range(1.5, 1.9), n: r.int(5, 7) }, crown: none(), surface: look(r, 0.2, 0.5),
   }) },
 ];
 

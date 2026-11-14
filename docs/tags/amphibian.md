@@ -25,6 +25,18 @@ eyes, toe pads, inflated throat, tadpole tail. Default eyes: a small dot only wh
 helps; most should read without.
 
 ## State
+2026-11-14 critic fix round (judged at --cell 60), still **25 species**. Four-legged tadpole:
+round fat body-blob (short topBody, wide profile), small head, stub legs, much fatter tail fin.
+Surinam toad: bigger squarer body, smaller narrower pointed head, thicker arms reaching
+straight forward, huge 5-toe webbed hind fans; Surinam-bodied mixes with every tag checked
+(rows `amphibian+<tag>@Surinam toad` in the mixes sheet): foreign heads/tails sit sanely,
+never legless. Hairy frog: 13-17 thicker, longer filaments from flank to thigh. Midwife
+toad: eggs ~1.4x larger (reads as a grape cluster behind the rump). Walking toad: legs
+much longer, body high, wide near/far stride. Crested newt: own dorsal `amphibianCrest`
+with 5-7 broad flat-topped teeth (shared `crest` teeth were hairlines). Weakest now:
+crested newt (crest small at print size), midwife toad (egg cluster is a lump more than
+beads), hairy frog (fringe reads as a skirt), four-legged tadpole (legs barely visible).
+
 2026-11-14 M3 taste run: **25 species** (was 28). Cut horned frog, coiled caecilian, poison
 dart frog (user rejects). Surinam toad redrawn on its own chassis `amphibianPipa` (draws
 body, head and limbs whole; limb genes ignored on it, `amphLimbless` so foreign legs skip
