@@ -62,3 +62,11 @@ How it works / decisions:
 
 Ideas not done: three-quarter view; Darwin's frog nose; Titicaca skin folds; star tips on
 Surinam fingers; a lily flower on the pad.
+
+### M2 fix run (2026-11-13), 37 -> 30 species
+- Cut the round-lump cluster down to three with distinct cues: horned frog (tall brow points), narrowmouth toad (pointed snout), common toad (parotoid + warts). Cut bullfrog, rain frog, spadefoot.
+- Cut fire-bellied toad unken (read as a flipped animal).
+- Top views merged to swimming, climbing tree, flying, Surinam; cut frog from above, toad from above, African clawed. Top-view digits now thicker (tr 0.12 default) and 3 fingers per hand by default.
+- Tadpoles with legs: short stubby 3-toed hind legs, fatter tail fin. Four-legged tadpole still slightly lizard-like (weakest).
+- Hairy frog: fewer, longer flank tufts. Midwife toad: bigger eggs. Crested newt: chunkier body, taller wavy crest.
+- Not done: amphibian+salamander mix contribution (queued for M4 with mount/scaling work).
