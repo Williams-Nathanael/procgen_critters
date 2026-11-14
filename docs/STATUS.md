@@ -3,7 +3,7 @@
 Single source of truth for "where are we, what is next". The overseer updates it at the end
 of every milestone. Per-tag detail lives in the State section of `docs/tags/<tag>.md`.
 
-## Where things stand (2026-11-13)
+## Where things stand (2026-11-14)
 
 **Working end to end**: `./critters` opens the app in the browser. Open a PDF, draw a
 scribble / polyline / box / oval border, stack tags, choose side, band depth, spacing and
@@ -26,6 +26,25 @@ The interrupted Fable WIP is kept on `wip/<tag>-species` branches.
 
 **M3 result (2026-11-13)**: the user answered everything; dragons, mammals and fungus are
 loved, arthropod loses 21 familiar or too-simple insects, and the fixes are queued as M3b.
+
+**M3b batch 1 result (2026-11-14)**: arthropod, dragon and jansson done; each got one
+builder run, a `critic` look at `--cell 60`, one follow-up fix run, and an overseer look.
+Counts now: arthropod 52, dragon 25, jansson 30 (the counts in the paragraph above are
+pre-M3b for these three).
+- arthropod: 21 rejects cut; mantis shrimp redrawn top-view; 9 new non-insects (king crab,
+  coconut crab, spiny lobster, squat lobster, whip spider, camel spider, trident trilobite,
+  arthropleura, marrella). Watch: mantis shrimp head end is a dark lump at print size; old
+  trilobite reads as a blob; woodlouse and pill bug plain.
+- dragon: amphisbaena (two heads facing), basilisk (crowned coil or cock-legged, 50/50),
+  cockatrice (hen-chested, serrated comb), ouroboros, fire salamander (flame-crested newt,
+  new `dragonNewt` chassis and `dragonFlames` part in the tag file). These are reworks the
+  user asked to see; not yet shown to the user. Watch: amphisbaena heads crowd; fire
+  salamander still small; jaculus and sleeping drake weak (untouched).
+- jansson: asterisk mite, pilcrow strider, stilt-legs cut; at-snail is now "spiral snail";
+  eyes small and embedded tag-wide. Display names changed at the user's request: label
+  "Little folk", short "Folk" (tag id stays `jansson`). Watch: ampersand knot's eye barely
+  shows (candidate cut); shy lump, huddle, stack, stone peeper, pot dweller read as one
+  template; comma crawler and loop runner legs hairline.
 
 **M2 result**: the final critic pass ranks nothing "would bother the user" in dragon,
 salamander, jansson and plant. Seven items remain in the other four (capped at two fix
@@ -61,7 +80,7 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
 3b. **M3b Taste fixes** (one `species-builder` per tag, at most 3 at once, judge at
    `--cell 60`; every brief: read the M3 decisions in BRIEF.md, commit only
    `out/roads/03-<tag>-*` plus the tag's two files, no `git reset`). Suggested batches:
-   - Batch 1: **arthropod** (cut the 21 rejects; fix mantis shrimp; add about 8 chunky,
+   - Batch 1 **DONE 2026-11-14** (see "M3b batch 1 result" above): **arthropod** (cut the 21 rejects; fix mantis shrimp; add about 8 chunky,
      armoured or feathery-limbed non-insects to replace them), **dragon** (rework
      amphisbaena, basilisk, cockatrice, ouroboros in 2-3 variants, fire salamander as a
      flame-based newt-like form), **jansson** (cut asterisk mite, pilcrow strider,
@@ -111,6 +130,13 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    on the 7.5 GB laptop, clear errors. [tested on 3 real-world PDFs]
 
 ## Known issues
+
+- Arthropod `jleg` in the `plated` form draws legs on one side only when the body is placed
+  sideways (woodlouse; arthropleura works around it with `stub` legs). Suspected opposite
+  winding on one side, not confirmed. Arthropod tag fix.
+- M3b batch 1: a worker again committed with `-- out/roads/`, swept up a sibling's sheets,
+  then ran `git commit --amend` on top of the sibling's commit (rewrote its hash, nothing
+  lost). Briefs must forbid `--amend` and `rebase` as well as `git reset`.
 
 - `npm run test:ui` needs the test server on port 4188 (`npm run serve:test`).
 - Worktree isolation branches from the stale `origin/main`; workers run in the main checkout.
