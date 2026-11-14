@@ -47,7 +47,7 @@ export function makeCritter(tags, seed, opts = {}) {
     if (!lent[t]) { const sp = pickSpecies(t); lent[t] = sp.genes(rng.fork()); names[t] = sp.name; }
     let gene = lent[t][s];
     // a lent feature that came up empty is a wasted mix: look through other species of that tag
-    for (let k = 0; k < 10 && isNone(gene) && ['tail', 'dorsal', 'crown'].includes(s); k++) gene = pickSpecies(t).genes(rng.fork())[s];
+    for (let k = 0; k < 10 && isNone(gene) && ['head', 'limbs', 'tail', 'dorsal', 'crown'].includes(s); k++) gene = pickSpecies(t).genes(rng.fork())[s];
     g[s] = gene;
   }
   if (donors.head !== (donors.primary ?? donors.chassis) && lent[donors.head]) g.surface = lent[donors.head].surface;
