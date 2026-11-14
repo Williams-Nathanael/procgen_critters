@@ -32,6 +32,24 @@ outline are welcome).
 
 ## State
 
+**2026-11-13 M3 taste run**: 64 -> 52 species. Cut the 21 BRIEF rejects (ant, bumblebee,
+butterfly, coiled millipede, copepod, crane fly, dragonfly, dung beetle, flea, fly, giant water
+bug, grasshopper, hairy caterpillar, inchworm, ladybird, longhorn beetle, mayfly, millipede,
+moth, wasp, water flea). Forms flyer/copepod/daphnia/worm-millipede code kept (unused paths are
+harmless; hornworm still uses worm).
+- Mantis shrimp redone as a top-view bespoke form `stomatopod`: stalked eyes, antennal scales,
+  big folded raptorial claws (smasher club or spiked spearer), abdomen widening to a spined
+  telson and uropods. No longer a tube.
+- New (9): king crab (crab shape 'king': spiked carapace, spiked thick legs), coconut crab
+  (shape 'oblong' + tucked abdomen lobe `abd`), spiny lobster (`spiny` carapace spikes, thick
+  antennae), squat lobster (long slim arms), whip spider (spider `palps`: spiny raptorial
+  palps, whip first legs), camel spider (spider `chel` jaws, lobed abdomen `abdSeg`), trident
+  trilobite (trilobite `trident`), arthropleura (long plated), marrella (bespoke form).
+- Weakest new: marrella (crossbow-like at print size), arthropleura (a legged loaf; plated legs
+  still comb one edge), spiny lobster (busy), camel spider (jaws small at cell 60).
+- Older weak still: pill bug, treehopper, anomalocaris/opabinia small, hornworm.
+
+
 **2026-11-13 M2 fix run 2** (critic `out/tmp/critic2-arthropod.md`, judged at --cell 60): still 64 species.
 - Mantis shrimp: 5 segments, front raised (tilt -0.3), little curl, wide spined tail fan,
   long eye stalks, raptorial claw redrawn as a folded knob held forward. No longer a tube.
