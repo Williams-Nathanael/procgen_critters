@@ -181,6 +181,22 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    Arc tolerance 0.08: 9.2 -> 8.6 ms per pure critter (~6%; soften is not where most time
    goes any more, look at union/Simplify for M5). Pure species output is unchanged by items
    1-5; item 6 changes edges by < 0.1 unit.
+   **M4 phase 2** (done 2026-11-14, mix quality). Tags may carry `mix: { <partner>: { lead,
+   sig, want, headS } }` (read in `chooseDonors`/`makeCritter`; pure output bit-identical):
+   `lead` weights who supplies the body, `sig`/`want` replace the lending table on that
+   partner's body, `headS` enlarges a lent head. Used for: fungus/plant lend a larger cap or
+   flower head to salamanders (rarely lead there) and mostly a head to amphibians; amphibian
+   leads amphibian+arthropod 4:1, no frog legs on bugs or bug legs on frogs; fungus lends cap
+   + back growths to bugs, bugs/frogs lend mostly face/feelers to mushrooms; plant lends head
+   and crown, not back leaves, to bugs; dragon lends head/tail/horns, rarely wings, to
+   mushrooms. Salamander legs on another tag's side-view body keep the near arm only
+   (`sprawl` gene flag, `limb()`). Funnel caps mount crowns on the dish surface; lent tails on
+   rooted bodies snap onto the body (`onBody` in critter.js; covers baobab, radish, carrot,
+   cacti, vines). Sheet: `out/roads/04-pairs.png`. Still weak at cell 60: fungus+dragon and
+   fungus+plant (two rooted/winged outlines compete, often collage-like); arthropod+plant
+   (thin plant bodies with bug parts); salamander+fungus caps on top-view bodies read small
+   and sometimes messy (feathery caps); some amphibian+arthropod+plant triples are messy.
+
 5. **M5 Placement polish** (engineer). No identical species adjacent; spacing by actual
    critter width; corners of boxes and tight curves handled; "both sides" staggered;
    placement fast enough to drag sliders smoothly (now ~1 s for ~60 critters: cache

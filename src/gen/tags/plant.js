@@ -1517,6 +1517,8 @@ export default {
   mix: {
     salamander: { lead: 0.15, sig: { head: 3 }, headS: 1.6 },
     amphibian: { sig: { head: 3, crown: 0.8 }, want: [[3, 1], [1, 2]], headS: 1.25 },
+    // leaves strewn along a bug's back read as a collage; a flower head or sprouting crown reads
+    arthropod: { sig: { head: 3, crown: 2.5, tail: 1, dorsal: 0.6 } },
   },
   species,
 };
