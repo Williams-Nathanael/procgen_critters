@@ -131,4 +131,41 @@ export default async function (ff) {
   await ff.shot('out/tmp/ui-help.png');
   assert(await key('Escape') === true, 'Esc did not close help');
   await ff.shot('out/tmp/ui-m6a.png');
+
+  assert(await ff.eval(`document.querySelector('.samples').style.getPropertyValue('--c') === '#ff0000'`), 'sample strip does not follow the ink colour');
+
+  // --- M6b: border point handles
+  const rectOf = sel => ff.eval(`(() => { const r = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`);
+  await ff.eval(`(() => { const s = window.__critters; s.selected = 300; s.redraw(); })()`);
+  await ff.eval(`document.querySelector('[data-tool=select]').click(), 1`);
+  assert(await ff.eval(`document.querySelectorAll('#overlay .handle').length === 2`), 'line border should show 2 handles');
+  const geo = () => ff.eval(`JSON.stringify(window.__critters.borders.find(b => b.id === 300).pts)`);
+  const g0 = await geo(), crit0 = await ff.eval(`JSON.stringify([...document.querySelectorAll('#overlay .critter')].filter(c => c.dataset.b === '300').map(c => c.getAttribute('d')))`);
+  const h1 = await rectOf('#overlay .handle[data-h="1"]');
+  await ff.dragPath([h1, [h1[0] + 20, h1[1] + 40], [h1[0] + 40, h1[1] + 80]]);
+  await ff.waitFor(`!window.__critters.stale`, 20000);
+  const g1 = await geo();
+  assert(g1 !== g0 && JSON.parse(g1)[0].join() === JSON.parse(g0)[0].join(), 'handle drag did not move only the dragged point: ' + g0 + ' -> ' + g1);
+  assert(await ff.eval(`JSON.stringify([...document.querySelectorAll('#overlay .critter')].filter(c => c.dataset.b === '300').map(c => c.getAttribute('d')))`) !== crit0, 'critters were not re-placed after a handle drag');
+  // double-click a segment adds a point
+  const mid = await ff.eval(`(() => { const s = window.__critters, b = s.borders.find(b => b.id === 300), r = document.querySelector('#overlay').getBoundingClientRect(), [a, c] = [b.pts[0], b.pts[1]]; return [r.left + (a[0] + c[0]) / 2 / s.pageW * r.width, r.top + (a[1] + c[1]) / 2 / s.pageH * r.height]; })()`);
+  await ff.eval(`document.querySelector('#overlay .hit[data-b="300"]').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, clientX: ${mid[0]}, clientY: ${mid[1]} })), 1`);
+  await ff.waitFor(`window.__critters.borders.find(b => b.id === 300).pts.length === 3`, 5000);
+  assert(await ff.eval(`document.querySelectorAll('#overlay .handle').length === 3`), 'new point has no handle');
+  // Delete on a focused handle removes it; the border stays; stops at 2
+  const del = () => ff.eval(`(() => { const h = document.querySelector('#overlay .handle[data-h="1"]'); h.focus(); h.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true })); return window.__critters.borders.length + '/' + window.__critters.borders.find(b => b.id === 300).pts.length; })()`);
+  assert(await del() === '4/2', 'Delete on a handle should remove one point and keep the border');
+  assert(await del() === '4/2', 'a line must keep 2 points');
+  // box: corner handle resizes
+  await ff.eval(`(() => { const s = window.__critters; s.borders.push({ id: 301, kind: 'rect', pts: [[300, 400], [420, 500]], closed: true, page: 1, scope: 'page', overrides: {}, showLine: false, settings: { ...structuredClone(s.defaults), tags: ['salamander'], seed: 5 } }); s.selected = 301; s.redraw(); })()`);
+  assert(await ff.eval(`document.querySelectorAll('#overlay .handle').length === 4`), 'box should show 4 corner handles');
+  const hc = await rectOf('#overlay .handle[data-h="3"]');
+  await ff.dragPath([hc, [hc[0] + 30, hc[1] + 30]]);
+  assert(await ff.eval(`JSON.stringify(window.__critters.borders.find(b => b.id === 301).pts)`) !== '[[300,400],[420,500]]', 'box corner drag did not resize');
+  // scribble: handles exist and a drag bends it
+  await ff.eval(`(() => { const s = window.__critters; s.selected = 100; s.redraw(); })()`);
+  const nh = await ff.eval(`document.querySelectorAll('#overlay .handle').length`);
+  assert(nh >= 2 && nh <= 24, 'scribble handle count ' + nh);
+  await ff.eval(`window.__critters.selected = 300, window.__critters.redraw(), 1`);
+  await ff.shot('out/tmp/ui-handles.png');
 }

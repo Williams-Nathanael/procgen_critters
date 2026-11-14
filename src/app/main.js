@@ -4,7 +4,7 @@ import { PDFDocument } from 'pdf-lib';
 import { TAGS, TAG_NAMES } from '../gen/tags/index.js';
 import { ringsToPath } from '../gen/core.js';
 import { makeCritter } from '../gen/critter.js';
-import { DEFAULTS, placeBorder, placeInteractive, bandOutline, borderPolyline } from '../place.js';
+import { DEFAULTS, placeBorder, placeInteractive, bandOutline, borderPolyline, simplify } from '../place.js';
 import { exportPdf, hexToRgb } from '../export.js';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL('./dist/pdf.worker.min.mjs', document.baseURI).href;
@@ -81,7 +81,7 @@ function pushHistory() {
   if (state.history.length > 100) state.history.shift();
 }
 function undo() {
-  const h = state.history.pop(); if (!h) return;
+  const h = state.history.pop(); if (!h) return; handleIdx = null;
   const s = JSON.parse(h); state.borders = s.borders; state.selected = s.selected;
   changed();
 }
@@ -133,6 +133,7 @@ function drawOverlay(draft = null) {
     nodes.push(m.el);
   }
   if (draft) nodes.push(svgGroup(`<path class="draft" d="${draft}"/>`));
+  nodes.push(drawHandles());
   svg.replaceChildren(...nodes);
   svg.classList.toggle('draw', state.tool !== 'select');
   svg.classList.toggle('pick', state.tool === 'select');
@@ -140,6 +141,56 @@ function drawOverlay(draft = null) {
   $('#hint').textContent = n ? '' : 'Draw a border on the page: scribble a line, or pick Box / Oval. Critters appear along it; tune them on the right.';
   state.stale = stale; state.lastDrawMs = performance.now() - t0;
   if (stale && !catchUp) catchUp = requestAnimationFrame(() => { catchUp = 0; drawOverlay(lastDraft); });
+}
+// ---- editable border points. Handles belong to the selected border (Select tool only) and live in
+// one persistent group, so a focused handle keeps focus while its position updates during a drag.
+const handleG = document.createElementNS(SVGNS, 'g'); handleG.setAttribute('class', 'handles');
+let handleIdx = null; // scribbles: indices into b.pts of the handle points
+function freeHandleIdx(b) {
+  if (handleIdx && handleIdx.id === b.id && handleIdx.n === b.pts.length) return handleIdx.idx;
+  let tol = 8, s; const pos = new Map(b.pts.map((p, i) => [p, i]));
+  do { s = simplify(b.pts, tol); tol *= 1.5; } while (s.length > 24);
+  let idx = s.map(p => pos.get(p));
+  if (b.closed && idx.length > 3 && Math.hypot(b.pts[idx[0]][0] - b.pts[idx.at(-1)][0], b.pts[idx.at(-1)][1] - b.pts[idx[0]][1]) < 20) idx.pop();
+  handleIdx = { id: b.id, n: b.pts.length, idx }; return idx;
+}
+function handlePoints(b) { // -> [[x, y], ...] in page units
+  if (b.kind === 'rect' || b.kind === 'ellipse') {
+    const [[x0, y0], [x1, y1]] = b.pts, a = Math.min(x0, x1), c = Math.max(x0, x1), t = Math.min(y0, y1), d = Math.max(y0, y1);
+    return [[a, t], [c, t], [a, d], [c, d]];
+  }
+  if (b.kind === 'free') return freeHandleIdx(b).map(i => b.pts[i]);
+  return b.pts;
+}
+function drawHandles() {
+  const b = state.tool === 'select' ? selected() : null;
+  if (!b || !appliesTo(b, state.page)) { handleG.replaceChildren(); return handleG; }
+  const pts = handlePoints(b), r = 5 / state.zoom;
+  while (handleG.children.length > pts.length) handleG.lastChild.remove();
+  pts.forEach((p, i) => {
+    let c = handleG.children[i];
+    if (!c) { c = document.createElementNS(SVGNS, 'circle'); c.setAttribute('class', 'handle'); c.setAttribute('tabindex', '0'); handleG.append(c); }
+    c.dataset.h = i; c.setAttribute('cx', p[0].toFixed(1)); c.setAttribute('cy', p[1].toFixed(1)); c.setAttribute('r', r.toFixed(2));
+  });
+  return handleG;
+}
+// Move handle k of border b to page point p. d holds what the drag started from.
+function dragHandle(b, d, p) {
+  if (b.kind === 'rect' || b.kind === 'ellipse') b.pts = [[Math.min(d.o[0], p[0]), Math.min(d.o[1], p[1])], [Math.max(d.o[0], p[0]), Math.max(d.o[1], p[1])]];
+  else if (b.kind === 'line') b.pts[d.k] = p;
+  else { // scribble: pull the stretch between the neighbouring handles along, tapering off
+    const idx = d.idx, n = d.orig.length, m = idx.length, ik = idx[d.k];
+    const dx = p[0] - d.orig[ik][0], dy = p[1] - d.orig[ik][1];
+    const fwd = d.k < m - 1 ? idx[d.k + 1] - ik : (b.closed ? idx[0] + n - ik : 0), back = d.k > 0 ? ik - idx[d.k - 1] : (b.closed ? ik + n - idx[m - 1] : 0);
+    b.pts = d.orig.map((q, i) => {
+      let w = 0;
+      const f = (i - ik + n) % n, g = (ik - i + n) % n;
+      if (i === ik) w = 1;
+      else if (b.closed || i > ik) { if (f > 0 && f < fwd && (b.closed || i > ik)) w = 1 - f / fwd; }
+      if (!w && (b.closed || i < ik)) { if (g > 0 && g < back) w = 1 - g / back; }
+      return w ? [q[0] + dx * w, q[1] + dy * w] : q;
+    });
+  }
 }
 // Coalesce rapid inputs (slider drags) into one redraw per animation frame.
 function drawSoon() {
@@ -164,7 +215,19 @@ function setupPointer() {
     if (e.button !== 0) return;
     const p = evPt(e);
     if (state.tool === 'select') {
-      const t = e.target;
+      let t = e.target;
+      if (t.classList.contains('handle')) {
+        // a critter under the pointer wins, so handles never block reroll / Alt-remove
+        const under = document.elementsFromPoint(e.clientX, e.clientY).find(x => x.classList?.contains('critter'));
+        if (!under) {
+          const b = selected(); if (!b) return;
+          const k = +t.dataset.h; pushHistory(); t.focus({ preventScroll: true });
+          const o = b.kind === 'rect' || b.kind === 'ellipse' ? (() => { const [[x0, y0], [x1, y1]] = b.pts, hp = handlePoints(b)[k]; return [hp[0] === Math.min(x0, x1) ? Math.max(x0, x1) : Math.min(x0, x1), hp[1] === Math.min(y0, y1) ? Math.max(y0, y1) : Math.min(y0, y1)]; })() : null;
+          drag = { mode: 'handle', k, o, moved: false, orig: b.pts.map(q => q.slice()), idx: b.kind === 'free' ? freeHandleIdx(b) : null };
+          svg.setPointerCapture(e.pointerId); e.preventDefault(); return;
+        }
+        t = under;
+      }
       if (t.classList.contains('critter')) {
         const b = state.borders.find(x => x.id === +t.dataset.b); if (!b) return;
         pushHistory();
@@ -192,6 +255,10 @@ function setupPointer() {
       polyDraft[polyDraft.length - 1] = q; drawOverlay(polyD(polyDraft, false)); return;
     }
     if (!drag) return;
+    if (drag.mode === 'handle') {
+      const b = selected(); if (!b) return;
+      dragHandle(b, drag, p); drag.moved = true; drawOverlay(); return;
+    }
     if (drag.mode === 'move') {
       const b = selected(); if (!b) return;
       const dx = p[0] - drag.last[0], dy = p[1] - drag.last[1];
@@ -211,11 +278,30 @@ function setupPointer() {
     polyDraft = null; drag = null;
     if (pts.length >= 2) addBorder('line', pts); else drawOverlay();
   };
-  svg.addEventListener('dblclick', finishPoly);
+  svg.addEventListener('dblclick', e => {
+    const b = selected();
+    if (state.tool === 'select' && b?.kind === 'line' && e.target.classList.contains('hit') && +e.target.dataset.b === b.id) { // add a point on the nearest segment
+      const p = evPt(e); let best = 0, bd = Infinity, bq = null;
+      for (let i = 0; i < b.pts.length - 1; i++) {
+        const [ax, ay] = b.pts[i], [cx, cy] = b.pts[i + 1], vx = cx - ax, vy = cy - ay, L = vx * vx + vy * vy || 1e-9;
+        const t = Math.max(0, Math.min(1, ((p[0] - ax) * vx + (p[1] - ay) * vy) / L)), q = [ax + t * vx, ay + t * vy], dd = Math.hypot(p[0] - q[0], p[1] - q[1]);
+        if (dd < bd) { bd = dd; best = i; bq = q; }
+      }
+      if (bq) { pushHistory(); b.pts.splice(best + 1, 0, bq); changed(); }
+      return;
+    }
+    finishPoly();
+  });
   window.addEventListener('keydown', e => {
     if (e.target.matches('input, select, textarea')) return;
     if (e.key === 'Escape' && !$('#help').hidden) { toggleHelp(false); return; }
     if (e.key === '?') { toggleHelp(); return; }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && e.target.classList?.contains('handle')) { // remove a polyline point (never below 2)
+      e.preventDefault();
+      const b = selected();
+      if (b?.kind === 'line' && b.pts.length > 2) { pushHistory(); b.pts.splice(+e.target.dataset.h, 1); changed(); }
+      return;
+    }
     if (!$('#help').hidden) return;
     if (e.key === 'Enter') finishPoly();
     if (e.key === 'Escape') { polyDraft = null; drag = null; drawOverlay(); }
@@ -227,7 +313,7 @@ function setupPointer() {
   svg.addEventListener('pointerup', e => {
     if (!drag || drag.mode === 'poly') return;
     const d = drag; drag = null;
-    if (d.mode === 'move') { if (!d.moved) state.history.pop(); changed(); return; }
+    if (d.mode === 'handle' || d.mode === 'move') { if (!d.moved) state.history.pop(); changed(); return; }
     if (d.mode === 'free') {
       if (d.pts.length < 4) { drawOverlay(); return; }
       const a = d.pts[0], z = d.pts[d.pts.length - 1];
@@ -283,7 +369,8 @@ function seg(options, get, set) {
 // A few sample critters for the current tag selection, so you can see what a mix gives
 // before drawing anything. Click to shuffle.
 function sampleStrip(st) {
-  const box = el('div', { class: 'samples', title: 'Samples of what these tags produce. Click for more.' });
+  const box = el('div', { class: 'samples', title: 'Samples of what these tags produce, in the ink colour. Click for more.' });
+  box.style.setProperty('--c', st.ink || DEFAULT_INK);
   const fill = () => {
     let h = '';
     for (let i = 0; i < 8; i++) {
@@ -345,7 +432,7 @@ function presetBar(st, b) {
 const HELP = [
   ['Tools', [['F', 'Scribble'], ['L', 'Line (click points; double-click or Enter to finish)'], ['R', 'Box'], ['O', 'Oval'], ['V', 'Select']]],
   ['Drawing', [['Shift + drag / click', 'Snap line to 45 degrees; square box; circle'], ['Enter', 'Finish a line'], ['Esc', 'Cancel the line being drawn']]],
-  ['Select tool', [['Click a border', 'Select it; drag to move it'], ['Click a critter', 'Reroll just that critter'], ['Alt + click / Shift + click a critter', 'Remove that critter'], ['Delete / Backspace', 'Delete the selected border']]],
+  ['Select tool', [['Click a border', 'Select it; drag to move it'], ['Click a critter', 'Reroll just that critter'], ['Alt + click / Shift + click a critter', 'Remove that critter'], ['Delete / Backspace', 'Delete the selected border'], ['Drag a round handle', 'Move a border point (a box or oval corner; a scribble bends smoothly)'], ['Double-click a line segment', 'Add a point to a straight / polyline border'], ['Delete on a focused handle', 'Remove that polyline point (a line keeps at least 2)']]],
   ['General', [['Ctrl + Z', 'Undo'], ['?', 'Show or hide this help'], ['Esc', 'Close this help'], ['Drop a PDF on the page', 'Open it']]],
 ];
 function toggleHelp(show = $('#help').hidden) {
@@ -375,7 +462,7 @@ function drawPanel() {
   kids.push(el('div', { class: 'line' }, el('label', { for: 'ink' }, 'Ink colour'),
     el('input', { type: 'color', id: 'ink', value: st.ink || DEFAULT_INK, title: 'Colour of the critters, on screen and in the exported PDF. New borders use the last colour you picked.',
       onpointerdown: () => { if (b) pushHistory(); },
-      oninput: e => { st.ink = e.target.value; state.defaults.ink = st.ink; drawSoon(); },
+      oninput: e => { st.ink = e.target.value; state.defaults.ink = st.ink; $('.samples')?.style.setProperty('--c', st.ink); drawSoon(); },
       onchange: () => changed() })));
   kids.push(presetBar(st, b));
 
