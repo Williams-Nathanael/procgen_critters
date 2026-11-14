@@ -5,6 +5,10 @@ of every milestone. Per-tag detail lives in the State section of `docs/tags/<tag
 
 ## Where things stand (2026-11-14)
 
+**Queue is empty after M7.** Next is the user's call: try the app on real pages, decide on
+encrypted-PDF export, and the open taste items (oyster mushroom, jelly ear; M3b reworks not
+yet shown).
+
 **Working end to end**: `./critters` opens the app in the browser. Open a PDF, draw a
 scribble / polyline / box / oval border, stack tags, choose side, band depth, spacing and
 size (more under "More options"), reroll or remove single critters, repeat a border across
@@ -164,6 +168,30 @@ and live sliders on Sonnet, generator speed on Opus) plus an overseer look at th
   Firefox profile or an extension); per-border tag weights not built (the user has not asked
   for them); none of the M6 UI has been tried by the user yet.
 
+**M7 result (2026-11-14)**: robustness done in one engineer (Sonnet) run (38b8528, 1749662,
+610a4a9), checked by the overseer on a clean copy of HEAD (build, `test:export`,
+`test:pdfs`, all-tags sheet); the worker reports `test:ui` passing.
+- Corpus (`out/tmp/pdfs/`, git-ignored; `tools/fetch-test-pdfs.sh` downloads the three public
+  ones): an 804-page manual, the IRS 1040 (199 form fields, all survive export), a 158-page
+  scanned book, plus generated mixed sizes/rotations/crop boxes, tiny page, user-password,
+  owner-password-only, truncated, non-PDF and empty files. `npm run test:pdfs` runs each
+  through load, place, export and re-open.
+- Encrypted PDFs: the app asks for the password, lets you place critters, and disables
+  Export with a notice. Before, export raised a raw pdf-lib error. **Open, for the user**:
+  real export of encrypted PDFs needs decryption (pdf-lib has none): a qpdf-wasm dependency,
+  or a hand-written RC4/AES handler (~150 lines). Owner-password-only PDFs (open without a
+  password, common from publishers) are affected too.
+- Errors and progress: no `alert`; in-app banner (error / warning / info) with plain-language
+  messages; progress bar on long exports.
+- Memory (headless Firefox, 804 pages, ~1.2 GB idle): export peak 2.8 -> 1.85 GB, time
+  149 -> 91 s (pages streamed, one compressed content stream per page, original content
+  wrapped in q/Q); opening and browsing adds ~0.3 GB; page canvases capped at 12 megapixels.
+  `tools/mem-pdf.mjs` measures it.
+- Watch: "Export this page" on a huge PDF still loads the whole file; `test:pdfs` prints
+  pdf-lib "Trying to parse invalid object" noise on one corpus file (the export still
+  passes); `tools/ff.mjs` timeout is now the `FF_TIMEOUT` env var; none of this tried by the
+  user on their own PDFs yet.
+
 **M2 result**: the final critic pass ranks nothing "would bother the user" in dragon,
 salamander, jansson and plant. Seven items remain in the other four (capped at two fix
 rounds per tag to bound cost; they go to the user at M3 as cut-or-fix choices):
@@ -292,7 +320,8 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    reference). (engineer). Presets; ink colour; editable border points; page
    thumbnails; export current page only; keyboard help; whatever the user asked for at M3.
    [smoke test extended and passing]
-7. **M7 Robustness** (engineer). Large and odd PDFs (many pages, encrypted, forms), memory
+7. **M7 Robustness. DONE 2026-11-14** (see "M7 result" above; text kept for
+   reference). (engineer). Large and odd PDFs (many pages, encrypted, forms), memory
    on the 7.5 GB laptop, clear errors. [tested on 3 real-world PDFs]
 
 ## Known issues
