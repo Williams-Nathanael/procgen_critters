@@ -404,7 +404,6 @@ chassis.mammalHill = (C, g) => {
 // HEAD
 // =====================================================================
 heads.mammalHead = (C, sock, g) => {
-  C.mHead = true;
   const { ink, rng } = C, s = sock.s, sym = sock.sym, sk = g.skull ?? 1;
   const c = polar(sock.p, sock.dir, s * sk * 0.45), F = frame(c, sock.face, s, 1);
   const dr = sym ? 0 : (g.droop ?? 0.1), L = g.snoutLen, tr = g.tipR;
@@ -441,13 +440,13 @@ heads.mammalHead = (C, sock, g) => {
 // =====================================================================
 crowns.mammalEar = (C, m, F0, s, g) => {
   // a cap or other single top mount gets no paired copy: splay a pair of ears from it
-  if (!C.mHead && C.plan.rooted && !m.far && !m.split) {
+  if (C.head?.tag !== 'mammal' && C.plan.rooted && !m.far && !m.split) {
     for (const sd of [-1, 1]) crowns.mammalEar(C, { ...m, split: true, p: polar(m.p, m.dir + PI / 2, sd * s * 0.75), dir: m.dir + sd * 0.5, flip: sd }, F0, s * 0.9, g);
     return;
   }
   const { ink, rng } = C, a = m.dir + m.flip * ((g.lean ?? 0) + (m.far ? (g.farLean ?? 0) : 0)), F = frame(m.p, a, s, m.flip);
   // lent to a foreign head: small ears vanish, so give them a readable minimum size
-  const lent = !C.mHead, len = lent ? Math.max(g.len * 1.2, 1.15) : g.len, wid = lent ? Math.max(g.wid, 0.95) : g.wid;
+  const lent = C.head?.tag !== 'mammal', len = lent ? Math.max(g.len * 1.2, 1.15) : g.len, wid = lent ? Math.max(g.wid, 0.95) : g.wid;
   switch (g.shape) {
     case 'round': ink.oval(F(len * 0.42, 0), len * 0.56 * s, wid * 0.5 * s, a); ink.poly(tube(polyline([F(-0.15, 0), F(len * 0.3, 0)], 2), wid * 0.3 * s)); break;
     case 'long': ink.poly(tube(spline([F(-0.2, 0), F(len * 0.5, (g.bend ?? 0) * len * 0.3), F(len, (g.bend ?? 0) * len)], 6), profile([[0, wid * 0.3 * s], [0.45, wid * 0.5 * s], [0.85, wid * 0.36 * s], [1, wid * 0.14 * s]]))); break;

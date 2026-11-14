@@ -98,6 +98,11 @@ chassis that draws most of itself and still returns sensible sockets; pair it wi
 `{ eyes: [], mounts: [{ p, dir, flip: 1, s }], spots: [] }`).
 
 **A head must return** `{ eyes: [{p, r}], mounts: [{p, dir, flip, s}], spots: [] }`.
+`makeCritter` stamps the origin afterwards: `plan.tag` is the tag that drew the chassis,
+`hd.tag` the tag that drew the head, and `C.head` holds the head result while crowns and
+surface are drawn. Lent parts compare these with their own tag id to adapt to a foreign host
+(e.g. mammal ears on a non-mammal head get a minimum size).
+
 `mounts` is where crown ornaments attach: one mount in side view, a mirrored pair when
 `sock.sym` (top view).
 

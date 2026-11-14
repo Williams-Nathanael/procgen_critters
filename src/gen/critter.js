@@ -55,11 +55,15 @@ export function makeCritter(tags, seed, opts = {}) {
   const ink = new Ink();
   const C = { ink, rng, plump: (opts.plump ?? 1) * rng.range(0.92, 1.1), lift: g.limbs?.lift ?? 0.5, plan: null };
   const plan = chassis[g.chassis.type](C, g.chassis);
+  // origin: which tag drew the chassis / head, so lent parts can adapt to their host
+  plan.tag = donors.chassis;
   C.plan = plan;
   tail(C, plan.tail, g.tail, donors.tail !== (donors.primary ?? donors.chassis));
   if (g.limbs && g.limbs.type !== 'none') for (const sock of plan.limbs) limb(C, sock, g.limbs);
   dorsal(C, plan, g.dorsal);
   const hd = heads[g.head.type](C, plan.head, g.head);
+  hd.tag = donors.head;
+  C.head = hd;
   crown(C, hd, g.crown);
   surface(C, plan, hd, g.surface, detail);
   // creatures with a borrowed, non-animal head still want an eye to read as creatures
