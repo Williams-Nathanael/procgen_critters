@@ -1,5 +1,5 @@
 // Write placed critters into a PDF as vector paths. Pure (no DOM): works in browser and node.
-import { PDFDocument, PDFOperator, PDFOperatorNames as Op, PDFNumber } from 'pdf-lib';
+import { PDFDocument, EncryptedPDFError, PDFOperator, PDFOperatorNames as Op, PDFNumber } from 'pdf-lib';
 
 const num = v => PDFNumber.of(Math.round(v * 100) / 100);
 const op = (name, ...args) => PDFOperator.of(name, args.map(num));
@@ -8,7 +8,11 @@ const op = (name, ...args) => PDFOperator.of(name, args.map(num));
 // `toPdf` maps our page coords (points, origin top-left of the *displayed* page, y down)
 // into that page's PDF user space, accounting for crop box and rotation.
 export async function exportPdf(srcBytes, pages, { ink = [0, 0, 0], onlyIndex = null } = {}) {
-  const doc = await PDFDocument.load(srcBytes, { ignoreEncryption: true });
+  // Encrypted files cannot be edited: pdf-lib has no decryption, and writing plain content into
+  // encrypted streams would give a file nothing can open. Fail clearly instead (see pdfio.js).
+  let doc;
+  try { doc = await PDFDocument.load(srcBytes, { updateMetadata: false }); }
+  catch (e) { throw e instanceof EncryptedPDFError ? Object.assign(e, { code: 'ENCRYPTED' }) : e; }
   const docPages = doc.getPages();
   for (const pg of pages) {
     const page = docPages[pg.index];
