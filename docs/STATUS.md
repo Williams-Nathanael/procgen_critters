@@ -351,9 +351,12 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
      [critic at `--cell 60` per tag; overseer looks at one sheet per batch]
    - Phase 3: taste check with the user (one page, hybrid sheets per tag).
 9. **M9 Mix verdicts from the 1.0 taste check** (engineer, model opus, `mix` tables in tag
-   files; no tag workers running). Never: salamander+fungus (overseer's reading: when both
-   tags are stacked, each critter is one or the other, never a blend; confirm with the user
-   at M8 phase 3). Less of this: amphibian+arthropod, arthropod+plant, fungus+dragon,
+   files; no tag workers running). Never: salamander+fungus. The user (2026-11-14): "either redesign it to be coherently
+   salamander blended with fungus rather than 'salamander with a mushroom for a head,' or
+   just give it up as a lost cause and I'll use it rarely." So: one redesign attempt (fungal
+   traits worked into the salamander body: gill frills, cap-like skin folds, spore spots,
+   mycelium toes, not a cap head); if the critic says it fails, leave the pair alone and
+   say so. Less of this: amphibian+arthropod, arthropod+plant, fungus+dragon,
    fungus+mammal, salamander+jansson, plant+jansson (overseer's reading: blend less often
    and improve what remains; the within-tag hybrids of M8 change these pairs, so re-render
    `--pairs` first). [critic on the 28-pair sheet; user check]

@@ -181,3 +181,6 @@ time. A visible base species is acceptable; a plain catalogue entry is not.
 - Fine, with comments: salamander+arthropod "Cooler than I expected", amphibian+fungus
   "Nice", dragon+plant "Rather good", dragon+jansson "Not as good as I hoped, but still
   okay."
+- Follow-up on salamander+fungus (same day): "either redesign it to be coherently
+  salamander blended with fungus rather than 'salamander with a mushroom for a head,' or
+  just give it up as a lost cause and I'll use it rarely." Not a ban on the pairing.
