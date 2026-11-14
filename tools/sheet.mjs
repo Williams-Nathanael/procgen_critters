@@ -21,20 +21,17 @@ if (!rows.length) rows.push(...TAG_NAMES);
 if (!out) die('usage: node tools/sheet.mjs out.png [rows...] [--pairs] [--n N] [--cell PX] [--seed S] [--detail D]');
 // validate every row before rendering
 for (const row of rows) {
-  const [tagPart, species, ...extra] = row.split('@');
-  const tags = tagPart.split('+');
-  if (extra.length) die(`bad row "${row}": at most one @species`);
+  const r = parseRow(row);
+  if (r.error) die(r.error);
+  const { tags, species, pinned } = r;
   for (const t of tags) if (!TAGS[t]) die(`unknown tag "${t}" in "${row}". Tags: ${TAG_NAMES.join(', ')}`);
-  if (tags.length > 1) {
-    for (const t of tags) if (!TAGS[t].sig) die(`tag "${t}" cannot be mixed (no sig) in "${row}". Mixable: ${mixable.join(', ')}`);
-    if (species != null) die(`"${row}": pinning a species inside a mix is not supported (sheet-lib/makeCritter pin only the primary tag's species)`);
-  } else if (species != null && species !== '*' && !TAGS[tags[0]].species.some(sp => sp.name === species)) {
-    die(`no species "${species}" in tag "${tags[0]}". Valid: ${TAGS[tags[0]].species.map(sp => sp.name).join(', ')}`);
-  }
+  if (tags.length > 1) for (const t of tags) if (!TAGS[t].sig) die(`tag "${t}" cannot be mixed (no sig) in "${row}". Mixable: ${mixable.join(', ')}`);
+  if (species != null && species !== '*' && !TAGS[tags[0]].species.some(sp => sp.name === species)) die(`no species "${species}" in tag "${tags[0]}". Valid: ${TAGS[tags[0]].species.map(sp => sp.name).join(', ')}`);
+  if (pinned && species === '*') die(`"${row}": "@*" cannot be combined with a mix`);
 }
 // "tag@*" expands to one row per species of that tag; "tag@species name" pins one species
 for (let i = rows.length - 1; i >= 0; i--) if (rows[i].endsWith('@*')) { const t = rows[i].slice(0, -2); rows.splice(i, 1, ...TAGS[t].species.map(sp => `${t}@${sp.name}`)); }
-import { sheetSvg } from './sheet-lib.mjs';
+import { sheetSvg, parseRow } from './sheet-lib.mjs';
 let svg = sheetSvg(rows, opt);
 const svgPath = out.replace(/\.png$/, '.svg');
 writeFileSync(svgPath, svg);
