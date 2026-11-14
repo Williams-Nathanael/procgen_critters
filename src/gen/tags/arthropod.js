@@ -1186,6 +1186,8 @@ export default {
     // and a mushroom body only gets one sturdy tail or plating
     fungus: { sig: { tail: 2, dorsal: 1.5 }, want: [[1, 1]] },
     // thin plant stems with bug parts read as a collage: bug bodies lead, plants get plating
+    // jointed legs and loose feelers on a salamander scatter; lend plating, a tail or a head
+    salamander: { sig: { dorsal: 2, tail: 2, head: 1.5 }, want: [[3, 1], [1, 2]] },
     plant: { lead: 2.5, sig: { dorsal: 2, crown: 1 }, want: [[1, 1]] },
   },
   species,
