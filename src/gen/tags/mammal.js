@@ -526,6 +526,9 @@ tips.mammalBrush = (C, e, ang, s, g, curl) => {
   const rad0 = profile(g.pk.map(([t, w]) => [t, w * pw]));
   // ringed tails (raccoon, red panda): narrow pinches between the rings
   const rad = g.bands ? (u => rad0(u) * (u < 0.15 ? 1 : 1 - 0.3 * Math.pow(Math.max(0, Math.cos(2 * PI * (u * g.bands + 0.5))), 6))) : rad0;
+  // ptarget is the heading reached at HALF the plume (absolute, side view only); precurve then
+  // turns the outer half, so ptarget up + a large precurve still ends pointing back. It works
+  // with any tailA on walk chassis (checked M4); it is ignored on top view and by wrap tails.
   const rise = side && g.ptarget != null ? angDiff(g.ptarget, ang) : 0, cs = side ? 1 : (rng.chance(0.5) ? 1 : -1);
   let h = ang, p = e; const pts = [p], hs = [h];
   for (let i = 1; i <= n; i++) {
