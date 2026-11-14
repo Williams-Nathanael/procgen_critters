@@ -568,10 +568,10 @@ const species = [
   }, [[3, 'walk'], [2, 'ess'], [1.5, 'curl'], [1.2, 'coil'], [1, 'look']]) },
 
   { name: 'slender salamander', w: 3, genes: r => make(r, {
-    r: r.range(3.6, 4.0), len: r.range(48, 58), belly: 1, neckW: 0.86, tail: r.range(1.1, 1.5), tF: 0.94, tH: 0.05, waveK: 1.25, limbS: 1.15,
+    r: r.range(5.4, 6), len: r.range(46, 54), belly: 1, neckW: 0.86, tail: r.range(1.1, 1.5), tF: 0.94, tH: 0.05, waveK: 1.25, limbS: 1.4,
     prof: [[0, 0.85], [0.3, 1], [0.7, 1], [1, 0.86]],
     head: headG(r, { len: r.range(1.5, 1.7), wid: r.range(1.0, 1.08), p: 2.1, eye: 0.2 }),
-    limbsG: legs(r, { len: r.range(1.6, 1.85), w: 0.46, toeLen: 0.55, toesH: 4, bend: 0.6 }), T: { keys: [[0, 1], [0.6, 0.7], [1, 0.12]], curlMax: 0.5 },
+    limbsG: legs(r, { len: r.range(1.9, 2.2), w: 0.55, toeLen: 0.55, toesH: 4, bend: 0.6 }), T: { keys: [[0, 1], [0.6, 0.7], [1, 0.12]], curlMax: 0.5 },
     poseFix: p => ({ curl: Math.max(-0.6, Math.min(0.6, p.curl)) }),
   }, [[2.5, 'coil'], [2.5, 'ess'], [1.5, 'eel'], [1.5, 'walk']]) },
 
@@ -614,7 +614,7 @@ const species = [
     r: r.range(4.4, 5), len: r.range(31, 36), belly: 1.05, neckW: 0.72, tail: r.range(1.1, 1.3), sideLimbS: 1.1,
     head: headG(r, { len: r.range(1.3, 1.42), wid: r.range(1.05, 1.12), p: 1.9, eye: 0.24 }),
     limbsG: legs(r, { len: r.range(2.1, 2.4), w: 0.4, toeLen: 0.55, toesH: 4 }), T: { keys: [[0, 1], [0.5, 0.55], [1, 0.07]] },
-  }, [[4, 'tailcurl'], [2, 'coil'], [1, 'walk']]) },
+  }, [[3, 'walkS'], [2, 'coil'], [2, 'walk']]) },
 
   // ------------------------------------------------ giants
   { name: 'giant salamander', w: 3, genes: r => make(r, {
@@ -671,7 +671,7 @@ const species = [
     limbsG: legs(r, { len: r.range(1.5, 1.8), w: 0.4, toeLen: 0.5, toesF: r.pick([3, 4, 4]), bend: 0.8 }),
     T: { fin: 0.5, topK: 0.7, keys: [[0, 1], [0.5, 0.75], [1, 0.07]], curlK: 0.5 },
     crown: gills(r, { style: 'bush', len: r.range(1.7, 2.1), fl: 0.34, w: 0.16, nf: 3, bend: 0.4, fan: [-0.45, 0.25, 0.9] }),
-  }, [[3, 'eel'], [2, 'eelcoil'], [1, 'ess']]) },
+  }, [[3, 'eel'], [1.5, 'ess']]) },
 
   { name: 'amphiuma', w: 1.5, genes: r => make(r, {
     r: r.range(5.4, 6.2), len: r.range(66, 76), neckW: 0.86, tail: r.range(0.22, 0.28), tF: 0.88, tH: 0.06, limbS: 1.1, waveK: 0.55,
@@ -730,7 +730,7 @@ const species = [
     limbsG: legs(r, { len: r.range(2.2, 2.5), w: 0.46, toeLen: 0.6 }),
     T: { fin: 0.3, finB: 0.2, topK: 0.7, keys: [[0, 1], [0.5, 0.6], [1, 0.08]] },
     dorsal: { type: 'salamanderWarts', n: r.int(9, 13), size: r.range(0.1, 0.14) },
-  }, [[0.35, 'unken'], [2, 'walkS'], [3, 'walk'], [1, 'curl']]) },
+  }, [[2, 'walkS'], [3, 'walk'], [1, 'curl']]) },
 
   { name: 'ribbed newt', w: 3, genes: r => make(r, {
     r: r.range(6.4, 7.2), len: r.range(42, 48), belly: 1.06, neckW: 0.84, tail: r.range(0.85, 1), sideR: 0.82,

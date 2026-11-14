@@ -73,3 +73,10 @@ weighted down), newt larva (busy at print size), web-footed (close to arboreal),
 - Smooth / palmate newt: top view now dominant (side poses ~15%); side legs longer/thicker (sideLegK 0.95, sideLimbS 1.25), feet bigger.
 - Rough-skinned newt unken weight 1.8 -> 0.35; ensatina 'tall' 3 -> 1.2.
 - Not done (minor): axolotl side spiky blot, siren top gill lump, top-view template sameness, hellbender/giant side view still somewhat sausage-like.
+
+### M2 fix run 2 (2026-11-13)
+- Spectacled salamander: tailcurl (scorpion C over back) pose dropped; now walkS/coil/walk.
+- Rough-skinned newt: unken (tail-over-back) pose dropped.
+- Slender salamander: body radius 3.6-4 -> 5.4-6, shorter, longer/thicker legs (limbS 1.4); reads as a salamander at 60px.
+- Siren: eelcoil (vertical hook) pose removed; eel/ess only.
+- Still minor: ensatina tall pose, hellbender/tiger side-view sausages.
