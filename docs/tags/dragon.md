@@ -72,3 +72,16 @@ done). Sheets: `out/roads/03-dragon-species.png`, `out/roads/03-dragon-mixes.png
 - Sea serpent: body r 6.4-7.4, shorter, 1-2 humps, fewer bigger fins. Long: thicker, bigger head, hairline whiskers removed, 6-8 bold mane lobes.
 - Fire salamander: shorter and plumper, head raised, big flame tail tuft, fewer bigger flame spines.
 - Still weak (minor, not addressed): jaculus (crumpled wings), sleeping drake/serra (heads unclear), ouroboros plain rings (small head).
+
+### M2 fix run 2 (2026-11-13, judged at --cell 60 only)
+- Still 25 species. Winged trio separated by overall outline: bestiary draco is now long and
+  low (near-level body, long straight trailing tail, small feather wing); wyvern stands bolt
+  upright on two legs with big raised bat wings and the tail curled under; heraldic passant is
+  a horizontal four-legger, always paw raised, wings folded along the back, tail curled high.
+- Fire salamander rebuilt as a plump, high-standing short beast, head up, flame tongue, 3-4
+  big flame crests and a big flame-tufted tail held up. Still the most blob-like; next cut
+  candidate if it bothers.
+- Ouroboros: thinner ring, head 1.5-1.75x with brow, horns or long ears, always a foreleg,
+  so the head breaks the ring outline at the top.
+- Weak: draco is thin at print size; fire salamander chunky; jaculus, sleeping drake, sea
+  serpent minors untouched.
