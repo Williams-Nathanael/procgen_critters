@@ -184,3 +184,6 @@ time. A visible base species is acceptable; a plain catalogue entry is not.
 - Follow-up on salamander+fungus (same day): "either redesign it to be coherently
   salamander blended with fungus rather than 'salamander with a mushroom for a head,' or
   just give it up as a lost cause and I'll use it rarely." Not a ban on the pairing.
+- Follow-up on the "less of this" pairs (same day): "the same - take a look for a redesign,
+  or leave as is - but not high priority, because I either don't care much about them or
+  think they're already okay. Not every combination needs to look amazing."

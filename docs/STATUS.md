@@ -357,9 +357,12 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    traits worked into the salamander body: gill frills, cap-like skin folds, spore spots,
    mycelium toes, not a cap head); if the critic says it fails, leave the pair alone and
    say so. Less of this: amphibian+arthropod, arthropod+plant, fungus+dragon,
-   fungus+mammal, salamander+jansson, plant+jansson (overseer's reading: blend less often
-   and improve what remains; the within-tag hybrids of M8 change these pairs, so re-render
-   `--pairs` first). [critic on the 28-pair sheet; user check]
+   fungus+mammal, salamander+jansson, plant+jansson. The user (2026-11-14): same as
+   salamander+fungus, "take a look for a redesign, or leave as is - but not high priority
+   ... Not every combination needs to look amazing." So: low priority, at most one cheap
+   attempt per pair where an obvious better blend exists, otherwise leave as is; do not
+   lower how often they blend. M8 changes these pairs, so re-render `--pairs` first. M9
+   does not block 1.0 if the user is content. [critic on the 28-pair sheet; user check]
 10. **1.0**: clean-copy check, push, tag. Only on the user's say-so.
 
 ## Known issues
