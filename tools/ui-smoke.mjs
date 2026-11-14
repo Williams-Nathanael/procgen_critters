@@ -22,6 +22,7 @@ export default async function (ff) {
   console.log('after box: borders', await ff.eval(`window.__critters.borders.length`), 'critters', await ff.eval(`document.querySelectorAll('#overlay .critter').length`));
   // toggle a second tag on, via the chips
   await ff.eval(`[...document.querySelectorAll('.chips button')].find(b => /Fungi/.test(b.textContent)).click(), 1`);
+  await ff.waitFor(`!window.__critters.stale`, 20000); // new tags regenerate over a few frames
   // reroll one critter with the select tool
   await ff.eval(`document.querySelector('[data-tool=select]').click(), 1`);
   const c = await ff.eval(`(() => { const r = document.querySelector('#overlay .critter').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })()`);
