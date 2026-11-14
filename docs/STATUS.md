@@ -110,6 +110,37 @@ Kept sheet: `out/roads/04-pairs.png`, tag `road-04-pairs`.
 - Not done: per-border tag weights (only if the user wants them; UI work, belongs in M6).
   `tools/review-page.mjs` also imports `sheet-lib.mjs` and was not re-run after the change.
 
+**M5 result (2026-11-14)**: placement polish done in three engineer runs (placement rules
+and live sliders on Sonnet, generator speed on Opus) plus an overseer look at the
+`test:export` sample page and three passing `test:ui` runs.
+- Placement (`src/place.js`, 25959ab): neighbours are never the same species (also across
+  the closing seam and across the line in "both sides"; up to 5 re-picks per slot); spacing
+  follows each critter's real width with even gaps, closed borders stretch gaps to close the
+  loop; critters slide forward off sharp corners and tight bends or the slot is skipped;
+  "both sides" rows are offset by half a pitch; layout comes from each slot's original
+  critter, so a reroll keeps neighbours in place (new critter capped to its cell) and a
+  removal moves nothing. `stats.made` counts generator calls (57 -> 71 on the sample).
+- Generator speed (`src/gen/core.js`, 2841c29; bench: `node tools/bench-gen.mjs`): mean per
+  critter ~13 -> 5.7 ms, p95 26 -> 10 ms, slowest 61 -> 19 ms. Clipper grid 1/16 unit
+  (was 1/64); whites cut against the black in their bounding box only; simple parts skip
+  SimplifyPolygon; near-collinear points (0.05 unit) dropped before soften. Pairs sheet
+  differs in 0.05% of pixels. Watch: at large zoom the fillets at the base of narrow spikes
+  are slightly bigger and one tiny hole filled in; not visible at sheet size, not checked in
+  a zoomed PDF export.
+- Live sliders (`src/app/main.js`, `placeInteractive` in `src/place.js`, 747cf75): per-border
+  layout and markup memo, one redraw per frame, only the changed border's SVG group is
+  replaced; detail / mix / plump regenerate under a 12 ms per-frame budget while the old
+  layout stays on screen. 3 borders, ~170 critters, headless Firefox: plumpness ~700 ms ->
+  18 ms median per event; band depth, spacing, size, tilt 1-22 ms median, single frames up
+  to ~60 ms. No Web Worker needed. Export still uses `placeBorder`.
+- Bug found on the way: the border's transparent 14px hit stroke sat above the critters and
+  swallowed clicks on small ones (reroll / Alt-remove); it is now under them.
+- Smoke test: checks reroll, Alt-remove and 3-border slider timings (median < 50 ms, single
+  frame < 150 ms). Watch: headless Firefox sometimes never returns from navigate; the test
+  retries once.
+- Not judged by the user or the critic: how corners and gaps look on real pages (the sample
+  box leaves its corners empty), and whether gaps feel too even.
+
 **M2 result**: the final critic pass ranks nothing "would bother the user" in dragon,
 salamander, jansson and plant. Seven items remain in the other four (capped at two fix
 rounds per tag to bound cost; they go to the user at M3 as cut-or-fix choices):
@@ -228,7 +259,8 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    still gets thin stag-beetle/mantis-shrimp dorsal bits on slender salamanders;
    fungus+plant collage-like; some amphibian+arthropod+plant triples messy.
 
-5. **M5 Placement polish** (engineer). No identical species adjacent; spacing by actual
+5. **M5 Placement polish. DONE 2026-11-14** (see "M5 result" above; text kept for
+   reference). (engineer). No identical species adjacent; spacing by actual
    critter width; corners of boxes and tight curves handled; "both sides" staggered;
    placement fast enough to drag sliders smoothly (now ~1 s for ~60 critters: cache
    geometry per seed, consider a Web Worker). [smoke test passes; sliders feel live on a
@@ -255,8 +287,8 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
   nothing lost). Until the commit command in `.claude/agents/species-builder.md` names only
   `out/roads/03-<tag>-*`, say so in every brief and forbid `git reset`. Workers also tend to
   commit sheet PNGs but not the matching SVGs.
-- Placement got slower with the richer species (node e2e: ~2.7 s for 57 critters). See M5.
-  Fungus worker measured: `Ink.finish` (core.js) costs ~10 ms per 1000 vertices of overlapping
+- (Resolved in M5, kept for the measurements.) Placement got slower with the richer species
+  (node e2e: ~2.7 s for 57 critters). Fungus worker measured: `Ink.finish` (core.js) costs ~10 ms per 1000 vertices of overlapping
   shapes; some salamander/dragon-bodied mixes take 55-100 ms per critter. Suggested fix: union
   in batches, skip the soften pass for small simple shapes, cache per seed. Four workers
   independently found the soften step (two round-join offsets) is 50-75% of generation
