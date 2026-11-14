@@ -163,7 +163,7 @@ function boolOp(type, subj, clip) {
 }
 function offset(paths, delta) {
   if (!delta) return paths;
-  const co = new ClipperOffset(2, 0.02 * S);
+  const co = new ClipperOffset(2, 0.08 * S);
   co.AddPaths(paths, JoinType.jtRound, EndType.etClosedPolygon);
   const out = new Paths();
   co.Execute(out, delta * S);
