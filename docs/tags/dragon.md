@@ -107,3 +107,18 @@ done). Sheets: `out/roads/03-dragon-species.png`, `out/roads/03-dragon-mixes.png
 - Weakest now: fire salamander is still small at cell 60 (long and low) and its flames are
   somewhat regular; cockatrice could still read as a griffin to some; ouroboros head is only a
   bump at cell 60.
+
+### M3 critic follow-up (2026-11-14, judged at --cell 60)
+- Still 25 species; only these four touched.
+- Fire salamander: r x1.4 (7.3-8.4), slightly shorter, tail held up; `dragonFlames` now has
+  jittered spacing, uneven heights, and 2-3 tall forked tongues leaning further back.
+- Cockatrice: rounder hen chest (chest 1.3-1.45), more upright, short neck and beak, big
+  wattle; `dragonComb` rewritten as one serrated blade across the top of the head; wing is
+  stub or a small 4-feather wing only; shorter tail.
+- Amphisbaena: tail head ~front-head size, jaw open, aimed at the front head (`face2` gene
+  in `tipEnd`); front head turns back up over the shoulder (`tilt` ~ -2.6) so the two heads
+  face each other over the back. Wings mostly dropped (stub at 1/3).
+- Basilisk: the legged variant was always reachable (chance was 0.35); now 0.5. Coil varies
+  more (turns 1.05-2, rise, gap, thickness).
+- Still weak: salamander body is a heavy lump under the flames; cockatrice beak small at
+  print size.
