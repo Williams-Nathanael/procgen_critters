@@ -5,9 +5,13 @@ of every milestone. Per-tag detail lives in the State section of `docs/tags/<tag
 
 ## Where things stand (2026-11-14)
 
-**Queue is empty after M7.** Next is the user's call: try the app on real pages, decide on
-encrypted-PDF export, and the open taste items (oyster mushroom, jelly ear; M3b reworks not
-yet shown).
+**Waiting on the user: 1.0 taste check** (published 2026-11-14):
+https://claude.ai/artifact/Py2LfDvwLMuFgSZzTwihn1 (private; answers in its database,
+collection `answers`; rebuilt with `npm run review`, output in git-ignored `out/review/`).
+65 rows: 3 cut-or-retry, 25 unseen reworks, 9 weak leftovers, 28 mix pairs. Next
+conversation: read the answers (ArtifactData `list`), record them in `docs/BRIEF.md`, apply
+cuts and retries (one `species-builder` per tag), then push and tag 1.0. The user does not
+want encrypted-PDF export (decided 2026-11-14; place-only with the notice stays).
 
 **Working end to end**: `./critters` opens the app in the browser. Open a PDF, draw a
 scribble / polyline / box / oval border, stack tags, choose side, band depth, spacing and
