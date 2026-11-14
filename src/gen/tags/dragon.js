@@ -711,7 +711,8 @@ const species = [
 export default {
   id: 'dragon', label: 'Small dragons', short: 'Dragons',
   sig: { dorsal: 3, tail: 3, head: 2, crown: 2 },
-  // M4: wings and crests on a mushroom read as a collage; lend a head, tail and horns there
-  mix: { fungus: { sig: { head: 2.5, tail: 2.5, crown: 2, dorsal: 0.8 } } },
+  // M4: wings, crests and tails stuck on a mushroom clump read as a collage; dragon bodies
+  // lead this pair and a mushroom gets only one dragon head or horns
+  mix: { fungus: { lead: 2.5, sig: { head: 3, crown: 1.5 }, want: [[1, 1]] } },
   species,
 };
