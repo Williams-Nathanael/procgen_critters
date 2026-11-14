@@ -55,3 +55,87 @@ re-reads it) and eight Fable sub-agents in parallel. The user's direction: "Fabl
 acting as a planner and overseer and maybe researcher and delegating to Sonnet 5.5 or Opus
 5.5 for most of the work." That is now the operating model in `CLAUDE.md` and
 `docs/ORCHESTRATION.md`.
+
+## Decisions (2026-11-13, M3 taste check)
+
+From the review page (all 28 mixes, all 7 open items, every species answered). Quotes are
+the user's. "Overseer reading" marks an interpretation, not something the user said.
+
+**General taste that came out of it**
+- Complexity over simplicity: "I prefer, say, trilobites over smooth simple stuff like a
+  flea or a copepod, and don't really like the simplicity of a butterfly ... could imagine
+  myself liking feathery stuff coming off of a solid body plan."
+- Familiar is boring: "everyone's seen grasshoppers, they don't want to see more
+  grasshopper and just read it as 'grasshopper'."
+- Not comical: spindly legs, oversized eyeballs and "comically misproportioned" /
+  "comically grotesque" forms were the recurring complaints.
+- Dragons ("very much fit the project"), mammals ("a fertile ground; I love these") and
+  fungus ("very awesome stuff, with a marvelous array of variety") are the reference level.
+
+**Open M2 items**
+| Item | Answer |
+|---|---|
+| Horned frog | Cut |
+| Flying frog / Surinam toad | Keep flying frog (favourite). Fix the toad: "a more faithful Surinam Toad body plan would solve these issues" |
+| Beaver | Fix; "if fixing it isn't viable I'd take it as is. It still does read as 'misc mammal'" |
+| Grasshopper | Marked fine as an open item, then rejected as a species (familiar insect): cut |
+| Mantis shrimp | Fix |
+| Chicken of the woods | Blob is fine. Real problem: "the jaggedness and square edges where I'm guessing it attaches to a log look terrible." Oyster mushroom: "same deal" |
+| Lion's mane | Fine as is |
+
+**Per tag**
+- **Arthropod**: "mostly not (standard) insects" and "more chunky scaly stuff". Rejected
+  (21): ant, bumblebee, butterfly, coiled millipede, copepod ("too simple"), crane fly,
+  dragonfly, dung beetle ("a really wacky bug with a bulbous body"), flea, fly, giant water
+  bug, grasshopper, hairy caterpillar, inchworm, ladybird, longhorn beetle, mayfly,
+  millipede, moth, wasp, water flea. Favourites: crab spider, crab zoea, fiddler crab,
+  jumping spider, pseudoscorpion, scorpion, shore crab, slipper lobster, spider crab. Pill
+  bug "barely accepted". Overseer reading: cut the 21; replacements should be armoured,
+  segmented or feathery-limbed crustaceans, arachnids and fossil forms.
+- **Amphibian**: rejected coiled caecilian, horned frog, poison dart frog (no comment:
+  cut). Favourites: climbing tree frog, crested newt, flying frog, four-legged tadpole,
+  froglet, tadpole profile.
+- **Salamander**: no rejects. "In general the legs look much too spindly relative to the
+  body, and that makes the overall impression of a line of these guys too comical ... when
+  looking at real salamanders I only think that perhaps half of them have spindly legs."
+  Favourites: axolotl, blind cave salamander, mole salamander, mudpuppy, newt larva, olm,
+  salamander larva, siren, spectacled salamander, tiger salamander.
+- **Fungus**: rejected chicken of the woods and oyster mushroom (log attachment, above),
+  liberty caps (no comment: cut), lattice cage ("Doesn't read right ... in silhouette, but
+  the original mushroom is quite fun. Definitely try to rework this one"). Wanted: "more of
+  the little wrinkly ear-like fungi", and other sorts still missing. 17 favourites.
+- **Mammal**: harvest mouse "I dislike the non-climbing versions; the climbing versions are
+  okay"; house mouse "Looks bad standing". 23 of 35 are favourites.
+- **Dragon**: rework amphisbaena (favourite, but "its feet(?) and body read very oddly, so
+  much so that I barely notice the tail"), basilisk ("Doesn't read very well; might be
+  viable with a rework"), cockatrice ("doesn't read clearly"), ouroboros ("Head reads as
+  comically grotesque and head-tail interface is messy; redesign, maybe a few versions?"),
+  fire salamander ("Too comically misproportioned, and the breath reads wrong ... lean a
+  bit away from heraldic and towards amphibians' crested newt; I would enjoy something
+  solidly flame-based in this set"). Loved: hydra ("Wonderful and beloved by me"),
+  lindworm ("Delightful"), sea serpent, serra, and 9 more favourites.
+- **Jansson**: "I don't want the dictionary folk to explicitly read as specific unusual
+  symbols, and the way that their large eyes look disconnected and spherical isn't great. I
+  prefer embedded eyes where the whole sphericality is not quite visible." Rejected:
+  asterisk mite ("A bizarre starfish with an oversized eyeball"), pilcrow strider ("too
+  disconnected from reality, especially with the enormous eyeball"), stilt-legs, at-snail
+  ("I love this fellow, but I don't love the @ part; adjust it to not explicitly read as an
+  @"). Query hook: "I like the smaller eyeball editions". Ampersand knot, comma crawler and
+  loop runner are favourites, so the symbol rule is about the reject list, not those.
+  20 favourites, including hunched troll and back-turned sitter.
+- **Plant**: no rejects. "great in hybrids, but I'm guessing they'll read as disunified and
+  messy standalone. I'm fine with that; someday later I might ask for a
+  designed-to-work-alone more vine-based run. A few more vines here wouldn't hurt, if and
+  only if they ended up looking coherent."
+
+**Mixes** (11 favourites, 16 fine, 1 reject)
+- Rejected salamander+fungus: "Neither 'salamander with mushrooms sticking out' nor
+  'mushroom with salamander sticking out' really did it for me; the fungus-headed guys
+  somewhat worked." Salamander+plant: "Similar problem."
+- Salamander+jansson: "Spindly legs aren't working so well with folk when they project on
+  both sides (top-down)."
+- Amphibian+fungus and amphibian+plant: favourites, "could be improved, but they look quite
+  stately."
+- Favourites: every salamander+animal pair (amphibian, arthropod, dragon, mammal),
+  amphibian+arthropod, amphibian+dragon, arthropod+dragon ("Lovely combinations"),
+  fungus+jansson, mammal+jansson.
