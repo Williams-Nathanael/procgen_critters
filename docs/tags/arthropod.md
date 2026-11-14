@@ -32,6 +32,16 @@ outline are welcome).
 
 ## State
 
+**2026-11-13 M2 fix run 2** (critic `out/tmp/critic2-arthropod.md`, judged at --cell 60): still 64 species.
+- Mantis shrimp: 5 segments, front raised (tilt -0.3), little curl, wide spined tail fan,
+  long eye stalks, raptorial claw redrawn as a folded knob held forward. No longer a tube.
+- Crab spider: front legs held sideways with mild forward curve, rear legs 0.7 L and
+  visible, smaller abdomen; no longer a horned bull head.
+- Thickened for print: harvestman (legW 3.8, bigger body), water strider (legW 3.6, wider
+  body), stick insect (shorter, ty 2.6, legs w 2.3), grasshopper (ty 4.3-4.9, ax 13-16,
+  hind femur w 4.6-5.2). Stick insect is still the slimmest form on the sheet (by nature).
+- Open minor: pill bug ragged, anomalocaris/opabinia small, treehopper star.
+
 **2026-11-13 M2 fix run** (critic list `out/tmp/critic-arthropod.md`): still 64 species.
 - Shrimp: taller legs, stronger hump and curl (hang 1.3) so the arched, tail-curled profile
   survives; no longer a low caterpillar tube. Mantis shrimp: deeper body, shorter, eye stalk
