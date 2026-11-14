@@ -140,16 +140,44 @@ export function leaf(p, ang, len, wid, bend = 0, fat = 0.4) {
 }
 
 // ---------- Ink ----------
-const S = 64;
+const S = 16; // grid units per critter unit (1/16 is far below print resolution; coarser grid = faster Clipper)
 const toC = pts => pts.map(p => ({ X: Math.round(p[0] * S), Y: Math.round(p[1] * S) }));
 const fromC = path => path.map(p => [p.X / S, p.Y / S]);
 const { Clipper, ClipperOffset, ClipType, PolyType, PolyFillType, JoinType, EndType, Paths } = ClipperLib;
+
+function dedupe(c) {
+  const o = [];
+  for (const p of c) { const q = o[o.length - 1]; if (!q || q.X !== p.X || q.Y !== p.Y) o.push(p); }
+  while (o.length > 1 && o[0].X === o[o.length - 1].X && o[0].Y === o[o.length - 1].Y) o.pop();
+  return o;
+}
+// True when no two non-adjacent edges touch (strictly simple ring). Conservative: any touch -> false.
+function isSimple(c) {
+  const n = c.length;
+  if (n > 400) return false;
+  for (let i = 0; i < n; i++) {
+    const a = c[i], b = c[(i + 1) % n];
+    const ax0 = Math.min(a.X, b.X), ax1 = Math.max(a.X, b.X), ay0 = Math.min(a.Y, b.Y), ay1 = Math.max(a.Y, b.Y);
+    for (let j = i + 2; j < n; j++) {
+      if (i === 0 && j === n - 1) continue;
+      const p = c[j], q = c[(j + 1) % n];
+      if (Math.max(p.X, q.X) < ax0 || Math.min(p.X, q.X) > ax1 || Math.max(p.Y, q.Y) < ay0 || Math.min(p.Y, q.Y) > ay1) continue;
+      const d1 = (b.X - a.X) * (p.Y - a.Y) - (b.Y - a.Y) * (p.X - a.X), d2 = (b.X - a.X) * (q.Y - a.Y) - (b.Y - a.Y) * (q.X - a.X);
+      const d3 = (q.X - p.X) * (a.Y - p.Y) - (q.Y - p.Y) * (a.X - p.X), d4 = (q.X - p.X) * (b.Y - p.Y) - (q.Y - p.Y) * (b.X - p.X);
+      if ((d1 <= 0 || d2 <= 0) && (d1 >= 0 || d2 >= 0) && (d3 <= 0 || d4 <= 0) && (d3 >= 0 || d4 >= 0)) return false;
+    }
+  }
+  return true;
+}
 
 function unionPolys(polys) {
   const norm = [];
   for (const p of polys) {
     if (p.length < 3 || p.some(q => !isFinite(q[0]) || !isFinite(q[1]))) continue;
-    for (const s of Clipper.SimplifyPolygon(toC(p), PolyFillType.pftNonZero)) norm.push(s);
+    const c = dedupe(toC(p));
+    if (c.length < 3) continue;
+    if (isSimple(c)) norm.push(Clipper.Area(c) < 0 ? c.reverse() : c); // most parts: skip a Clipper pass
+    else for (const s of Clipper.SimplifyPolygon(c, PolyFillType.pftNonZero)) norm.push(s);
   }
   return boolOp(ClipType.ctUnion, norm, null);
 }
@@ -170,6 +198,14 @@ function offset(paths, delta) {
   return out;
 }
 
+function clipToBox(paths, ref, pad) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const r of ref) for (const p of r) { if (p.X < x0) x0 = p.X; if (p.X > x1) x1 = p.X; if (p.Y < y0) y0 = p.Y; if (p.Y > y1) y1 = p.Y; }
+  if (!(x0 <= x1)) return [];
+  x0 -= pad; y0 -= pad; x1 += pad; y1 += pad;
+  return boolOp(ClipType.ctIntersection, paths, [[{ X: x0, Y: y0 }, { X: x1, Y: y0 }, { X: x1, Y: y1 }, { X: x0, Y: y1 }]]);
+}
+
 export class Ink {
   constructor() { this.k = []; this.w = []; this.k2 = []; }
   poly(pts, layer = 'k') { this[layer].push(pts); return this; }
@@ -184,11 +220,14 @@ export class Ink {
   // -> array of rings ([[x,y],...]); outer rings and holes, for even-odd / nonzero fill.
   finish({ soften = 0.6, whiteMargin = 0.9, minHole = 5 } = {}) {
     let blk = unionPolys(this.k);
-    if (soften > 0) blk = offset(offset(blk, soften), -soften); // closing: fillets concave junctions
+    // closing: fillets concave junctions. Dropping near-collinear points first (0.05 units) halves
+    // its cost: Clipper adds a self-crossing loop at every concave vertex it offsets.
+    if (soften > 0) blk = offset(offset(Clipper.CleanPolygons(blk, 0.05 * S), soften), -soften);
     blk = blk.filter(r => { const a = Clipper.Area(r) / (S * S); return a > 0 ? a > 0.5 : -a > minHole; });
     if (this.w.length) {
       let wh = unionPolys(this.w);
-      wh = boolOp(ClipType.ctIntersection, wh, offset(blk, -whiteMargin));
+      // only the black near the whites matters: clip it to the whites' box (grown past the margin) first
+      wh = boolOp(ClipType.ctIntersection, wh, offset(clipToBox(blk, wh, (whiteMargin + 1) * S), -whiteMargin));
       // open the whites a touch so slivers vanish
       wh = offset(offset(wh, -0.25), 0.25);
       if (wh.length) blk = boolOp(ClipType.ctDifference, blk, wh);
