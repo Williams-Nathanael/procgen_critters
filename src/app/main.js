@@ -4,7 +4,7 @@ import { PDFDocument } from 'pdf-lib';
 import { TAGS, TAG_NAMES } from '../gen/tags/index.js';
 import { ringsToPath } from '../gen/core.js';
 import { makeCritter } from '../gen/critter.js';
-import { DEFAULTS, placeBorder, bandOutline, borderPolyline } from '../place.js';
+import { DEFAULTS, placeBorder, placeInteractive, bandOutline, borderPolyline } from '../place.js';
 import { exportPdf } from '../export.js';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL('./dist/pdf.worker.min.mjs', document.baseURI).href;
@@ -23,7 +23,7 @@ const state = {
   defaults: structuredClone(DEFAULTS),
   history: [], nextId: 1, renderToken: 0,
 };
-window.__critters = state; // handy for debugging from the console
+window.__critters = state; // handy for debugging from the console and the UI tests
 
 // ------------------------------------------------------------------ document
 async function blankPdf() {
@@ -85,6 +85,7 @@ function undo() {
   changed();
 }
 function changed() { drawOverlay(); drawPanel(); saveSession(); }
+state.redraw = changed;
 
 function addBorder(kind, pts, closed = false) {
   pushHistory();
@@ -96,28 +97,52 @@ function addBorder(kind, pts, closed = false) {
 }
 
 // ------------------------------------------------------------------ overlay
-let placedNow = []; // [{border, items}]
 function polyD(pts, closed) { return pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('') + (closed ? 'Z' : ''); }
+// Redraw the overlay. Borders whose inputs did not change reuse their layout and markup; a border
+// that needs many new critters (detail / mix sliders) shows its previous layout and catches up over
+// the next frames, so no single event blocks for long.
+const FRAME_BUDGET = 12; // ms of critter generation per draw when a stale layout can be shown
+let catchUp = 0, rafPending = 0, lastDraft = null;
+const SVGNS = 'http://www.w3.org/2000/svg';
+const svgGroup = markup => { const g = document.createElementNS(SVGNS, 'g'); g.innerHTML = markup; return g; };
 function drawOverlay(draft = null) {
-  const svg = $('#overlay'); let h = '';
-  placedNow = [];
+  const t0 = performance.now();
+  const svg = $('#overlay'); let stale = false;
+  lastDraft = draft;
+  const nodes = [];
   for (const b of state.borders) {
     if (!appliesTo(b, state.page)) continue;
     const sel = b.id === state.selected;
-    const poly = borderPolyline(b);
-    if (sel) for (const band of bandOutline(b)) h += `<path class="band" d="${polyD(band.line.concat(band.off.slice().reverse()), true)}"/>`;
-    let items = [];
-    try { items = placeBorder(b, pageKey(b, state.page)); } catch (e) { console.error(e); }
-    placedNow.push({ border: b, items });
-    for (const it of items) h += `<path class="critter" data-b="${b.id}" data-slot="${it.slot}" d="${ringsToPath(it.rings, null, 2)}"/>`;
-    h += `<path class="bline${sel ? ' sel' : ''}" d="${polyD(poly.pts, poly.closed)}"/><path class="hit" data-b="${b.id}" d="${polyD(poly.pts, poly.closed)}"/>`;
+    let r = { items: [], stale: false, memo: null };
+    try { r = placeInteractive(b, pageKey(b, state.page), FRAME_BUDGET); } catch (e) { console.error(e); }
+    if (r.stale) stale = true;
+    const m = r.memo; if (!m) continue;
+    if (sel) { // the band preview is cheap; rebuilt each time
+      let bh = ''; for (const band of bandOutline(b)) bh += `<path class="band" d="${polyD(band.line.concat(band.off.slice().reverse()), true)}"/>`;
+      nodes.push(svgGroup(bh));
+    }
+    // One group per border, reused as long as the border's layout memo and selection are unchanged.
+    // The hit stroke sits under the critters so they stay clickable.
+    if (!m.el || m.sel !== sel) {
+      const poly = borderPolyline(b), d = polyD(poly.pts, poly.closed);
+      m.el = svgGroup(`<path class="hit" data-b="${b.id}" d="${d}"/>` + r.items.map(it => `<path class="critter" data-b="${b.id}" data-slot="${it.slot}" d="${ringsToPath(it.rings, null, 2)}"/>`).join('') + `<path class="bline${sel ? ' sel' : ''}" d="${d}"/>`);
+      m.sel = sel;
+    }
+    nodes.push(m.el);
   }
-  if (draft) h += `<path class="draft" d="${draft}"/>`;
-  svg.innerHTML = h;
+  if (draft) nodes.push(svgGroup(`<path class="draft" d="${draft}"/>`));
+  svg.replaceChildren(...nodes);
   svg.classList.toggle('draw', state.tool !== 'select');
   svg.classList.toggle('pick', state.tool === 'select');
   const n = state.borders.length;
   $('#hint').textContent = n ? '' : 'Draw a border on the page: scribble a line, or pick Box / Oval. Critters appear along it; tune them on the right.';
+  state.stale = stale; state.lastDrawMs = performance.now() - t0;
+  if (stale && !catchUp) catchUp = requestAnimationFrame(() => { catchUp = 0; drawOverlay(lastDraft); });
+}
+// Coalesce rapid inputs (slider drags) into one redraw per animation frame.
+function drawSoon() {
+  if (rafPending) return;
+  rafPending = requestAnimationFrame(() => { rafPending = 0; drawOverlay(); });
 }
 
 function evPt(e) {
@@ -242,7 +267,7 @@ function slider([key, label, min, max, step, fmt, title]) {
   const out = el('output', {}, fmt(st[key]));
   const input = el('input', { type: 'range', min, max, step, value: st[key], title: title || label,
     onpointerdown: () => { if (selected()) pushHistory(); },
-    oninput: e => { target()[key] = +e.target.value; out.textContent = fmt(+e.target.value); drawOverlay(); },
+    oninput: e => { target()[key] = +e.target.value; out.textContent = fmt(+e.target.value); drawSoon(); },
     onchange: () => saveSession() });
   return el('div', { class: 'row' }, el('label', {}, label), input, out);
 }

@@ -136,10 +136,32 @@ function overlap(A, B) {
 
 export const stats = { made: 0 }; // generator calls (for tests)
 const critterCache = new Map();
+// Interactive callers may set a deadline (performance.now() ms); a placement that would
+// generate a critter past it throws DEFER. Critters made so far stay cached, so calling again
+// continues where it stopped. placeBorder has no other side effects.
+export const DEFER = Symbol('placement deferred');
+let deadline = 0;
+export function placeWithin(border, pageKey, ms) {
+  deadline = performance.now() + ms;
+  try { return placeBorder(border, pageKey); } finally { deadline = 0; }
+}
+// Layout memo per border (keyed by content and page key): sliders that do not touch a border cost it nothing.
+const placeMemo = new Map();
+export function placeInteractive(border, pageKey, ms) { // -> { items, stale }
+  const key = JSON.stringify([border.kind, border.pts, border.closed, border.settings, border.overrides, pageKey]);
+  const m = placeMemo.get(border.id);
+  if (m && m.key === key && m.pageKey === pageKey) return { items: m.items, stale: false, memo: m };
+  try {
+    const items = m ? placeWithin(border, pageKey, ms) : placeBorder(border, pageKey);
+    const memo = { key, pageKey, items }; if (border.id != null) placeMemo.set(border.id, memo);
+    return { items, stale: false, memo };
+  } catch (e) { if (e === DEFER && m) return { items: m.items, stale: true, memo: m }; throw e; }
+}
 function cachedCritter(tags, seed, st) {
   const key = tags.join('+') + '|' + seed + '|' + st.detail + '|' + st.chaos + '|' + st.plump;
   let c = critterCache.get(key);
   if (!c) {
+    if (deadline && performance.now() > deadline) throw DEFER;
     stats.made++;
     c = makeCritter(tags, seed, { detail: st.detail, chaos: st.chaos, plump: st.plump });
     if (critterCache.size > 4000) critterCache.clear();
