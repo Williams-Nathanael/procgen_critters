@@ -1092,7 +1092,7 @@ FORMS.tillandsia = (Cp, g) => {
 };
 
 // ---------------------------------------------------------------------
-// VINES: one main stem line (arching, trained along a cordon, or twining up a stake) with a
+// VINES: one main stem line (arching, trained along a cordon, or creeping along the ground) with a
 // rhythm of nodes: a leaf on a petiole, perhaps a coiled tendril, hanging fruit, side flowers.
 // ---------------------------------------------------------------------
 // ivy: five pointed lobes from one point
@@ -1102,7 +1102,7 @@ U.ivy = (C, p, a, s, o) => {
   for (const [d, k] of [[0, 1], [-0.85, 0.72], [0.85, 0.72], [-1.7, 0.45], [1.7, 0.45]]) C.ink.poly(leaf(b, a + d, L * k, w * (k > 0.6 ? 1 : 0.8), 0, 0.42));
   C.ink.dot(polar(b, a, L * 0.12), L * 0.2);
 };
-// three-lobed leaf (passionflower, gourd)
+// three-lobed leaf (gourd)
 U.trilobe = (C, p, a, s, o) => {
   const L = s * (o.len ?? 1), sp = o.spread ?? 0.75;
   for (const [d, k] of [[0, 1], [-sp, 0.82], [sp, 0.82]]) C.ink.poly(leaf(p, a + d, L * k, s * (o.wid ?? 0.42), 0, 0.5));
@@ -1126,25 +1126,13 @@ U.gourd = (C, p, a, s, o) => {
   thin(C.ink, [p, polar(p, a, s * 0.4)], Math.max(s * 0.12, MINW));
   C.ink.poly(tube(polyline([q0, polar(q0, a, L)], 14), P([[0, s * 0.12], [0.12, s * 0.33], [0.3, s * 0.36], [0.42, s * 0.3], [0.68, s * 0.68], [0.86, s * 0.66], [1, s * 0.3]])));
 };
-// passionflower, face-on: a ring of petals behind a fringe of corona filaments and the stigma cross
-U.passion = (C, p, a, s, o) => {
-  const c = polar(p, a, s * 0.95), K = C.ink, rng = C.rng, ph = rng.range(0, TAU);
-  thin(K, [p, c], Math.max(s * 0.1, MINW));
-  for (let i = 0; i < 10; i++) K.poly(leaf(c, ph + i / 10 * TAU, s * 0.95, s * 0.36, 0, 0.5));
-  const nf = o.nf ?? 20;
-  for (let i = 0; i < nf; i++) { const b = ph + (i + 0.5) / nf * TAU; K.poly(spike(polar(c, b, s * 0.5), polar(c, b, s * 1.3), hair * 1.1, hair * 0.9)); }
-  K.dot(c, s * 0.42);
-  for (let i = 0; i < 3; i++) { const b = UP + (i - 1) * 1.1; thin(K, [c, polar(c, b, s * 0.75)], MINW); K.dot(polar(c, b, s * 0.75), s * 0.13); }
-};
-
 FORMS.vine = (Cp, g) => {
   const K = Cp.ink, rng = Cp.rng, sd = g.sd;
   let pts;
-  if (g.kind === 'twine') { // stem winding up a stake, its free tip reaching out past the top
-    const H = g.stake, A = g.amp, ph = rng.range(0, TAU), raw = [];
-    K.poly(tube(polyline([[0, 0.3], [0, -H]], 4), g.stakeW ?? 0.55));
-    for (let i = 0; i <= 44; i++) { const t = i / 44; raw.push([A * Math.sin(ph + t * g.wraps * TAU) * ss(0, 0.12, t), -0.2 - t * (H - 1.2)]); }
-    pts = raw.concat(arcPath(last(raw), UP + sd * g.lean, g.tipL, sd * g.tipTurn, 12, 1.6).slice(1));
+  if (g.kind === 'creep') { // a short rise, then a run along the ground with a lifted tip
+    const rise = stemPts([0, 0.2], UP + sd * 0.7, g.h1, sd * 0.6, 0, 6, 0, 0), ph = rng.range(0, TAU), run = [];
+    for (let i = 1; i <= 26; i++) { const t = i / 26, e = last(rise); run.push([e[0] + sd * g.run * t, e[1] + 0.6 * t - g.lift * ss(0.75, 1, t) + Math.sin(ph + t * g.wv * TAU) * 0.8]); }
+    pts = rise.concat(run);
   } else if (g.kind === 'cordon') { // trunk, then a trained arm
     const tr = stemPts([0, 0.2], UP - sd * 0.05, g.h1, sd * 0.1, 0, 10, g.wav ?? 0.1, rng.range(0, TAU));
     pts = tr.concat(arcPath(last(tr), UP + sd * 0.05, g.arm, sd * g.turn, 14, 0.3).slice(1));
@@ -1488,18 +1476,18 @@ const species = [
     return build(r, form, { head: { type: 'plantTuft', kind: 'tube', n: 7, len: 2.4, wid: 0.3, spread: 3.6 }, headSize: 0.9, orn: { u: 'tendril', len: 1, turn: 3 }, tipS: 1.6, crownS: 1.4, row: { u: 'tendril', len: 1, turn: 2.5 }, rowS: 1.2 });
   } },
   // ---------------- vines ----------------
-  { name: 'ivy', w: 1.4, genes: r => {
-    const berries = r.chance(0.55);
-    const form = { form: 'vine', kind: 'arch', sd: r.sign(), lean: r.range(0.05, 0.25), arc: r.range(0.5, 0.9), nod: r.range(0.8, 1.6), h: r.range(36, 46), w0: 1.1, w1: 0.6, wav: r.range(0, 0.12), roots: true,
-      nodes: { n: r.int(5, 7), t0: 0.12, t1: 0.88, s: r.range(8, 9.5), k1: 0.65, ped: 0.6, ang: 1.0, up: 0.45, spec: { u: 'ivy', len: 1, wid: 0.5 } },
-      ...(berries ? { tip: { type: 'plantClock', R: 1.3, n: r.int(8, 11), bead: 0.34, core: 0.3 }, ts: r.range(3.4, 4) } : { curlS: r.range(3, 4) }) };
+  { name: 'ivy', w: 1.4, genes: r => { // creeping low along the line, leaves held up
+    const form = { form: 'vine', kind: 'creep', sd: r.sign(), h1: r.range(3.5, 5.5), run: r.range(34, 44), lift: r.range(4, 8), wv: r.range(0.8, 1.6), w0: 1.0, w1: 0.6, roots: true,
+      nodes: { n: r.int(5, 7), t0: 0.2, t1: 0.9, s: r.range(8, 9.5), k1: 0.7, ped: r.range(0.5, 0.9), ang: 1.0, up: 0.6, lup: 0.5, spec: { u: 'ivy', len: 1, wid: 0.5 } },
+      curlS: r.range(2.6, 3.4) };
     return build(r, form, { head: { type: 'plantLeaf', unit: { u: 'ivy' }, size: 1.6 }, orn: { u: 'ivy' }, tipS: 1.1, crownS: 1, row: { u: 'ivy' }, rowS: 0.9 });
   } },
-  { name: 'grapevine', w: 1.5, genes: r => {
+  { name: 'grapevine', w: 1.5, genes: r => { // leaves hang and tilt along the cane, alternating with the bunches
     const sd = r.sign(), ng = r.int(1, 2), hang = [];
-    for (let i = 0; i < ng; i++) hang.push({ t: mix(0.62, 0.9, ng > 1 ? i / (ng - 1) : 0.5) + r.range(-0.03, 0.03), s: r.range(3.6, 4.4), ped: 0.35, droop: 1.0, spec: { u: 'grapes', rows: r.pick([[3, 4, 3, 3, 2, 1], [4, 3, 3, 2, 2, 1], [3, 3, 3, 2, 1]]) } });
+    const bt = ng > 1 ? [0.67, 0.88] : [r.range(0.74, 0.8)];
+    for (const t of bt) hang.push({ t: t + r.range(-0.02, 0.02), s: r.range(3.6, 4.4), ped: 0.35, droop: 1.0, spec: { u: 'grapes', rows: r.pick([[3, 4, 3, 3, 2, 1], [4, 3, 3, 2, 2, 1], [3, 3, 3, 2, 1]]) } });
     const form = { form: 'vine', kind: 'cordon', sd, h1: r.range(20, 26), arm: r.range(28, 34), turn: r.range(1.45, 1.6), w0: r.range(1.7, 2.1), w1: 0.8, roots: true,
-      nodes: { n: 3, t0: 0.58, t1: 0.96, s: r.range(7, 8), k1: 0.85, ped: 0.6, ang: 1.2, up: 0.7, side: () => -sd, spec: { u: 'ivy', len: 1, wid: 0.62 } },
+      nodes: { n: ng > 1 ? 3 : 3, t0: 0.56, t1: 0.99, s: r.range(5.4, 6.2), k1: 0.85, ped: 0.7, ang: r.range(0.35, 0.5), up: 0, lup: 0, side: () => -sd, spec: { u: 'ivy', len: 1, wid: 0.62 } },
       tendril: { p: 0.6, s: r.range(3, 4) }, hang, curlS: r.range(3, 4) };
     return build(r, form, { head: { type: 'plantLeaf', unit: { u: 'grapes' }, size: 1.4 }, orn: { u: 'grapes' }, tipS: 0.9, crownS: 0.9, row: { u: 'ivy', wid: 0.62 }, rowS: 0.8 });
   } },
@@ -1511,21 +1499,13 @@ const species = [
       hang, curlS: r.range(3, 4) };
     return build(r, form, { head: { type: 'plantLeaf', unit: { u: 'raceme', len: 2.6 }, size: 1.4 }, orn: { u: 'raceme', len: 2.4 }, tipS: 0.9, crownS: 0.9, row: { u: 'raceme', len: 2 }, rowS: 0.6 });
   } },
-  { name: 'passionflower', w: 1.4, genes: r => {
-    const sd = r.sign(), nf = r.int(1, 2), flowers = [];
-    for (let i = 0; i < nf; i++) flowers.push({ t: i ? r.range(0.35, 0.5) : r.range(0.66, 0.8), sd: -sd, ang: 1.0, ped: 1.3, s: r.range(3.0, 3.4), spec: { u: 'passion' } });
-    const form = { form: 'vine', kind: 'arch', sd, lean: r.range(0.05, 0.2), arc: r.range(0.5, 0.8), nod: r.range(0.7, 1.2), h: r.range(40, 48), wav: r.range(0.05, 0.15), w0: 0.95, w1: 0.55, roots: true,
-      nodes: { n: r.int(4, 6), t0: 0.12, t1: 0.92, s: r.range(6, 7), k1: 0.75, ped: 0.6, ang: 1.15, up: 0.2, side: (i) => (i % 3 === 2 ? -sd : sd), spec: { u: 'trilobe', len: 1, wid: 0.4 } },
-      tendril: { p: 0.55, s: r.range(3, 3.8) }, flowers, curlS: r.range(3, 4) };
-    return build(r, form, { head: { type: 'plantLeaf', unit: { u: 'passion' }, size: 1.5 }, orn: { u: 'passion' }, tipS: 0.9, crownS: 0.9, row: { u: 'trilobe' }, rowS: 0.8 });
-  } },
-  { name: 'bottle gourd', w: 1.2, genes: r => {
+  { name: 'bottle gourd', w: 1.2, genes: r => { // sprawling low and wide, the gourd hanging clear on a long stalk
     const sd = r.sign();
-    const form = { form: 'vine', kind: 'arch', sd, lean: r.range(0.0, 0.15), arc: r.range(0.6, 0.9), nod: r.range(0.9, 1.3), h: r.range(44, 52), w0: 1.2, w1: 0.6, wav: r.range(0, 0.1), roots: true,
-      nodes: { n: r.int(3, 4), t0: 0.25, t1: 0.92, s: r.range(7.5, 8.5), k1: 0.8, ped: 0.6, ang: 1.0, up: 0.6, side: () => -sd, spec: { u: 'trilobe', len: 1, wid: 0.5, spread: 0.85 } },
+    const form = { form: 'vine', kind: 'arch', sd, lean: r.range(0.3, 0.45), arc: r.range(0.9, 1.1), nod: r.range(0.9, 1.2), h: r.range(50, 58), w0: 1.2, w1: 0.6, wav: r.range(0.05, 0.15), roots: true,
+      nodes: { n: r.int(3, 4), t0: 0.2, t1: 0.95, s: r.range(7, 8), k1: 0.8, ped: 0.8, ang: r.range(1.3, 1.6), up: -0.3, lup: 0, side: i => (i % 2 ? -sd : sd), spec: { u: 'trilobe', len: 1, wid: 0.5, spread: 0.85 } },
       tendril: { p: 0.6, s: r.range(3, 3.8) },
-      hang: [{ t: r.range(0.68, 0.76), s: r.range(5.4, 6.2), ped: 0.4, droop: 1.0, swing: 0.05, spec: { u: 'gourd', len: r.range(2.2, 2.6) } }],
-      ...(r.chance(0.5) ? { flowers: [{ t: r.range(0.4, 0.5), sd, s: 3.4, spec: { type: 'plantBell', kind: 'trumpet', wid: 0.9 } }] } : {}), curlS: r.range(3, 4) };
+      hang: [{ t: r.range(0.55, 0.62), s: r.range(5.0, 5.6), ped: r.range(0.6, 0.8), droop: 0.5, swing: 0.05, spec: { u: 'gourd', len: r.range(1.9, 2.2) } }],
+      ...(r.chance(0.5) ? { flowers: [{ t: r.range(0.68, 0.8), sd: -sd, s: 3.4, spec: { type: 'plantBell', kind: 'trumpet', wid: 0.9 } }] } : {}), curlS: r.range(3, 4) };
     return build(r, form, { head: { type: 'plantLeaf', unit: { u: 'gourd' }, size: 1.4 }, orn: { u: 'gourd' }, tipS: 0.8, crownS: 0.8, row: { u: 'trilobe', wid: 0.5 }, rowS: 0.8 });
   } },
 ];

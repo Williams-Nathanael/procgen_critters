@@ -32,6 +32,15 @@ leaves as ears/wings/tail, tendrils and fiddlehead curls, a flower, seed-head or
 for a head, root feet, thorns, a sprout on the crown. Default eyes: none.
 
 ## State
+- 2026-11-14 vine critic fix round: 52 -> 51 species. Passionflower CUT (side-on saucer flower
+  with fringe and raised crown plus tendrils tried; at --cell 60 still an upright leafy stem
+  with a cross on top, not a vine). Layouts now differ: ivy uses a new `creep` kind (short rise,
+  then runs low along the line, leaves held up, tip lifts and curls; berry umbel dropped);
+  grapevine leaves tilt forward along the top of the cane, bunches hang below between them;
+  bottle gourd sprawls in a wide low arch, gourd hangs clear on its own stalk from the crown of
+  the arch, leaves droop alternately; wisteria untouched. Removed the unused `twine`/stake code
+  path. Judged at --cell 60, 10 seeds each. Still weakish: grapevine leaves a little flag-like,
+  ivy small at print size.
 - 2026-11-13 M2 fix run 2: monkey puzzle rebuilt as tall thick bare trunk with an asymmetric dome of 6-7 tiers of drooping spiky rope branches (skewed per side, some skipped) and an upward tuft at the top; no longer an aerial. Teasel and thistle separated: teasel is a tall narrow egg of spines with long thin bracts sweeping out and up past it; thistle is a round spiny bulb pinched to a neck with a wide flaring shaving-brush tuft. Judged at --cell 60. Still weak (unchanged): lotus, barrel/old man/pincushion, nepenthes, foxglove, titan arum symmetry.
 - 2026-11-13 M2 fix run (critic list): cut honesty and bleeding heart (stalk-plus-blobs template, scribbles at print size); now 45 species. Thistle and teasel: one big head (optional single side head), thicker stems, fewer prickles. Chinese lanterns: 2-3 large lanterns on a thick arching stem. Titan arum: new wide frilled spathe skirt with tilted asymmetric rim and blunt curled lip, spadix rising from it. Monkey puzzle: thick ropey arms that droop then upturn, random lengths, 3-4 tiers. Lotus: one big round-petalled bloom (or pod) plus 1-2 tilted pads, optional bud, no stick fence. Poppy stems thickened. Still weak: lotus pads read as lens leaves, foxglove spike, living stones/welwitschia small, nepenthes berry-bush look, poppy capsules busy, barrel/pincushion/old man similar.
 - 2026-11-14 M3b vine run: 47 -> 52 species. New `vine` form (one main stem: `arch`,
