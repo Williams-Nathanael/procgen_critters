@@ -27,6 +27,13 @@ gills/frills, puffball tails and coral antlers read well. Default eyes: none.
 Updated 2026-11-13 (species-builder run on main; review rounds done). Sheets:
 `out/roads/03-fungus-species.png`, `out/roads/03-fungus-mixes.png`.
 
+M2 fix run 2 (judged at --cell 60): lion's mane is now a rounded cascade of 26-34 fine short
+spines hung high off a slim snag (no ground-reaching spines, no second stump; was reading as
+an elephant). Oyster and chicken of the woods use a slim rootless stub (w 2.2-2.7) with longer,
+round-rimmed shelves (rim 0.5) so shelves dominate; oyster shelves droop as tongues. Chicken
+still a little blocky when 5 shelves stack. Minor items (puffball, earthball, false morel,
+liberty caps, earthstar) untouched.
+
 - **45 species** (was 46 unreviewed; wood ear cut). Stem-and-cap agarics are 13 of 45.
 - **Strong**: fly agaric, parasol, shaggy inkcap, bonnet cluster, liberty caps, witch's hat,
   funnel cap, hedgehog, chanterelle, morel, veiled lady, devil's fingers (egg + arms),

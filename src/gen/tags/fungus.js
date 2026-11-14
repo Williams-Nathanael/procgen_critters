@@ -1015,24 +1015,25 @@ const species = [
     return build(r, ch, { ...CAP.fan(r), seat: 1.1 }, { stem: 0.02, rake: 0.6, dorsal: r.chance(0.5) ? { type: 'fungusFrill', h: r.range(0.8, 1.2), wid: 0.16, tiers: r.int(1, 2) } : null });
   } },
   { name: 'chicken of the woods', w: 1.8, genes: r => {
-    const ch = stub(r, { snag: 0, h: r.range(30, 36) }), n = r.int(3, 4), sd0 = r.sign(), t0 = r.range(0.18, 0.3);
+    const ch = stub(r, { snag: 0, w: r.range(2.2, 2.7), h: r.range(26, 32), flare: 0.3, roots: false }), n = r.int(3, 5), sd0 = r.sign(), t0 = r.range(0.2, 0.32);
     ch.shelves = [];
-    for (let i = 0; i < n; i++) ch.shelves.push({ t: t0 + i * r.range(8, 9.5) / ch.h, sd: (i === n - 1 && r.chance(0.4)) ? -sd0 : sd0, len: r.range(18, 26) * (1 - 0.12 * i), th: r.range(7, 8.5) * (1 - 0.08 * i), up: 0.55, down: 0.45, k: 2.0, kb: 0.9, wavy: r.range(0.4, 0.7), droop: r.range(-0.16, 0.06), rim: 0.3 });
+    for (let i = 0; i < n; i++) ch.shelves.push({ t: t0 + i * r.range(8, 9.5) / ch.h, sd: (i === n - 1 && r.chance(0.4)) ? -sd0 : sd0, len: r.range(24, 32) * (1 - 0.1 * i), th: r.range(7, 8) * (1 - 0.08 * i), up: 0.6, down: 0.5, k: 1.3, kb: 0.9, wavy: r.range(0.5, 0.8), droop: r.range(-0.12, 0.1), rim: 0.5 });
     if (r.chance(0.6)) ch.shelves.push({ t: r.range(0.3, 0.6), sd: -sd0, len: r.range(10, 14), th: 7, up: 0.5, down: 0.5, k: 2.4, wavy: 0.4, rim: 0.38 });
     return build(r, ch, { ...CAP.fan(r), thick: 0.34, rim: 0.2, seat: 1.1 }, { stem: 0.02, rake: 0.6, dorsal: { type: 'fungusFrill', h: r.range(1, 1.5), wid: 0.24, tiers: 2 } });
   } },
   { name: 'oyster mushroom', w: 2, genes: r => {
-    const ch = stub(r, { h: r.range(28, 34) }), sd0 = r.sign(), t0 = r.range(0.25, 0.45), n = r.int(3, 4);
+    const ch = stub(r, { w: r.range(2.2, 2.7), h: r.range(26, 32), flare: 0.3, roots: false, snag: 0 }), sd0 = r.sign(), t0 = r.range(0.25, 0.4), n = r.int(3, 5);
     ch.shelves = [];
-    for (let i = 0; i < n; i++) ch.shelves.push({ t: t0 + i * r.range(7, 8.5) / ch.h, sd: (n > 3 && i === 0) ? -sd0 : sd0, len: r.range(17, 22) * (1 - 0.1 * i), th: r.range(6, 7), up: 0.55, down: 0.75, k: 2.6, kb: 0.55, wavy: r.range(0.1, 0.3), droop: r.range(0.12, 0.22), rim: 0.24 });
+    for (let i = 0; i < n; i++) ch.shelves.push({ t: t0 + i * r.range(7, 8.5) / ch.h, sd: (n > 3 && i === 0) ? -sd0 : sd0, len: r.range(22, 28) * (1 - 0.08 * i), th: r.range(6, 7), up: 0.5, down: 0.6, k: 1.2, kb: 0.6, wavy: r.range(0.1, 0.25), droop: r.range(0.22, 0.34), rim: 0.5 });
     const oy = { form: 'cap', span: 2, w: r.range(1.7, 2.2), h: r.range(0.5, 0.7), a: 2.6, b: 0.5, under: 0.3, rim: 0.12, curl: r.range(-0.25, 0.1), skew: 0, thick: 0.2, wavy: r.range(0, 0.2) };
     return build(r, ch, { ...oy, seat: 1.1 }, { stem: 0.3, rake: 0.4 });
   } },
   { name: 'lion\'s mane', w: 1.8, genes: r => {
-    const ch = stub(r, { w: r.range(3.8, 4.6), h: r.range(28, 36), lean: r.range(-0.1, 0.1) }), sd = r.sign(), s = r.range(8, 9.5);
-    const mn = { form: 'mane', span: 2, w: r.range(1.8, 2.3), h: r.range(1.6, 2.1), teeth: r.int(15, 20), tl: r.range(1.5, 2.2), bulb: 0, lend: 0.72 };
-    ch.items = [{ t: r.range(0.6, 0.78), sd, ax: -0.1, stem: 0, turn: 0, s, fb: { ...mn, h: mn.w * 1.5, w: mn.h * 1.25 } }];
-    if (r.chance(0.35)) ch.items.push({ t: r.range(0.25, 0.4), sd: -sd, ax: -0.1, stem: 0, s: s * 0.55, fb: { ...mn, h: mn.w * 1.5, w: mn.h * 1.25, teeth: 11 } });
+    // a rounded cascade of fine hanging spines off the side of a slim snag, clear of the ground
+    const ch = stub(r, { w: r.range(1.8, 2.2), h: r.range(36, 42), flare: 0.35, roots: false, snag: 0, teeth: r.int(2, 3), lean: r.range(-0.06, 0.06) }), sd = r.sign(), s = r.range(7.5, 8.5);
+    const mn = { form: 'mane', span: 2, w: r.range(1.5, 1.8), h: r.range(1.7, 2.0), teeth: r.int(26, 34), tl: r.range(1.5, 1.9), bulb: 0, lend: 0.72 };
+    ch.items = [{ t: r.range(0.78, 0.86), sd, ax: -0.05, stem: 0, turn: 0, s, fb: mn }];
+    if (r.chance(0.4)) ch.items.push({ t: r.range(0.42, 0.5), sd: -sd, ax: -0.05, stem: 0, s: s * 0.5, fb: { ...mn, teeth: 14 } });
     return build(r, ch, mn, { stem: 0.02, hw: 0.7 });
   } },
   { name: 'witch\'s butter', w: 1.5, genes: r => {
