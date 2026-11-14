@@ -18,7 +18,7 @@ export const DEFAULTS = {
   detail: 0.3,         // white interior detail 0..1
   chaos: 0.12,         // how wild tag mixes get 0..1
   plump: 1,
-  hybrid: 0.85,        // share of single-tag critters melded from several species of the tag
+  hybrid: 1,           // how far critters are chimeras of several species of their tag (0: one species)
   seed: 1,
   startOffset: 0.5,    // first critter position, fraction of spacing
   avoidOverlap: true,

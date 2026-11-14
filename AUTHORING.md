@@ -16,33 +16,39 @@ from one of its own species (`src/gen/critter.js`).
 Everything is black polygons unioned into a single silhouette (`Ink` in `core.js`), with
 optional white shapes cut out. No strokes, no greys.
 
-## Within-tag hybrids
+## Within-tag hybrids (chimeras)
 
-By default most critters are meldings of several species of one tag (`makeCritter` option
-`hybrid`, 0..1, default `HYBRID` = 0.85 in `critter.js`; it is the chance a critter
-hybridizes and scales how far genes blend). The primary tag's species is the visible
-**base**; then, on a separate rng stream (so `hybrid: 0` is bit-identical to pure output):
+By default every critter is a chimera of several species of its tag (`makeCritter` option
+`hybrid`, 0..1, default `HYBRID` = 1 in `critter.js`). It runs on a separate rng stream,
+so `hybrid: 0` is bit-identical to pure output. Every species of the tag is a potential
+parent (the species the main rng picked is just one of them, and fades out as the dial
+rises); per slot, with chance `hybrid`:
 
-- 1-3 of `head`, `limbs`, `tail`, `dorsal`, `crown` (only slots the primary tag still owns;
-  slots lent by another tag in a mix stay lent) are taken from other species of the same
-  tag. Empty slots are rarely borrowed. `surface` follows the head.
-- One sibling is picked as a mate, and every numeric gene of a slot where base and mate
-  use the same part `type` (chassis included, one level of nested objects) moves
-  0.2-0.55 x `hybrid` of the way toward the mate's. Integers stay integers.
+- **chassis**: one parent sets the chassis type; its numeric genes are a weighted blend
+  with 1-2 other parents of the same type, pushed up to 35% beyond the parents' mean and
+  clamped to their range widened by 15% (signs kept, integers stay integers).
+- `head`, `limbs`, `tail`, `dorsal`, `crown` (only slots the primary tag still owns; lent
+  slots of a mix stay lent): taken from a parent not used yet where possible, empty slots
+  rarely (never an empty head), then numerically blended 0.2-0.6 x `hybrid` toward a second
+  parent with the same part type. `surface` follows the head.
+- Below 1, slots that miss the roll stay with the chassis parent, so the dial scales
+  smoothly down to one species.
 
-The result's `species[tag]` reads `base × donor × ...` (base first), `base` is the base
-name and `hybrid` maps slot (or `blend`) to the sibling used, or is null.
+Coherence: parts hang off the chassis's sockets, so they scale to the receiving body; a tail
+from a parent other than the chassis's goes through the lent-tail cap (and `onBody` on rooted
+bodies). The result's `species[tag]` lists all parents (`a × b × ...`, no base), `base` is
+null for a chimera, and `hybrid` maps each slot to its parent name (or `[parent, blend mate]`).
 
 Optional hints on a species object, read from the tag file:
 
 ```js
-{ name: 'earthstar', hybrid: { never: true }, genes(r) { ... } }    // never a base or a donor
-{ name: 'snail', hybrid: { keep: ['head', 'chassis'] } }            // as base: these slots stay its own, unblended
+{ name: 'earthstar', hybrid: { never: true }, genes(r) { ... } }    // never a parent (use rarely)
+{ name: 'snail', hybrid: { keep: ['head', 'chassis'] } }            // when it gives the chassis: these slots stay its own, unblended
 { name: 'hydra', hybrid: { noLend: ['head'] } }                     // never lends (or blends) these slots
 ```
 
 Sheets: `tag` rows use the default; `tag@species` rows are pure unless `--hybrid` is given
-(`--hybrid 0` gives pure tag rows). Cells caption the melded name.
+(`--hybrid 0` gives pure tag rows). Cells caption the parents.
 
 ## Coordinates and conventions
 

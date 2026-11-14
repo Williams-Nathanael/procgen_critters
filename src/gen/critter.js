@@ -46,62 +46,114 @@ function onBody(plan, sock) {
   return { ...sock, p: [q[0] + dx * k, q[1] + dy * k] };
 }
 
-// ---- within-tag hybrids ----
-// The default share of single-tag critters (and primaries of mixes) that are meldings of
-// several species of their tag rather than one catalogue species.
-export const HYBRID = 0.85;
+// ---- within-tag hybrids (chimeras) ----
+// `hybrid` (0..1) is a continuous dial. 0: one catalogue species. 1: no base species at all;
+// every slot from a different sibling where the tag has enough, the chassis a blend of
+// several siblings, and each slot's numbers blended with another same-type sibling.
+export const HYBRID = 1;
 const LENDABLE = ['head', 'limbs', 'tail', 'dorsal', 'crown'];
 const none = x => !x || x.type === 'none';
-// t of the way from a toward b for every numeric gene both share (top level and one level
-// of nested plain objects); integers stay integers. Booleans, strings, arrays untouched.
+const isNum = x => typeof x === 'number' && Number.isFinite(x);
+const plain = x => x && typeof x === 'object' && !Array.isArray(x);
+// t of the way from a toward b for every numeric gene both share (recursing into nested
+// plain objects of the same type); integers stay integers. Booleans, strings, arrays untouched.
 function blend(a, b, t) {
   for (const k of Object.keys(a)) {
     const x = a[k], y = b[k];
-    if (typeof x === 'number' && typeof y === 'number' && Number.isFinite(x) && Number.isFinite(y)) {
+    if (isNum(x) && isNum(y)) {
       const v = x + (y - x) * t;
       a[k] = Number.isInteger(x) && Number.isInteger(y) ? Math.round(v) : v;
-    } else if (x && y && typeof x === 'object' && typeof y === 'object' && !Array.isArray(x) && !Array.isArray(y) && x.type === y.type) {
-      blend(x, y, t);
+    } else if (plain(x) && plain(y) && x.type === y.type) { a[k] = { ...x }; blend(a[k], y, t); }
+  }
+}
+// Weighted blend of several same-type genes into a (a's keys), pushed a little beyond the
+// parents' mean (`ex`), then clamped to the parents' range widened by 15% (sign kept).
+function blendMany(a, others, ws, ex) {
+  for (const k of Object.keys(a)) {
+    const vs = [a[k], ...others.map(o => o[k])];
+    if (vs.every(isNum)) {
+      let W = 0, v = 0; vs.forEach((x, i) => { v += x * ws[i]; W += ws[i]; }); v /= W;
+      const mean = vs.reduce((p, x) => p + x, 0) / vs.length, lo = Math.min(...vs), hi = Math.max(...vs), pad = (hi - lo) * 0.15;
+      v += (v - mean) * ex;
+      v = Math.min(hi + pad, Math.max(lo - pad, v));
+      if (lo >= 0) v = Math.max(v, lo > 0 ? lo * 0.85 : 0);
+      if (hi <= 0) v = Math.min(v, hi < 0 ? hi * 0.85 : 0);
+      a[k] = vs.every(Number.isInteger) ? Math.round(v) : v;
+    } else if (vs.every(x => plain(x) && x.type === a[k].type)) {
+      a[k] = { ...a[k] }; blendMany(a[k], vs.slice(1), ws, ex);
     }
   }
 }
-// Meld species of one tag: the base species `sp0` (genes g) takes 1-3 slots from siblings
-// and blends its numeric genes toward one sibling wherever both use the same part type.
+// Meld species of one tag into a chimera. Every species of the tag (sp0, the rng's pick,
+// is just one of them) is a potential parent. With chance `amount` per slot, the slot comes
+// from a parent not yet used; the chassis likewise becomes a weighted blend of up to three
+// same-type parents. Each borrowed slot then blends toward a second same-type parent.
 // Uses its own rng stream (seeded from the critter seed), so hybrid 0 leaves output untouched.
-// Species hints (optional, on the species object): hybrid: { never, keep: [slots], noLend: [slots] }.
-// Returns [[slot | 'blend', sibling name], ...] in order.
+// Species hints: hybrid: { never, keep: [slots], noLend: [slots] } (see AUTHORING.md).
+// Returns { parents: [names], from: { slot: name or [names] } } or null; g is edited in place.
 function hybridize(tag, sp0, g, donors, seed, amount) {
   const hr = makeRng((Math.imul(typeof seed === 'number' ? seed : String(seed).length, 2654435761) ^ 0x5bd1e995) >>> 0);
-  if (!hr.chance(amount) || sp0.hybrid?.never) return [];
-  const sibs = TAGS[tag].species.filter(sp => sp !== sp0 && !sp.hybrid?.never);
-  if (!sibs.length) return [];
-  const pick = () => hr.wpick(sibs.map(sp => [sp.w ?? 1, sp]));
-  const used = [];
-  // slots still the primary's own (lent slots of a mix stay with their tag)
-  const open = LENDABLE.filter(s => donors[s] === tag && !sp0.hybrid?.keep?.includes(s));
-  const want = Math.min(open.length, hr.wpick([[4, 1], [4, 2], [2, 3]]));
-  for (const s of hr.shuffle(open).slice(0, want)) {
-    for (let k = 0; k < 8; k++) {
-      const sp = pick();
-      if (sp.hybrid?.noLend?.includes(s)) continue;
-      const sg = sp.genes(hr.fork());
-      if (none(sg[s]) && k < 7) continue; // borrowing nothing is no melding
-      g[s] = sg[s];
-      if (s === 'head') g.surface = sg.surface; // surface follows head
-      used.push([s, sp.name]);
-      break;
+  if (sp0.hybrid?.never) return null;
+  const pool = TAGS[tag].species.filter(sp => sp === sp0 || !sp.hybrid?.never)
+    .map(sp => ({ sp, w: sp.w ?? 1, g: sp === sp0 ? g : sp.genes(hr.fork()) }));
+  if (pool.length < 2) return null;
+  const P0 = pool.find(p => p.sp === sp0);
+  const from = {}, used = new Map(); // parent -> use count
+  const use = (p, s) => { used.set(p, (used.get(p) ?? 0) + 1); from[s] = p.sp.name; };
+  // weighted pick among parents that pass `ok`, preferring fresh ones (sp0 fades out as amount -> 1)
+  const pick = (ok) => {
+    const c = pool.filter(ok);
+    if (!c.length) return null;
+    return hr.wpick(c.map(p => [p.w * (p === P0 ? 1 - amount + 0.02 : 1) / (1 + 4 * (used.get(p) ?? 0)), p]));
+  };
+  // chassis
+  let chassisP = P0;
+  const keepOf = p => p.sp.hybrid?.keep ?? [];
+  if (!keepOf(P0).includes('chassis') || amount >= 1) {
+    if (hr.chance(amount)) {
+      chassisP = pick(p => !p.sp.hybrid?.noLend?.includes('chassis')) ?? P0;
+      const T = chassisP.g.chassis.type;
+      const mates = hr.shuffle(pool.filter(p => p !== chassisP && p.g.chassis?.type === T && !p.sp.hybrid?.noLend?.includes('chassis'))).slice(0, hr.int(1, 2));
+      g.chassis = { ...chassisP.g.chassis };
+      if (mates.length && !keepOf(chassisP).includes('chassis')) {
+        const ws = [hr.range(0.5, 1), ...mates.map(() => hr.range(0.25, 1) * amount)];
+        blendMany(g.chassis, mates.map(m => m.g.chassis), ws, hr.range(0, 0.35) * amount);
+        from.chassis = [chassisP.sp.name, ...mates.map(m => m.sp.name)];
+        mates.forEach(m => used.set(m, (used.get(m) ?? 0) + 1));
+      } else from.chassis = chassisP.sp.name;
+      used.set(chassisP, (used.get(chassisP) ?? 0) + 1);
+    } else {
+      const m = pick(p => p !== P0 && p.g.chassis?.type === g.chassis.type && !p.sp.hybrid?.noLend?.includes('chassis'));
+      if (m && amount > 0) { g.chassis = { ...g.chassis }; blend(g.chassis, m.g.chassis, hr.range(0.2, 0.5) * amount); from.chassis = [P0.sp.name, m.sp.name]; used.set(m, 1); }
     }
   }
-  // numeric blend toward one sibling, slot by slot where the part types agree
-  const mate = pick(), mg = mate.genes(hr.fork()), t = hr.range(0.2, 0.55) * amount;
-  let blended = false;
-  for (const s of ['chassis', ...LENDABLE]) {
-    if (s !== 'chassis' && donors[s] !== tag) continue;
-    if (sp0.hybrid?.keep?.includes(s) || mate.hybrid?.noLend?.includes(s)) continue;
-    if (g[s] && mg[s] && !none(g[s]) && g[s].type === mg[s].type) { g[s] = { ...g[s] }; blend(g[s], mg[s], t); blended = true; }
+  if (from.chassis == null) { from.chassis = P0.sp.name; used.set(P0, (used.get(P0) ?? 0) + 1); }
+  // the chassis parent's keep-list binds its own slots (a snail's head stays on its shell)
+  const keep = new Set(keepOf(chassisP));
+  if (chassisP !== P0) for (const s of keepOf(chassisP)) if (LENDABLE.includes(s)) { g[s] = chassisP.g[s]; if (s === 'head') g.surface = chassisP.g.surface; }
+  if (chassisP === P0) keepOf(P0).forEach(s => keep.add(s));
+  // slots: only those the primary tag still owns (lent slots of a mix stay with their tag)
+  for (const s of hr.shuffle(LENDABLE.filter(s => donors[s] === tag && !keep.has(s)))) {
+    if (!hr.chance(amount)) {
+      if (chassisP !== P0) { g[s] = chassisP.g[s]; if (s === 'head') g.surface = chassisP.g.surface; from[s] = chassisP.sp.name; }
+      continue;
+    }
+    const can = p => !p.sp.hybrid?.noLend?.includes(s);
+    // empty slots are a legitimate parent choice, but rarely (and never an empty head)
+    let p = pick(q => can(q) && !none(q.g[s]));
+    if (!p || (s !== 'head' && hr.chance(0.12))) p = pick(can) ?? p;
+    if (!p) continue;
+    g[s] = p.g[s];
+    if (s === 'head') g.surface = p.g.surface; // surface follows head
+    use(p, s);
+    if (none(g[s])) continue;
+    const m = pick(q => q !== p && can(q) && q.g[s]?.type === g[s].type);
+    if (m) { g[s] = { ...g[s] }; blend(g[s], m.g[s], hr.range(0.2, 0.6) * amount); from[s] = [p.sp.name, m.sp.name]; used.set(m, (used.get(m) ?? 0) + 1); }
   }
-  if (blended) used.push(['blend', mate.name]);
-  return used;
+  if (none(g.head)) { const p = pick(q => !none(q.g.head)); if (p) { g.head = p.g.head; g.surface = p.g.surface; use(p, 'head'); } }
+  const parents = [...used.keys()].map(p => p.sp.name);
+  if (parents.length < 2) return null;
+  return { parents, from, chassis: chassisP.sp.name };
 }
 
 export function makeCritter(tags, seed, opts = {}) {
@@ -130,11 +182,10 @@ export function makeCritter(tags, seed, opts = {}) {
   }
   if (donors.head !== (donors.primary ?? donors.chassis) && lent[donors.head]) g.surface = lent[donors.head].surface;
   const hy = opts.hybrid ?? HYBRID;
-  let hybrid = null;
+  let hybrid = null, chassisFrom = sp0.name;
   if (hy > 0) {
-    const mix = hybridize(donors.primary ?? donors.chassis, sp0, g, donors, seed, hy);
-    if (mix.length) names[donors.primary ?? donors.chassis] = [sp0.name, ...new Set(mix.map(m => m[1]))].join(' × ');
-    hybrid = Object.fromEntries(mix);
+    const hx = hybridize(donors.primary ?? donors.chassis, sp0, g, donors, seed, hy);
+    if (hx) { names[donors.primary ?? donors.chassis] = hx.parents.join(' × '); hybrid = hx.from; chassisFrom = hx.chassis; }
   }
   for (const s of SLOTS) if (g[s] == null) g[s] = { type: 'none' };
   const ink = new Ink();
@@ -143,7 +194,10 @@ export function makeCritter(tags, seed, opts = {}) {
   // origin: which tag drew the chassis / head, so lent parts can adapt to their host
   plan.tag = donors.chassis;
   C.plan = plan;
-  const lentTail = donors.tail !== (donors.primary ?? donors.chassis);
+  // a tail from another tag, or (in a chimera) from a sibling other than the chassis's,
+  // is capped to the receiving body
+  const tailFrom = hybrid?.tail && [].concat(hybrid.tail)[0];
+  const lentTail = donors.tail !== (donors.primary ?? donors.chassis) || (tailFrom != null && tailFrom !== chassisFrom);
   // rooted bodies (plants, fungi) often put the tail socket off the body (beside a taproot,
   // under a baobab's crown); a lent tail there floats, so pull the socket onto the body
   if (lentTail && plan.rooted && plan.path?.length > 1 && plan.rad) plan.tail = onBody(plan, plan.tail);
@@ -168,5 +222,5 @@ export function makeCritter(tags, seed, opts = {}) {
   const dy = plan.view === 'top' ? -b.y1 : (b.y1 > allow ? allow - b.y1 : 0);
   rings = rings.map(r => r.map(([x, y]) => [x + dx, y + dy]));
   b = ringsBBox(rings);
-  return { rings, bbox: b, view: plan.view, donors, tags, seed, species: names, base: sp0.name, hybrid };
+  return { rings, bbox: b, view: plan.view, donors, tags, seed, species: names, base: hybrid ? null : sp0.name, hybrid };
 }

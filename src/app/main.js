@@ -452,7 +452,7 @@ const MORE = [
   ['startOffset', 'Start offset', 0, 1, 0.01, pct],
   ['detail', 'White detail', 0, 1, 0.01, v => (v < 0.05 ? 'none' : v < 0.5 ? 'eyes' : 'eyes + marks')],
   ['chaos', 'Mix wildness', 0, 1, 0.01, pct],
-  ['hybrid', 'Hybrid', 0, 1, 0.01, pct, 'How often a critter melds several species of its tag (0: one catalogue species each)'],
+  ['hybrid', 'Hybrid', 0, 1, 0.01, pct, 'How far each critter is a chimera of several species of its tag (0: one catalogue species; 100%: every part from a different parent)'],
   ['plump', 'Plumpness', 0.7, 1.4, 0.01, v => v.toFixed(2)],
 ];
 
