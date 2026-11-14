@@ -46,6 +46,28 @@ pre-M3b for these three).
   shows (candidate cut); shy lump, huddle, stack, stone peeper, pot dweller read as one
   template; comma crawler and loop runner legs hairline.
 
+**M3b batch 2 result (2026-11-14)**: fungus, amphibian and salamander done; same recipe as
+batch 1 (builder, `critic` at `--cell 60`, one fix run, overseer look). Counts now: fungus
+42, amphibian 25, salamander 29.
+- fungus: liberty caps cut; lattice cage is a tilted ball with a mesh of holes (clear
+  improvement); chicken of the woods is wavy fans on a thick rounded log, join smooth; hare's
+  ear added (reads as ears). Snow fungus, beefsteak and stalked puffball tried and cut.
+  **Open, for the user (cut or another attempt)**: oyster mushroom still fails (rounded log
+  end with 2-3 shelves reads as a letter F or a pipe); jelly ear reads as a pair of snails.
+  Watch: giant puffball and earthball blobs.
+- amphibian: horned frog, coiled caecilian, poison dart frog cut; Surinam toad on its own
+  `amphibianPipa` chassis (squarish flat body, star-tipped arms forward, huge webbed hind
+  feet; takes no lent limbs, forced mixes look whole); four-legged tadpole no longer a
+  lizard; walking toad strides; crested newt has its own `amphibianCrest` dorsal. "Leaf-litter
+  horned frog" is a different species and was kept (the user cut only "horned frog"; asked).
+  Watch: hairy frog fringe reads as spikes or a skirt; midwife toad eggs a lump; crested
+  newt crest small.
+- salamander: 14 heavy-bodied species have `stout` legs (tag-file gene, no `parts.js`
+  change); `sideLift` raises hellbender and giant in side view; axolotl gills thinned.
+  Watch: hellbender and giant side views still dark bars with short feet (`salamanderFold`
+  invisible at print size); mole salamander legs barely show in side view; amphiuma, siren,
+  newt larva untouched.
+
 **M2 result**: the final critic pass ranks nothing "would bother the user" in dragon,
 salamander, jansson and plant. Seven items remain in the other four (capped at two fix
 rounds per tag to bound cost; they go to the user at M3 as cut-or-fix choices):
@@ -85,7 +107,7 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
      amphisbaena, basilisk, cockatrice, ouroboros in 2-3 variants, fire salamander as a
      flame-based newt-like form), **jansson** (cut asterisk mite, pilcrow strider,
      stilt-legs; at-snail must not read as @; eyes embedded and smaller across the tag).
-   - Batch 2: **fungus** (smooth the log attachment on chicken of the woods and oyster;
+   - Batch 2 **DONE 2026-11-14** (see "M3b batch 2 result" above): **fungus** (smooth the log attachment on chicken of the woods and oyster;
      rework lattice cage; cut liberty caps; add wrinkly ear-like fungi and other missing
      sorts), **amphibian** (cut horned frog, coiled caecilian, poison dart frog; faithful
      Surinam toad body plan), **salamander** (sturdier legs on about half the species; if
@@ -117,6 +139,12 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    ones "somewhat worked"), so rooted tags should lend a head or cap, not scattered
    growths. Top-down salamander legs projecting on both sides look wrong on jansson folk.
    Amphibian+fungus and amphibian+plant are liked ("stately") but could be improved.
+   From M3b batch 2: amphibian+arthropod gives insect-like cricket and centipede shapes
+   (the familiar-insect look the user rejected); weight the amphibian body more. Some
+   fungus+salamander, fungus+arthropod mixes are plain blobs and fungus+amphibian can be
+   spindly; give the fungus donor more of the outline. The sheet tool throws in
+   `chooseDonors` on `<tag>+legacy` (`src/gen/tags/legacy` has no `sig`) and in
+   `pickSpecies` on an unknown tag id; skip or report cleanly.
    [critic on a 28-pair sheet]
 5. **M5 Placement polish** (engineer). No identical species adjacent; spacing by actual
    critter width; corners of boxes and tight curves handled; "both sides" staggered;
