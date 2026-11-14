@@ -1214,7 +1214,7 @@ export default {
   // M4: on salamander/amphibian bodies lend a cap for a head, not scattered growths;
   // a mushroom body with salamander bits sticking out was rejected, so rarely lead there.
   mix: {
-    salamander: { lead: 0.15, sig: { head: 3 }, headS: 1.6 },
+    salamander: { lead: 0.15, sig: { head: 3 }, headS: 1.3 },
     amphibian: { sig: { head: 3, crown: 0.8 }, want: [[3, 1], [1, 2]], headS: 1.25 },
     // on bug bodies a lone cap reads as a blob: lend cap and back growths together
     arthropod: { lead: 0.4, sig: { head: 2, dorsal: 3, crown: 1 }, want: [[1, 1], [3, 2]], headS: 1.2 },
