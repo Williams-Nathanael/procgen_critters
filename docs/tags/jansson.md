@@ -40,6 +40,14 @@ Signature features to lend: big round ringed eyes, a soft rounded snout or long 
 tasselled tail, tufts and single hairs, small props, the upright pear body.
 
 ## State
+- **M2 fix run (2026-11-13): 33 species** (was 38). Cut: drift bells (drifted toward a known
+  character), tail-holding procession, cursive procession (members smudge at print), crook stemling
+  (read as b/6), scarf creature (scarf read as arm). Tall wanderer no longer has a cone hat or a
+  walking stick: plain head with long ears / tuft / hair, carries bundle or lantern. Farm sprite never
+  carries a staff. Folk bodies vary in outline: new local shapes squat, cone, gourd, sack used by
+  folkBody and shy lump. Glyph chassis gained genes sx/sy (stretch), sl (slant), wt (stroke weight),
+  wob (jitter), wider leg length, plus random crown and tail. Huddle is mostly 2 members, larger.
+  Still weak: huddle at print, suitcase case small, curled sleeper plain, squat folk with big props.
 - **38 species** (2026-11-13; was 36 unreviewed WIP). Sheets: `out/roads/03-jansson-species.png`,
   `out/roads/03-jansson-mixes.png`. All load, nothing below the line, slowest mean ~15 ms (loop runner).
 - **Word-creatures (12, ~37% of weight)**: comma crawler, ampersand knot, crook stemling, minim
