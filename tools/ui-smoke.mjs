@@ -192,4 +192,27 @@ export default async function (ff) {
   await ff.waitFor(`document.querySelector('#thumbs .thumb[data-page="30"] canvas')`);
   assert(await ff.eval(`document.querySelectorAll('#thumbs canvas').length < 30`), 'thumbnails not released when scrolled away');
   await ff.shot('out/tmp/ui-thumbs.png');
+
+  // --- M7: bad files give an in-app message (no alert), encrypted files ask for the password and switch export off
+  await goto(base);
+  await ff.waitFor(`document.querySelector('#overlay').getAttribute('viewBox')`);
+  await ff.eval(`window.__critters.openFile(new File(['this is not a pdf at all'], 'bad.pdf')), 1`);
+  await ff.waitFor(`!document.querySelector('#msg').hidden && document.querySelector('#msg').className === 'error'`);
+  const bad = await ff.eval(`document.querySelector('#msg').textContent`);
+  console.log('bad file message:', bad);
+  assert(/does not look like a readable PDF/.test(bad) && !/null/.test(bad), 'bad-file message is not plain language');
+  assert(await ff.eval(`window.__critters.name === 'blank page'`), 'bad file replaced the open document');
+  const { existsSync } = await import('node:fs');
+  if (existsSync('out/tmp/pdfs/gen-userpw.pdf')) {
+    await ff.eval(`fetch('/out/tmp/pdfs/gen-userpw.pdf').then(r => r.blob()).then(b => window.__critters.openFile(new File([b], 'locked.pdf'))), 1`);
+    await ff.waitFor(`document.querySelector('#pwinput')`);
+    await ff.shot('out/tmp/ui-password.png');
+    await ff.eval(`(() => { const i = document.querySelector('#pwinput'); i.value = 'wrong'; document.querySelector('#pwok').click(); })()`);
+    await ff.waitFor(`document.querySelector('#pwdlg p')?.textContent.includes('not right')`);
+    await ff.eval(`(() => { const i = document.querySelector('#pwinput'); i.value = 'user123'; document.querySelector('#pwok').click(); })()`);
+    await ff.waitFor(`window.__critters.name === 'locked.pdf'`);
+    assert(await ff.eval(`document.querySelector('#export').disabled`), 'export not disabled for an encrypted PDF');
+    assert(await ff.eval(`document.querySelector('#msg').className === 'warn'`), 'no encrypted-file notice');
+    await ff.shot('out/tmp/ui-encrypted.png');
+  } else console.log('SKIP encrypted-file check: run npm run test:pdfs first');
 }

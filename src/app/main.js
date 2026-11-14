@@ -34,9 +34,9 @@ let msgTimer = 0;
 function showMessage(text, kind = 'error', { progress = null, sticky = kind !== 'info' } = {}) {
   const box = $('#msg'); clearTimeout(msgTimer);
   box.className = kind; box.hidden = false;
-  box.replaceChildren(el('span', { class: 'mtext' }, text),
+  box.replaceChildren(...[el('span', { class: 'mtext' }, text),
     progress != null ? el('progress', { max: 1, value: progress }) : null,
-    sticky && progress == null ? el('button', { class: 'mclose', title: 'Dismiss', onclick: hideMessage }, '×') : null);
+    sticky && progress == null ? el('button', { class: 'mclose', title: 'Dismiss', onclick: hideMessage }, '×') : null].filter(Boolean));
   if (!sticky) msgTimer = setTimeout(hideMessage, 5000);
 }
 function hideMessage() { clearTimeout(msgTimer); $('#msg').hidden = true; }
@@ -78,7 +78,7 @@ async function loadBytes(bytes, name) {
   state.bytes = bytes; state.doc = doc; state.name = name; state.numPages = doc.numPages; state.page = 1;
   state.encrypted = looksEncrypted(bytes);
   state.borders = []; state.selected = null; state.history = [];
-  if (old) old.destroy().catch(() => {});
+  if (old) old.loadingTask.destroy().catch(() => {});
   $('#docname').textContent = name;
   for (const b of [$('#export'), $('#exportpage')]) { b.disabled = state.encrypted; b.title = state.encrypted ? 'This PDF is encrypted, so critters cannot be written into it' : b.dataset.title; }
   if (state.encrypted) showMessage('This PDF is encrypted. You can place critters and preview them, but Export is switched off: pdf-lib cannot write into encrypted files. Remove the protection first (for example qpdf --decrypt in.pdf out.pdf) and open that copy.', 'warn');
@@ -670,6 +670,7 @@ async function openFile(f) {
   try { await loadBytes(new Uint8Array(await f.arrayBuffer()), f.name); }
   catch (err) { if (!(err instanceof CancelledError)) { console.error(err); showMessage(friendlyPdfError(err, 'open')); } }
 }
+state.openFile = openFile;
 async function init() {
   $('#open').onclick = () => $('#file').click();
   $('#file').onchange = e => openFile(e.target.files[0]);
