@@ -73,3 +73,10 @@ tasselled tail, tufts and single hairs, small props, the upright pear body.
 - Cut: serif scuttlers (read as boxes/teeth). Old WIP branch `wip/jansson-species` is superseded.
 - Stacking checked both ways: lent heads (ringed eyes, button/long/bulb noses) and brush tassels sit
   well on other chassis; foreign parts on glyph chassis attach at the ball head and back arc.
+
+### M2 fix run 2 (2026-11-13)
+- Glyph variation widened so it shows at print size: query hook (belly size, neck length, hook height/width, head size, optional arms, mirrored), at-snail (shell size and stretch, neck length, head size), asterisk mite (5-8 spokes, pinwheel curl either way, spoke weight, centre size, splay).
+- Blob folk split by outline: shy lump is now flat and wide (squat/lump, low), shaggy mop is tall and narrow; pot dweller is a straight flared flowerpot with a smaller head and handles most of the time (egg kind dropped); stone peeper is a low wide rock with a small head over it.
+- Burrow peeper: head rises well above the mound, bigger eyes and side mounds, thicker ground line.
+- Removed dead duplicate `tail` key in `glyph()`.
+- Still weak: shaggy mop's shag barely reads at 60px; pot dweller without handles can still look like a blob; asterisk mite with strong curl is busy.
