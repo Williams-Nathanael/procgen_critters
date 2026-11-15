@@ -25,12 +25,12 @@ parent (the species the main rng picked is just one of them, and fades out as th
 rises); per slot, with chance `hybrid`:
 
 - **chassis**: one parent sets the chassis type; its numeric genes are a weighted blend
-  with 1-2 other parents of the same type, pushed up to 35% beyond the parents' mean and
+  with 1-2 other parents of the same type and variant (`form`, `view`, `kind`, `mode` all equal), pushed up to 35% beyond the parents' mean and
   clamped to their range widened by 15% (signs kept, integers stay integers).
 - `head`, `limbs`, `tail`, `dorsal`, `crown` (only slots the primary tag still owns; lent
   slots of a mix stay lent): taken from a parent not used yet where possible, empty slots
   rarely (never an empty head), then numerically blended 0.2-0.6 x `hybrid` toward a second
-  parent with the same part type. `surface` follows the head.
+  parent with the same part type and variant (otherwise the slot parent's values stay). `surface` follows the head.
 - Below 1, slots that miss the roll stay with the chassis parent, so the dial scales
   smoothly down to one species.
 

@@ -69,13 +69,17 @@ function relink(gene, src, g) {
     else if (s) Object.defineProperty(gene, k, { ...d, value: g[s] });
   }
 }
+// Genes blend numerically only between the same part type and the same variant: forms mean
+// different things by the same key (W, legL, rot), so a blend across them is noise.
+const VARIANT = ['form', 'view', 'kind', 'mode'];
+const sameForm = (a, b) => plain(a) && plain(b) && a.type === b.type && VARIANT.every(k => a[k] === b[k]);
 function blend(a, b, t) {
   for (const k of Object.keys(a)) {
     const x = a[k], y = b[k];
     if (isNum(x) && isNum(y)) {
       const v = x + (y - x) * t;
       a[k] = Number.isInteger(x) && Number.isInteger(y) ? Math.round(v) : v;
-    } else if (plain(x) && plain(y) && x.type === y.type) { a[k] = clone(x); blend(a[k], y, t); }
+    } else if (sameForm(x, y)) { a[k] = clone(x); blend(a[k], y, t); }
   }
 }
 // Weighted blend of several same-type genes into a (a's keys), pushed a little beyond the
@@ -91,7 +95,7 @@ function blendMany(a, others, ws, ex) {
       if (lo >= 0) v = Math.max(v, lo > 0 ? lo * 0.85 : 0);
       if (hi <= 0) v = Math.min(v, hi < 0 ? hi * 0.85 : 0);
       a[k] = vs.every(Number.isInteger) ? Math.round(v) : v;
-    } else if (vs.every(x => plain(x) && x.type === a[k].type)) {
+    } else if (vs.every(x => sameForm(x, a[k]))) {
       a[k] = clone(a[k]); blendMany(a[k], vs.slice(1), ws, ex);
     }
   }
@@ -124,8 +128,7 @@ function hybridize(tag, sp0, g, donors, seed, amount) {
   if (!keepOf(P0).includes('chassis') || amount >= 1) {
     if (hr.chance(amount)) {
       chassisP = pick(p => !p.sp.hybrid?.noLend?.includes('chassis')) ?? P0;
-      const T = chassisP.g.chassis.type;
-      const mates = hr.shuffle(pool.filter(p => p !== chassisP && p.g.chassis?.type === T && !p.sp.hybrid?.noLend?.includes('chassis'))).slice(0, hr.int(1, 2));
+      const mates = hr.shuffle(pool.filter(p => p !== chassisP && sameForm(p.g.chassis, chassisP.g.chassis) && !p.sp.hybrid?.noLend?.includes('chassis'))).slice(0, hr.int(1, 2));
       g.chassis = clone(chassisP.g.chassis);
       if (mates.length && !keepOf(chassisP).includes('chassis')) {
         const ws = [hr.range(0.5, 1), ...mates.map(() => hr.range(0.25, 1) * amount)];
@@ -135,7 +138,7 @@ function hybridize(tag, sp0, g, donors, seed, amount) {
       } else from.chassis = chassisP.sp.name;
       used.set(chassisP, (used.get(chassisP) ?? 0) + 1);
     } else {
-      const m = pick(p => p !== P0 && p.g.chassis?.type === g.chassis.type && !p.sp.hybrid?.noLend?.includes('chassis'));
+      const m = pick(p => p !== P0 && sameForm(p.g.chassis, g.chassis) && !p.sp.hybrid?.noLend?.includes('chassis'));
       if (m && amount > 0) { g.chassis = clone(g.chassis); blend(g.chassis, m.g.chassis, hr.range(0.2, 0.5) * amount); from.chassis = [P0.sp.name, m.sp.name]; used.set(m, 1); }
     }
   }
@@ -159,7 +162,7 @@ function hybridize(tag, sp0, g, donors, seed, amount) {
     if (s === 'head') g.surface = p.g.surface; // surface follows head
     use(p, s);
     if (none(g[s])) continue;
-    const m = pick(q => q !== p && can(q) && q.g[s]?.type === g[s].type);
+    const m = pick(q => q !== p && can(q) && sameForm(q.g[s], g[s]));
     if (m) { g[s] = clone(g[s]); blend(g[s], m.g[s], hr.range(0.2, 0.6) * amount); from[s] = [p.sp.name, m.sp.name]; used.set(m, (used.get(m) ?? 0) + 1); }
   }
   if (none(g.head)) { const p = pick(q => !none(q.g.head)); if (p) { g.head = p.g.head; g.surface = p.g.surface; use(p, 'head'); } }
