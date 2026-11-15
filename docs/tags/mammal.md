@@ -27,6 +27,17 @@ cottontail), whiskered pointed snouts, hedgehog and porcupine spines, bat wings.
 eyes: a small white dot.
 
 ## State
+**Chimera fix round (2026-11-14), critic's cell-60 findings; pure species pixel-identical (checked):**
+- `sp()` tags every gene with its species (non-enumerable `mSp`); `isChim(g)` is true only when a
+  mammal sibling supplied a slot. All mammal chassis are wrapped: on chimeras they set
+  `plan.mChim` / `plan.mType` and thicken thin curly tails (w0 >= 0.3).
+- Molehill chimera: no tail, ears or dorsal; head capped at 0.8 (small head poking out).
+- Lent bat wing on chimeras: none on sitting/curled bodies; elsewhere 25% smaller, half folded
+  (fan 0.9), shallow scallops (no spiky trailing edge).
+- Stalk climber chimera: stalk <= 60, body r >= 0.12 stalk, body length >= 1.5 r.
+- Bat chimera: span 0.78, head >= 0.85 r so a borrowed head shows.
+- Still weak: winged walkers read as hunched lumps rather than bats; bat chimera heads still small at cell 60.
+
 **M8 phase 2 chimeras (2026-11-14), judged on 48 seeds at hybrid 1, cell 60/110:**
 - Chimeras mostly hold together: sitters, walkers, stalk climbers, gliders, bats and molehills
   all appear as chassis; no one chassis dominates.

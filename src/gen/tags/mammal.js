@@ -20,6 +20,11 @@ import { chassis, heads, feet, tips, crowns, dorsals } from '../parts.js';
 const PI = Math.PI;
 const none = () => ({ type: 'none' });
 const isOwn = g => !!(g.own && g.own.chassis === g && g.own.limbs && g.own.limbs.mOwn);
+// Within-tag chimera: some slot came from a sibling species (sp() tags every gene with its
+// species, `mSp`). Pure species and cross-tag mixes are never chimeras here.
+const isChim = g => { const G = g.own; return !!(G && g.mSp && ['head', 'crown', 'dorsal', 'tail', 'limbs'].some(s => G[s]?.mSp && G[s].mSp !== g.mSp)); };
+// Chimeras: a thin curly tail goes hairline at print size, so thicken its base (tail drawn after chassis).
+const chimTail = g => { const G = g.own, T = G.tail; if (T && T.type !== 'mammalScaleTail' && (T.curl ?? 0) > 1 && (T.w0 ?? 1) < 0.3) G.tail = { ...T, w0: 0.3, w1: Math.max(T.w1 ?? 0, 0.1) }; };
 
 function strip(path, rad, t0, t1, n, sideSign, k = 0.85) {
   const out = [];
@@ -232,7 +237,7 @@ chassis.mammalBat = (C, g) => {
   const F = frame([0, 0], g.bank ?? 0, 1, 1), FP = p => F(p[0], p[1]);
   const body = []; for (let i = 0; i < 22; i++) { const a = i / 22 * 2 * PI; body.push(F(bw * Math.cos(a) * (1 - 0.15 * Math.sin(a)), bh * Math.sin(a))); }
   ink.poly(body);
-  const ua = r * g.arm, fa = r * g.arm * 1.2, fl = r * g.finger, back = [];
+  const chim = isChim(g), span = chim ? 0.78 : 1, ua = r * g.arm * span, fa = r * g.arm * 1.2 * span, fl = r * g.finger * span, back = [];
   // one outline per wing: arm leading edge to the wrist, then finger tips joined by deep scallops
   for (const sd of [-1, 1]) {
     const el = g.elev + sd * (g.skew ?? 0);
@@ -263,7 +268,7 @@ chassis.mammalBat = (C, g) => {
   const limbs = own ? [] : [-1, 1].map(sd => ({ p: F(sd * bw * 0.4, bh * 0.8), dir: up + PI - sd * 0.5, s: r * 0.6, role: 'hind', fwd: up, side: sd }));
   return {
     view: 'top', mBat: true, r, path, rad: () => bw * 0.8,
-    head: { p: F(0, -bh * 0.8), dir: up, face: up, s: r * g.headS, sym: true },
+    head: { p: F(0, -bh * 0.8), dir: up, face: up, s: r * (chim ? Math.max(g.headS, 0.85) : g.headS), sym: true },
     tail: { p: F(0, bh * 0.9), dir: up + PI, s: r * 0.3 },
     limbs, back,
   };
@@ -302,7 +307,7 @@ chassis.mammalGlide = (C, g) => {
 
 // Clinging to an upright stalk or branch (harvest mouse on an ear of grass, tarsier on a sapling).
 chassis.mammalClimb = (C, g) => {
-  const { ink, rng } = C, own = isOwn(g), r = g.r * C.plump, Ht = g.stalkH, sr = Math.max(g.stalkR, 0.7);
+  const { ink, rng } = C, own = isOwn(g), chim = isChim(g), Ht = chim ? Math.min(g.stalkH, 60) : g.stalkH, r = chim ? Math.max(g.r * C.plump, Ht * 0.12) : g.r * C.plump, sr = Math.max(g.stalkR, 0.7);
   const bx = g.bendX * Ht;
   const sPath = spline([[0, 0], [-bx * 0.15, -Ht * 0.4], [bx * 0.25, -Ht * 0.75], [bx, -Ht]], 8);
   ink.poly(tube(sPath, profile([[0, sr * 1.25], [0.6, sr], [1, sr * (g.top === 'branch' ? 0.85 : 0.6)]])));
@@ -323,7 +328,7 @@ chassis.mammalClimb = (C, g) => {
     ink.poly(leaf(topE.p, topE.ang + 0.5, r * 1.3, r * 0.65, 0, 0.45));
   }
   const Q = pathAt(sPath, g.at), ta = Q.ang, ra = ta + PI / 2; // ra: toward +x side of the stalk
-  const len = g.len, off = sr + r * (g.hug ?? 0.78);
+  const len = chim ? Math.max(g.len, r * 1.5) : g.len, off = sr + r * (g.hug ?? 0.78);
   const mk = (along, out) => polar(polar(Q.p, ta, along), ra, out);
   const rump = mk(-len / 2, off), shd = mk(len / 2, off * (g.shOff ?? 0.9));
   const neckA = ta + (g.turn ?? 0.5), neckEnd = polar(shd, neckA, r * 0.55);
@@ -376,7 +381,9 @@ chassis.mammalFloat = (C, g) => {
 
 // Mole surfacing from a molehill.
 chassis.mammalHill = (C, g) => {
-  const { ink, rng } = C, own = isOwn(g), r = g.r * C.plump, W = g.w, Hm = g.hm;
+  const { ink, rng } = C, own = isOwn(g), chim = isChim(g), r = g.r * C.plump, W = g.w, Hm = g.hm;
+  // chimera: only a small head pokes out (no lent tail, ears or back parts: they made a castle)
+  if (chim) g.own.tail = none();
   const ph = rng.range(0, 6), mound = [];
   for (let i = 0; i <= 30; i++) { const a = PI + i / 30 * PI; mound.push([Math.cos(a) * W / 2, Math.sin(a) * Hm * (1 + 0.07 * Math.sin(a * 7 + ph)) * Math.pow(Math.abs(Math.sin(a)), -0.25 + 0.25)]); }
   ink.poly(mound);
@@ -394,11 +401,18 @@ chassis.mammalHill = (C, g) => {
   const back = []; for (let i = 0; i < 8; i++) { const a = PI + 0.25 + i / 7 * 0.75, p = [Math.cos(a) * W / 2 * 0.9, Math.sin(a) * Hm * 0.9]; back.push({ p, dir: a, t: i / 7 }); }
   return {
     view: 'side', r, path, rad,
-    head: { p: top, dir: -PI / 2 + g.lean * 0.6 + 0.15, face: g.face ?? -0.55, s: r * g.headS, sym: false },
+    head: { p: top, dir: -PI / 2 + g.lean * 0.6 + 0.15, face: g.face ?? -0.55, s: r * (chim ? Math.min(g.headS, 0.8) : g.headS), sym: false },
     tail: { p: [-W * 0.3, -Hm * 0.35], dir: PI + 0.3, s: r * 0.35 },
-    limbs, back: [back],
+    limbs, back: chim ? [] : [back],
   };
 };
+
+// Chimera hooks on every mammal chassis: thicker curly tails, and plan.mChim / plan.mType so
+// lent parts can adapt (pure species never pass isChim, so they are untouched).
+for (const k of Object.keys(chassis).filter(k => k.startsWith('mammal'))) {
+  const f = chassis[k];
+  chassis[k] = (C, g) => { const ch = isChim(g); if (!ch) return f(C, g); chimTail(g); const p = f(C, g); p.mChim = true; p.mType = k; return p; };
+}
 
 // =====================================================================
 // HEAD
@@ -439,6 +453,7 @@ heads.mammalHead = (C, sock, g) => {
 // EARS
 // =====================================================================
 crowns.mammalEar = (C, m, F0, s, g) => {
+  if (C.plan.mChim && C.plan.mType === 'mammalHill') return;
   // a cap or other single top mount gets no paired copy: splay a pair of ears from it
   if (C.head?.tag !== 'mammal' && C.plan.rooted && !m.far && !m.split) {
     for (const sd of [-1, 1]) crowns.mammalEar(C, { ...m, split: true, p: polar(m.p, m.dir + PI / 2, sd * s * 0.75), dir: m.dir + sd * 0.5, flip: sd }, F0, s * 0.9, g);
@@ -596,16 +611,18 @@ dorsals.mammalBatWing = (C, plan, st, sd, si, g) => {
   // Chimeras: bat wings dominated the dorsal slot (every winged body read as a gremlin), so a
   // lent wing only shows on about 2 in 5 bodies, and a little smaller.
   if (C.rng.chance(0.6)) return;
-  const { ink } = C, r = clamp(plan.r, 6.5, 10), k = samp(st, g.at ?? 0.7), s = r * g.size * 0.82;
+  // chimeras: spread spiky membranes on a sitting / curled body read as a dragon; none there
+  if (plan.mChim && (plan.mType === 'mammalUp' || plan.mType === 'mammalBall')) return;
+  const { ink } = C, r = clamp(plan.r, 6.5, 10), k = samp(st, g.at ?? 0.7), s = r * g.size * 0.82 * (plan.mChim ? 0.75 : 1);
   const base = polar(k.p, k.dir, -plan.r * 0.3);
   const wings = side ? [[1, 0.85, 0.3], [0, 1, 0]] : [[0, 1, 0]];
   for (const [far, ks, da] of wings) {
     // local frame: x along the arm (outward), y toward the trailing edge (backward / down)
     const a0 = side ? -PI / 2 - 0.3 + da : k.dir - sd * 0.25;
     const F = frame(base, a0, s * ks, sd);
-    const E = [0.3, -0.06], W = [0.62, -0.1], nf = g.nf ?? 4, tipsP = [], fan = clamp(g.fan ?? 1.4, 1.3, 1.5);
+    const E = [0.3, -0.06], W = [0.62, -0.1], nf = g.nf ?? 4, tipsP = [], fan = plan.mChim ? 0.9 : clamp(g.fan ?? 1.4, 1.3, 1.5); // chimeras: half-folded
     for (let i = 0; i < nf; i++) { const a = 0.55 + i * fan / (nf - 1), len = 0.7 * (1 - 0.12 * i); tipsP.push(polar(W, a, len)); }
-    const sc = Math.min(g.scallop ?? 0.45, 0.45), root = [0.0, 0.4];
+    const sc = plan.mChim ? 0.12 : Math.min(g.scallop ?? 0.45, 0.45), root = [0.0, 0.4];
     const mem = [[0, -0.06], E, W, tipsP[0]];
     for (let i = 0; i < nf - 1; i++) mem.push(...bez(tipsP[i], lerp(lerp(tipsP[i], tipsP[i + 1], 0.5), W, sc), tipsP[i + 1]), tipsP[i + 1]);
     mem.push(...bez(tipsP[nf - 1], lerp(lerp(tipsP[nf - 1], root, 0.5), [0.15, 0.1], sc), root), root);
@@ -657,7 +674,7 @@ const stand = (r, B, o = {}) => ({
   headS: B.headS / 0.92, arms: 'hang', legW: B.legW ?? 0.3, footL: B.sitFoot ?? 0.8, hunch: r.range(-0.05, 0.1), face: r.range(-0.25, 0.1), thigh: 0.7, ...o,
 });
 const ball = (r, B, o = {}) => ({ type: 'mammalBall', r: B.r * 1.25, wide: r.range(1.08, 1.22), headS: B.headS / 1.25 * 0.95, ...o });
-const sp = (name, w, fn, hybrid) => ({ name, w, ...(hybrid ? { hybrid } : {}), genes: r => { const G = fn(r); G.limbs ??= limbs(); G.dorsal ??= none(); G.crown ??= none(); G.tail ??= none(); G.surface ??= { eyes: 'dot' }; Object.defineProperty(G.chassis, 'own', { value: G, enumerable: false }); return G; } });
+const sp = (name, w, fn, hybrid) => ({ name, w, ...(hybrid ? { hybrid } : {}), genes: r => { const G = fn(r); G.limbs ??= limbs(); G.dorsal ??= none(); G.crown ??= none(); G.tail ??= none(); G.surface ??= { eyes: 'dot' }; Object.defineProperty(G.chassis, 'own', { value: G, enumerable: false }); for (const k of Object.keys(G)) if (G[k] && typeof G[k] === 'object') Object.defineProperty(G[k], 'mSp', { value: name, enumerable: false, configurable: true }); return G; } });
 
 // =====================================================================
 // SPECIES
