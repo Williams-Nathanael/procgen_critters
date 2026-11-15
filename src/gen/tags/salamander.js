@@ -72,9 +72,56 @@ function strip(path, rad, t0, t1, n, sideSign) {
 }
 
 // ---------------------------------------------------------------------
+// CHIMERA body plans (only when the root gene set mixes species; pure species untouched)
+// ---------------------------------------------------------------------
+const isChim = g => { const R = g.root; return !!(R && g.__sal) && ['head', 'tail', 'limbs', 'crown', 'dorsal'].some(s => R[s]?.__sal && R[s].__sal !== g.__sal); };
+// shared chimera fixes on the root: open gills (two long fronds, never with a sail/frill),
+// tail length varied, a side fin that tapers into the trunk
+function chimRoot(C, Rt, side) {
+  const { rng } = C;
+  const cr = Rt.crown;
+  if (cr?.type === 'salamanderGills') {
+    Rt.crown = { ...cr, open: true, len: cr.len * rng.range(1.15, 1.35), fl: (cr.fl ?? 0.3) * 0.55, nf: 2, style: cr.style === 'bush' ? 'plume' : cr.style };
+    if (['salamanderSail', 'salamanderSpines'].includes(Rt.dorsal?.type) || (!side && Rt.dorsal?.type !== 'none')) Rt.dorsal = { type: 'none' };
+  }
+  if (Rt.tail?.T) {
+    const T = { ...Rt.tail.T, len: Rt.tail.T.len * rng.range(0.7, 1.3) };
+    if (side) { T.finBase = 0; T.finKeys = [[0, 0], [0.3, 1], [0.65, 0.8], [1, 0]]; T.up = false; }
+    Rt.tail = { ...Rt.tail, T };
+  }
+}
+const sideKinds = [[2, 'walk'], [2, 'alert'], [0.8, 'tall'], [1, 'swim']];
+// a chimera side pose: belly curve, lifted head, arched back
+function chimSidePose(r) {
+  const P = sidePose(r, r.wpick(sideKinds));
+  if (!P.swim) Object.assign(P, { rise: Math.max(P.rise ?? 0, r.range(0.3, 0.8)), neck: Math.max(P.neck ?? 0, r.range(0.45, 0.9)), arch: r.range(0.25, 0.55) });
+  return P;
+}
+
+// ---------------------------------------------------------------------
 // CHASSIS: top view
 // ---------------------------------------------------------------------
 chassis.salamanderTop = (C, g) => {
+  if (isChim(g)) {
+    const r0 = C.rng, Rt = g.root;
+    // about half of chimeras turn to a side view
+    if (r0.chance(0.5)) {
+      const sg = { type: 'salamanderSide', len: g.len / 1.18 * 0.92, r: g.r * 0.95, pose: chimSidePose(r0), belly: g.belly, headS: g.headS, limbs: g.limbs, legK: 0.85, legW: 0.85, stance: 0.35, ownLeg: Rt.limbs?.salL?.len };
+      Object.defineProperty(sg, 'root', { value: Rt, configurable: true, writable: true });
+      Object.defineProperty(sg, '__sal', { value: g.__sal, configurable: true });
+      return chassis.salamanderSide(C, sg);
+    }
+    chimRoot(C, Rt, false);
+    // vary the plan: girth from eel-thin to hellbender-wide, pose, limb count and size
+    const gk = r0.range(0.65, 1.4), kind = r0.wpick([[2, 'walk'], [2, 'ess'], [1.5, 'coil'], [1.5, 'look'], [1.2, 'eel']]);
+    const lm = r0.wpick([[6, g.limbs ?? 'four'], [1.2, 'fore'], [1, 'tiny']]);
+    const kept = { root: Rt, __sal: g.__sal };
+    g = { ...g, r: g.r * gk, len: g.len * (gk < 1 ? 1.25 - 0.25 * gk : 1 / Math.sqrt(gk)), pose: topPose(r0, kind, kind === 'eel' ? 0.8 : 1), _chim: true };
+    if (lm === 'fore') g.limbs = 'fore';
+    if (lm === 'tiny' || kind === 'eel') g.limbS = (g.limbS ?? 1.1) * 0.6;
+    if (lm === 'fore') g.tF = 0.9;
+    for (const [k, v] of Object.entries(kept)) Object.defineProperty(g, k, { value: v, configurable: true, writable: true });
+  }
   const { ink, rng } = C, r = g.r * C.plump, L = g.len, P = g.pose ?? {};
   const ph = P.ph ?? rng.range(0, TAU), f = P.freq ?? 1;
   const prof = (g.prof ?? [[0, 0.7], [0.2, 0.95], [0.5, g.belly ?? 1], [0.8, 0.9], [1, g.neckW ?? 0.72]]).map(([t, k]) => [t, k * r]);
@@ -98,7 +145,7 @@ chassis.salamanderTop = (C, g) => {
   const e = pathAt(path, 1), b = pathAt(path, 0);
   const face = e.ang + (P.headTurn ?? 0), hs = rad(1) / 0.74 * (g.headS ?? 1);
   const bendMid = clamp(kap(0.5) / 3, -1, 1), gait = g.gait ?? 0.4;
-  const want = g.limbs ?? 'four', ls = r * (g.limbS ?? 1.1);
+  const want = g.limbs === 'fore' ? 'fore' : (g.limbs ?? 'four'), ls = r * (g.limbS ?? 1.1);
   // whatever salamander legs arrive (a chimera's limbs may come from a side-view sibling)
   // are re-fitted as top-view sprawling legs; the clearance check uses their real length
   const Rt = g.root, LS = Rt?.limbs?.salL;
@@ -180,6 +227,17 @@ chassis.salamanderTop = (C, g) => {
 // CHASSIS: side view
 // ---------------------------------------------------------------------
 chassis.salamanderSide = (C, g) => {
+  if (isChim(g) && !g._chim) {
+    const r0 = C.rng, Rt = g.root;
+    chimRoot(C, Rt, true);
+    const gk = r0.range(0.7, 1.3), kept = { root: Rt, __sal: g.__sal };
+    g = { ...g, r: g.r * gk, len: g.len * (gk < 1 ? 1.2 - 0.2 * gk : 1 / Math.sqrt(gk)), pose: g.pose?.swim || g.pose?.kind === 'walk' || !g.pose ? chimSidePose(r0) : { ...g.pose, arch: Math.max(g.pose.arch ?? 0, 0.25) }, legK: Math.max(g.legK ?? 0.7, 0.9), _chim: true };
+    if (r0.chance(0.15)) g.limbs = 'fore';
+    for (const [k, v] of Object.entries(kept)) Object.defineProperty(g, k, { value: v, configurable: true, writable: true });
+    // a plain back gets a crest or spines breaking the line
+    if ((Rt.dorsal?.type ?? 'none') === 'none' && Rt.crown?.type !== 'salamanderGills' && r0.chance(0.6))
+      Rt.dorsal = r0.chance(0.5) ? { type: 'salamanderCrest', h: r0.range(0.5, 0.9), wave: 0.2, freq: r0.range(6, 9), env: [[0, 0.2], [0.3, 1], [0.8, 0.9], [1, 0.2]] } : { type: 'salamanderSpines', n: r0.int(6, 9), len: r0.range(0.7, 1.0), wid: r0.range(0.2, 0.26), lean: 0.55 };
+  }
   const { ink, rng } = C, r = g.r * C.plump, L = g.len, P = g.pose ?? {};
   const swim = !!P.swim;
   // salamander legs from any sibling are re-fitted to this body: the chassis species sets how
@@ -204,7 +262,7 @@ chassis.salamanderSide = (C, g) => {
   const rad = profile((g.prof ?? [[0, 0.62], [0.25, 0.94], [0.5, belly], [0.75, 0.9], [1, g.neckW ?? 0.66]]).map(([t, k]) => [t, k * r]));
   ink.poly(tube(path, rad));
   const limbs = [], ls = r * (g.limbS ?? 1.0), st = (g.gait ?? 0.55) * r * rng.sign();
-  const want = g.limbs ?? 'four';
+  const want = g.limbs === 'fore' ? 'fore' : (g.limbs ?? 'four');
   const mk = (base, dx, role, far) => {
     if (swim) limbs.push({ p: add(base, [dx, r * 0.55]), dir: PI - (role === 'fore' ? 1.0 : 0.6) + rng.range(-0.12, 0.12), s: ls * 0.9, role, far, fwd: role === 'fore' ? -PI / 2 : PI / 2, side: 1 }); // lower legs fold back
     else limbs.push({ p: add(base, [dx, r * 0.55]), dir: PI / 2, s: ls, role, far, ground: 0, fwd: 0, side: 1 });
@@ -382,6 +440,8 @@ function tailSide(C, sock, T) {
     for (let i = 0; i < n; i++) {
       const u = (i + 0.5) / n, cap = step / (1.4 * rf(u) + 1.2);
       h += clamp(kap(u, h) / n, -cap, cap);
+      // a raised tail is held at most ~30 degrees above the horizontal (never a vertical whip)
+      if (!swim) h = PI + clamp(angDiff(h, PI), -1.5, 0.55);
       p = polar(p, h, step);
       const lim = -(rf((i + 1) / n) + finB * fe((i + 1) / n) + 0.15);
       if (floor && p[1] > lim) { p = [p[0], lim]; if (!up) h += angDiff(PI, h) * 0.7; }
@@ -422,7 +482,7 @@ crowns.salamanderGills = (C, m, F, s, g) => {
   const dirAt = (i, k) => sideV ? -PI / 2 + SF[i] - k - (far ? 0.3 : 0) : m.dir + m.flip * (fan[i] + k + (far ? 0.25 : 0));
   const Q = (i, k, d) => polar(m.p, dirAt(i, k), d * s);
   const web = [m.p];
-  for (let i = far ? 1 : 0; i < 3; i++) {
+  for (const i of (g.open ? (sideV ? [1, 2] : [0, 2]) : [0, 1, 2]).filter(i => !far || i > 0)) {
     const len = g.len * lens[i] * (far ? 0.82 : 1) * (sideV ? 1.3 : 1), bend = g.bend ?? 0.45;
     const pts = spline([Q(i, 0, -0.2), Q(i, bend * 0.1, len * 0.4), Q(i, bend * 0.5, len * 0.75), Q(i, bend, len)], 6);
     const n = pts.length, w = Math.max(s * (g.w ?? 0.12), MINW * 0.55), fl = s * (g.fl ?? 0.3), nf = g.nf ?? 4;
@@ -440,7 +500,7 @@ crowns.salamanderGills = (C, m, F, s, g) => {
     web.push(pts[Math.round((n - 1) * 0.5)]);
   }
   // fill the crotches between the rami near the head: open fronds, never trapped white gaps
-  ink.poly(web);
+  if (!g.open) ink.poly(web);
 };
 
 // facing of the head a mount sits on (salamander heads: top mounts at face +-1.3, side mount at
@@ -637,6 +697,10 @@ function make(r, d, kinds) {
   // chassis can re-fit sibling legs and keep its limbs out of the gills actually worn
   Object.defineProperty(ch, 'root', { value: G, enumerable: false, configurable: true, writable: true });
   if (d.limbs === 'none') G.limbs = none();
+  // hidden species token on every slot gene: a chassis whose root holds a gene from another
+  // species knows it is a chimera (clone() keeps non-enumerable descriptors)
+  const tok = {};
+  for (const o of [ch, G.head, G.tail, G.limbs, G.crown, G.dorsal]) if (o && typeof o === 'object') Object.defineProperty(o, '__sal', { value: tok, configurable: true });
   return G;
 }
 

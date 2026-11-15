@@ -116,3 +116,13 @@ Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.
 - Chassis carry a non-enumerable `root` link to the gene set. Side chassis refit any salamander legs (`limbs.salL`) to their own legK/stance and lift (lift follows leg length, min 0.4: fixes dark bars on short feet for hellbender/giant/mole/spotted chimeras); top chassis restore sprawl legs and take the gill keep-out zone from the crown actually worn.
 - No `hybrid` hints needed so far.
 - Weak: banded newt top-view frill (reads as bumps), horns small in top view, shovel head still roundish from above, lent finned tails start with a step on low-backed side chassis, giant-with-gills top views blobby.
+
+### M8 chimera fix round (2026-11-14)
+- Chimera detection inside the tag: `make` puts a hidden species token (`__sal`) on every slot gene; a chassis whose root holds a gene with another token is a chimera (`isChim`). Pure species and cross-tag mixes take none of the paths below.
+- Body plans: half of top-view chimeras switch to the side chassis; top chimeras re-roll girth (x0.65-1.4, length compensated), pose (walk/ess/coil/look/eel), and limbs (~13% forelimbs only, siren-like; ~11% tiny legs; eels get tiny legs). Side chimeras re-roll girth, ~15% forelimbs only.
+- Side views: chimera side poses lift the head (rise/neck) and arch the back; legs longer (legK >= 0.9); a plain back gets a crest or spine row 60% of the time.
+- Raised tails (all, pure included) are capped at ~30 degrees above horizontal in `tailSide`.
+- Chimera gills are "open": two longer fronds (side view: the two rear rami), thinner fringe, no crotch web; a sail/spines dorsal (and any top-view dorsal) is dropped when gills are worn.
+- Chimera side-view tail fin starts at 0 height (no step at the trunk); chimera tail length x0.7-1.3.
+- Sheet: `out/roads/07-salamander-chimeras.png` (seeds 1000/1100/1200, cell 110). Top-down splayed now roughly a third.
+- Still weak: some side chimeras still long dark bars when girth rolls high; capped raised tails read as straight sticks; foreign heads on the side chassis unchecked at cell 60.
