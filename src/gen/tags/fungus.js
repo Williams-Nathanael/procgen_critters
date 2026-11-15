@@ -390,6 +390,28 @@ const FB = {
     return { top: F(0.98, 0), w: W, c: F(0.5, 0) };
   },
 
+  // Jelly ear (Auricularia): a floppy, wrinkled ear on a pinched stub, lobed round its rim,
+  // with white vein folds fanning from the attachment. No flat side, so it never reads as a shell.
+  jwrink(K, rng, p, ax, s, g) {
+    const H = g.h * s, W = g.w * s, sd = g.side ?? rng.sign(), dr = (g.droop ?? 0.3) * sd;
+    const F = (x, y) => frame(p, ax, 1, sd)(x * H, y * W + x * x * dr * W);
+    const nl = g.lobes ?? 4, ph = rng.range(0, TAU), wb = g.wob ?? 0.1, pts = [], N = 48;
+    for (let i = 0; i < N; i++) {
+      const a = i / N * TAU, far = (1 + Math.cos(a)) / 2;
+      const rr = 1 + wb * Math.sin(nl * a + ph) * far + rng.range(-0.015, 0.015);
+      const pinch = mix(0.28, 1, Math.min(1, far * 1.6 + 0.05));
+      pts.push(F(0.52 + 0.5 * Math.cos(a) * rr, 0.5 * Math.sin(a) * rr * pinch));
+    }
+    K.poly(pts);
+    if (H > 8) { // the cupped hollow: a thick pale fold following the rim, like the helix of an ear
+      const vw = Math.max(MINW * 1.4, W * 0.09), a0 = rng.range(-2.2, -1.7), a1 = rng.range(1.5, 2.1), arc = [];
+      for (let i = 0; i <= 8; i++) { const a = mix(a0, a1, i / 8), k = 0.6 + 0.06 * Math.sin(i * 1.3 + ph); arc.push(F(0.56 + 0.42 * k * Math.cos(a), 0.42 * k * Math.sin(a))); }
+      K.poly(tube(spline(arc, 4), profile([[0, vw * 0.4], [0.3, vw], [0.75, vw], [1, vw * 0.4]])), 'w');
+      if ((g.veins ?? 2) > 2) K.poly(tube(spline([F(0.2, 0.02), F(0.42, rng.range(-0.08, 0.08))], 4), profile([[0, vw * 0.4], [1, vw * 0.7]])), 'w');
+    }
+    return { top: F(1.0, 0), w: W, c: F(0.5, 0) };
+  },
+
   // Devil's fingers / starfish stinkhorn: arching tentacle arms.
   arms(K, rng, p, ax, s, g) {
     const n = g.n ?? 5; let best = p, bh = -1e9;
@@ -556,7 +578,7 @@ function grass(K, rng, x, n, h) {
 const FORMS = {
   stems(K, rng, g, plump) {
     const sub = g.sub ?? {};
-    let y0 = 0;
+    let y0 = 0; const fbs = [];
     if (sub.kind === 'twig') { // a fallen stick the fruit bodies sit on
       const rt = sub.r, x0 = sub.x0, x1 = sub.x1;
       tb(K, [[x0, -rt * 0.9], [mix(x0, x1, 0.35), -rt * (1 + sub.bow)], [mix(x0, x1, 0.7), -rt * (1 - sub.bow * 0.5)], [x1, -rt * 0.9]], profile([[0, rt * 0.8], [0.5, rt], [1, rt * 0.7]]));
@@ -602,10 +624,10 @@ const FORMS = {
         if (st.egg) { const v = st.egg; oval(K, [st.x, -v.h * 0.5], v.w, v.h * 0.5); for (const sd of [-1, 1]) K.poly(leaf([st.x + sd * v.w * 0.6, -v.h * 0.8], UP + sd * rng.range(0.4, 0.8), v.h * rng.range(0.35, 0.5), v.w * 0.55, 0, 0.3)); }
       }
       const ax = (h > 1 ? toward(UP, e.ang, st.tilt ?? 0.6) : e.ang) + (st.tiltA ?? 0);
-      if (i > 0 || g.selfHead) FB[st.head.form](K, rng, e.p, ax, st.s, st.head);
+      if (i > 0 || g.selfHead) fbs.push({ p: e.p, ax, s: st.s, g: st.head });
       if (i === 0) main = { path, rad, e, ax, r, st, base };
     });
-    const m = main, R = g.R ?? m.r, out = { r: R, path: m.path, rad: m.rad };
+    const m = main, R = g.R ?? m.r, out = { r: R, path: m.path, rad: m.rad, fbs };
     if (g.body) {
       const b = g.body, c = [b.x, -b.cy];
       out.head = { p: [b.x + b.rx * 0.78, -b.cy * (b.hy ?? 0.9)], dir: -0.3, face: 0, s: clamp(Math.min(b.rx, b.ry) * 0.6, 4.5, 9) };
@@ -660,7 +682,8 @@ const FORMS = {
       }
       if (g.shelves?.some(sh => sh.front)) logBody('k2');
       if (g.column) { const [cx, cy, h, cr] = g.column; tb(K, [[x1 - cx, yt(1) * 0.8], [x1 - cx, yt(1) - h]], profile([[0, cr * 1.2], [1, cr]]), 5); K.poly(tube(spline([[x1 - cx, yt(1) * 0.8], [x1 - cx, yt(1) - h]], 5), profile([[0, cr * 1.2], [1, cr]])), 'k2'); }
-      for (const it of g.items ?? []) { const q = [mix(x0, x1, it.t), yt(it.t) * (it.dip ?? 0.92)]; if (it.stem) tb(K, [q, polar(q, UP + it.ax, it.stem)], it.stemW ?? 1); FB[it.fb.form](K, rng, polar(q, UP + it.ax, it.stem ?? 0), UP + it.ax, it.s, it.fb); }
+      out.fbs = [];
+      for (const it of g.items ?? []) { const q = [mix(x0, x1, it.t), yt(it.t) * (it.dip ?? 0.92)]; if (it.stem) tb(K, [q, polar(q, UP + it.ax, it.stem)], it.stemW ?? 1); out.fbs.push({ p: polar(q, UP + it.ax, it.stem ?? 0), ax: UP + it.ax, s: it.s, g: it.fb }); }
       const c = [0, -rr];
       out.r = rr; out.path = [[x0, -rr], [0, -rr], [x1, -rr]]; out.rad = () => rr * 0.85;
       out.head = { p: [x1 + rr * 0.1, -rr * 1.05], dir: -0.25, face: 0, s: rr * 0.8 };
@@ -678,13 +701,13 @@ const FORMS = {
     K.poly([...Lp, ...jag, ...Rp.reverse()]);
     if (g.roots) for (const sd of [-1, 1]) K.poly(leaf([sd * w * 0.9, -w * 0.35], sd > 0 ? 0.25 : PI - 0.25, w * rng.range(1.2, 1.8), w * 0.75, 0, 0.25));
     if (g.snag) { const t = g.snag, sd = g.sd, b = [cx(t) + sd * hw(t, sd) * 0.6, -h * t]; tb(K, [b, add(b, [sd * w * 1.2, -w * 0.9]), add(b, [sd * w * 2.0, -w * 2.1])], profile([[0, w * 0.4], [1, w * 0.26]])); }
-    const at = (t, sd) => [cx(t) + sd * hw(t, sd) * 0.8, -h * t];
+    const at = (t, sd) => [cx(t) + sd * hw(t, sd) * 0.8, -h * t]; out.fbs = [];
     for (const sh of g.shelves ?? []) if (sh.lobe) lobe(K, rng, [cx(sh.t) + sh.sd * (sh.dx ?? 0) * w, -h * sh.t], sh.sd, sh.len, sh.w0, sh.w1, sh); else shelf(K, rng, sh.center ? [cx(sh.t), -h * sh.t] : at(sh.t, sh.sd), sh.sd, sh.len, sh.th, sh);
     for (const it of g.items ?? []) {
       const q = at(it.t, it.sd), ax = it.sd > 0 ? it.ax : PI - it.ax;
       const e = it.stem ? polar(q, ax, it.stem) : q;
       if (it.stem) tb(K, [add(q, [-it.sd * 1.5, 0]), e], it.stemW ?? 1.2);
-      FB[it.fb.form](K, rng, e, ax + (it.turn ?? 0) * it.sd, it.s, it.fb);
+      out.fbs.push({ p: e, ax: ax + (it.turn ?? 0) * it.sd, s: it.s, g: it.fb });
     }
     out.r = w; out.path = spline([[0, 0], [cx(0.5), -h * 0.5], [cx(1), -h]], 6); out.rad = t => hw(t, 1);
     out.head = { p: [cx(1), -h + w * 0.2], dir: UP + g.lean * 0.8, face: rng.range(-0.1, 0.2), s: w * 0.92, radial: true };
@@ -722,12 +745,13 @@ const FORMS = {
 // REGISTERED PARTS
 // =====================================================================
 chassis.fungus = (C, g) => {
-  const own = g._own, ownLimbs = !!own && C.lift === own.limbs.lift;
+  const own = g._own, ownLimbs = Math.abs(C.lift - FZ_LIFT) < 1e-6; // fungus limbs (any fungus parent): no legs, no lent fungus ornaments
   if (own) for (const o of own.mute) { for (const k of Object.keys(o)) delete o[k]; o.type = 'none'; } // lend-only ornaments
   const R0 = g.R ?? 6, dy = ownLimbs ? 0 : C.lift * R0 * 1.1 + R0 * 0.15;
   const K = pen(C.ink, dy, true);
   const o = FORMS[g.form](K, C.rng, g, C.plump);
   const sh = p => [p[0], p[1] - dy], r = o.r;
+  const span0 = g.form === 'stems' ? g.stems[0].head?.span ?? 2 : o.fbs?.[0]?.g.span ?? 2;
   const limbs = [];
   if (!ownLimbs) {
     const ls = clamp(r, 4, 9);
@@ -738,9 +762,9 @@ chassis.fungus = (C, g) => {
     view: 'side', rooted: true, alt: !!o.alt, r,
     path: o.path.map(sh), rad: o.rad,
     head: { sym: false, ...o.head, p: sh(o.head.p) },
-    tail: { p: sh(o.tailP), dir: PI + C.rng.range(0, 0.35), s: clamp(r, 4, 9) * 0.6 },
+    tail: { p: sh(o.tailP), dir: PI + C.rng.range(0, 0.35), s: ownLimbs ? 1e-3 : clamp(r, 4, 9) * 0.6 },
     limbs, back: o.strips.map(st => st.map(k => ({ ...k, p: sh(k.p) }))),
-    fungus: { dy, muteHead: !!g.selfHead || g.form !== 'stems' },
+    fungus: { dy, muteHead: !!g.selfHead || g.form !== 'stems', fbs: o.fbs ?? [], hid: g.hid, span0, own: ownLimbs },
   };
 };
 
@@ -749,8 +773,20 @@ chassis.fungus = (C, g) => {
 heads.fungusFB = (C, sock, g) => {
   const { ink, rng } = C, fz = C.plan.fungus, s0 = fz ? sock.s : Math.max(sock.s, 4.2); // tiny arthropod heads still get a legible fruit body
   if (fz) {
-    if (fz.muteHead) return { eyes: [], mounts: [{ p: sock.p, dir: sock.dir, flip: 1, s: s0 }], spots: [], isCap: true };
-    const K = pen(ink, fz.dy, true), r = FB[g.form](K, rng, [sock.p[0], sock.p[1] + fz.dy], sock.dir, s0, g);
+    // a chimera (head from another parent than the chassis): every fruit body on the chassis
+    // becomes the head's kind, sized to fit the stalk it sits on, so the whole thing is one organism
+    const hyb = g.hid !== fz.hid, K = pen(ink, fz.dy, true), fit = sp => hyb ? clamp((sp / g.span) ** 0.75, 0.62, 1.6) : 1;
+    const gh = hyb && g.skirt ? { ...g, skirt: g.skirt * 0.6 } : g;
+    // a stalked fruit body landing on a ground-level seat (a puffball's or coral's socket) grows a stout stalk
+    const stalk = (p, ax, ss) => {
+      if (!hyb || !STALKED.has(g.form) || p[1] < -ss * 1.2) return p;
+      const L = ss * rng.range(1.9, 2.7), e = polar(p, toward(ax, UP, 0.7), L);
+      K.poly(tube(spline([p, lerp(p, e, 0.5), e], 5), profile([[0, ss * 0.36], [0.3, ss * 0.26], [1, ss * 0.22]])));
+      return e;
+    };
+    for (const q of fz.fbs) { const ss = q.s * fit(q.g.span); FB[hyb ? g.form : q.g.form](K, rng, stalk(q.p, q.ax, ss), q.ax, ss, hyb ? gh : q.g); }
+    if (fz.muteHead && !(hyb && !fz.fbs.length)) return { eyes: [], mounts: [{ p: sock.p, dir: sock.dir, flip: 1, s: s0 }], spots: [], isCap: true };
+    const s1 = s0 * fit(fz.span0), r = FB[g.form](K, rng, stalk([sock.p[0], sock.p[1] + fz.dy], sock.dir, s1), sock.dir, s1, gh);
     const up = p => [p[0], p[1] - fz.dy];
     return { eyes: [], mounts: [{ p: up(r.top), dir: sock.dir, flip: 1, s: s0 }], spots: (r.spots ?? []).map(q => ({ p: up(q.p), r: q.r })), isCap: true };
   }
@@ -780,6 +816,7 @@ heads.fungusFB = (C, sock, g) => {
 
 // Growths along a back: a troop of little fruit bodies of differing sizes.
 dorsals.fungusGrowth = (C, plan, strip, sd, si, g, at) => {
+  if (C.plan.fungus?.own) return; // on a fungus body, sibling ornaments would be loose bits
   const { rng } = C, K = pen(C.ink), r = plan.r, n = g.n, side = plan.view === 'side';
   for (let i = 0; i < n; i++) {
     if (plan.alt && (i + si) % 2) continue;
@@ -805,6 +842,7 @@ dorsals.fungusFrill = (C, plan, strip, sd, si, g) => {
 
 // Fruit bodies sprouting from the head: little caps, coral antlers, pixie cups.
 crowns.fungusSprout = (C, m, F, s, g) => {
+  if (C.plan.fungus?.own) return; // on a fungus body, sibling ornaments would be loose bits
   const { rng } = C, K = pen(C.ink), n = m.far ? 1 : (g.n ?? 1);
   for (let i = 0; i < n; i++) {
     const u = n > 1 ? i / (n - 1) * 2 - 1 : 0, sz = (i === 0 || n === 1 ? 1 : rng.range(0.55, 0.85));
@@ -817,6 +855,7 @@ crowns.fungusSprout = (C, m, F, s, g) => {
 
 // A fruit body at the end of a tail (puffball tails, club tails).
 tips.fungusFB = (C, e, ea, s, g) => {
+  if (C.plan.fungus?.own) return; // on a fungus body, sibling ornaments would be loose bits
   const K = pen(C.ink), a = C.plan.view === 'side' ? toward(ea, UP, g.tipUp ?? 0.5) : ea;
   FB[g.fb.form](K, C.rng, e, a, s * (g.size ?? 1) * 0.95 / g.fb.span, g.fb);
 };
@@ -830,6 +869,8 @@ feet.fungusBulb = (C, p, ang, s, g, k) => {
 // =====================================================================
 // GENE HELPERS
 // =====================================================================
+const STALKED = new Set(['cap', 'inkcap', 'thimble', 'saddle', 'morel', 'brain', 'cage']);
+const FZ_LIFT = 0.1307; // marks fungus limb genes (constant, so blends keep it)
 const st = (x, h, r, o = {}) => ({ x, h, r, lean: 0, sway: 0, arc: 0.12, flare: 1.25, taper: 0.82, ...o });
 
 // Lendable ornaments built from a fruit-body gene. They are muted on the species' own chassis.
@@ -851,8 +892,10 @@ function lends(r, fb, o = {}) {
 }
 function build(r, ch, head, lo = {}) {
   const L = lends(r, lo.fb ?? head, lo);
-  const limbs = { len: r.range(1.1, 1.5), w: 0.6, taper: 0.85, bend: 0.4, foot: 'fungusBulb', lift: r.range(0.1, 0.16), stance: 0.12, arm: 0.8, hindW: 1.1 };
+  r.range(0.1, 0.16);
+  const limbs = { len: r.range(1.1, 1.5), w: 0.6, taper: 0.85, bend: 0.4, foot: 'fungusBulb', lift: FZ_LIFT, stance: 0.12, arm: 0.8, hindW: 1.1 };
   ch.type = 'fungus'; ch._own = { limbs, mute: [L.tail, L.dorsal, L.crown] };
+  ch.hid = head.hid = 'f' + r.int(0, 1e9);
   return { chassis: ch, head: { type: 'fungusFB', ...head }, limbs, tail: L.tail, dorsal: L.dorsal, crown: L.crown, surface: { eyes: r.chance(0.8) ? 'dot' : 'none', capSpots: lo.spots ? r.int(4, 7) : 0 } };
 }
 // shorthand for a stems-form species whose main fruit body is the head slot
@@ -1149,20 +1192,6 @@ const species = [
     for (const sd of [-1, 1]) if (r.chance(0.85)) ch.shelves.push({ front: true, t: c0 + sd * r.range(0.1, 0.16), dip: 0.95, sd, len: r.range(14, 18), w0: 1.8, w1: r.range(5.2, 6.2), up: 1, dn: 0.6, rise: r.range(0.45, 0.75), bend: r.range(0.2, 0.4), scallop: r.range(0.12, 0.2), sf: r.int(2, 4), full: 0.9 });
     return build(r, ch, { ...CAP.fan(r), thick: 0.34, rim: 0.2, seat: 1.1 }, { stem: 0.02, rake: 0.6, dorsal: { type: 'fungusFrill', h: r.range(1, 1.5), wid: 0.24, tiers: 2 } });
   } },
-  { name: 'oyster mushroom', w: 2, genes: r => {
-    // overlapping drooping tongues spraying from the cut end of a log, upper ones longest
-    // a thick log with a rounded sawn end; 2-3 separate drooping shelves stacked up the cut face,
-    // each lower one drawn in front of the one above with a pale gap between them
-    const L = r.range(25, 30), rr = r.range(4.6, 5.2), n = r.wpick([[3, 2], [1, 3]]), gap = r.range(11, 12.5);
-    const ch = { form: 'wood', kind: 'log', round: true, len: L, rr, bow: r.range(-0.05, 0.08), snag: r.chance(0.3) ? r.range(0.12, 0.3) : 0, sd: -1, R: rr, items: [], shelves: [] };
-    for (let i = 0; i < n; i++) {
-      const k = n > 1 ? i / (n - 1) : 0; // 0 = top shelf
-      ch.shelves.push({ cap: true, t: 1, dx: -rr * 0.5, dy: -(n - 1 - i) * gap, dip: 0.95, sd: 1, len: r.range(16, 19) * (1 - 0.2 * k), th: r.range(7.2, 8.2) * (1 - 0.15 * k), droop: r.range(0.16, 0.26) });
-    }
-    if (n > 1) ch.column = [rr * 0.45, 0, (n - 1) * gap + 1, 2.4];
-    const oyc = { form: 'cap', span: 2, w: r.range(1.7, 2.2), h: r.range(0.5, 0.7), a: 2.6, b: 0.5, under: 0.3, rim: 0.12, curl: r.range(-0.25, 0.1), skew: 0, thick: 0.2, wavy: r.range(0, 0.2) };
-    return build(r, ch, { ...oyc, seat: 1.1 }, { stem: 0.3, rake: 0.4 });
-  } },
   { name: 'lion\'s mane', w: 1.8, genes: r => {
     // a rounded cascade of fine hanging spines off the side of a slim snag, clear of the ground
     const ch = stub(r, { w: r.range(1.8, 2.2), h: r.range(36, 42), flare: 0.35, roots: false, snag: 0, teeth: r.int(2, 3), lean: r.range(-0.06, 0.06) }), sd = r.sign(), s = r.range(7.5, 8.5);
@@ -1172,13 +1201,14 @@ const species = [
     return build(r, ch, mn, { stem: 0.02, hw: 0.7 });
   } },
   { name: 'jelly ear', w: 2.2, genes: r => {
-    // rubbery ears on a fallen branch, cupped and veined, turned every which way
-    // one or two big upright ears leaning apart on a stick (plus at most one small one), never touching
-    const L = r.range(30, 36), rr = r.range(2.4, 2.9), big = r.sign();
-    const ear = (k) => ({ form: 'jear', span: 1.2, h: r.range(1.9, 2.2) * k, w: r.range(1.3, 1.5) * k, notch: r.range(0.18, 0.24), bulb: 0.5, seat: 0.8, lend: 0.85 });
-    const ch = { form: 'wood', kind: 'log', len: L, rr, bow: r.range(-0.05, 0.12), snag: r.chance(0.35) ? r.range(0.12, 0.25) : 0, sd: -1, R: rr, items: [] };
-    for (const sd of [-1, 1]) ch.items.push({ t: 0.5 + sd * r.range(0.2, 0.26), ax: sd * r.range(0.4, 0.6), dip: 0.9, s: r.range(9, 10.5) * (sd === big ? 1 : r.range(0.72, 0.88)), fb: { ...ear(1), side: sd } });
-    return build(r, ch, ear(1), { stem: 0.02 });
+    // rubbery, wrinkled ears hanging off the sides of a slim dead elder snag (no lying log, so no
+    // flat baseline): 2-3 ears of different sizes on alternate sides, lobed rims, white vein folds
+    const ch = stub(r, { w: r.range(2.0, 2.5), h: r.range(30, 40), flare: r.range(0.5, 0.8), roots: r.chance(0.4), snag: r.chance(0.4) ? r.range(0.55, 0.75) : 0, teeth: r.int(2, 3), lean: r.range(-0.12, 0.12) });
+    const ear = k => ({ form: 'jwrink', span: 1.6, h: r.range(1.6, 1.9) * k, w: r.range(1.5, 1.8) * k, lobes: r.int(2, 3), wob: r.range(0.12, 0.18), veins: r.int(2, 3), droop: r.range(0.2, 0.5), bulb: 0.4, seat: 0.7, lend: 0.85 });
+    const n = r.wpick([[3, 2], [2, 3]]); let sd = r.sign();
+    ch.items = [];
+    for (let i = 0; i < n; i++) { const t = mix(0.88, 0.42, n > 1 ? i / (n - 1) : 0) + r.range(-0.04, 0.04); ch.items.push({ t, sd, ax: r.range(0.15, 0.7), stem: 0, s: r.range(10, 12) * (i === 0 ? 1 : r.range(0.6, 0.8)), fb: { ...ear(1), side: r.sign() } }); sd = -sd; }
+    return build(r, ch, ear(1), { stem: 0.02, hw: 0.7 });
   } },
   { name: 'hare\'s ear', w: 1.8, genes: r => {
     // Otidea: tall ears standing from the leaf litter, split down one side, in a small clump
