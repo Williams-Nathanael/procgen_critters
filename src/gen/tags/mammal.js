@@ -593,7 +593,10 @@ dorsals.mammalBatWing = (C, plan, st, sd, si, g) => {
   if (plan.mBat) return;
   const side = plan.view === 'side' && !plan.rooted;
   if (side && si > 0) return;
-  const { ink } = C, r = clamp(plan.r, 6.5, 10), k = samp(st, g.at ?? 0.7), s = r * g.size;
+  // Chimeras: bat wings dominated the dorsal slot (every winged body read as a gremlin), so a
+  // lent wing only shows on about 2 in 5 bodies, and a little smaller.
+  if (C.rng.chance(0.6)) return;
+  const { ink } = C, r = clamp(plan.r, 6.5, 10), k = samp(st, g.at ?? 0.7), s = r * g.size * 0.82;
   const base = polar(k.p, k.dir, -plan.r * 0.3);
   const wings = side ? [[1, 0.85, 0.3], [0, 1, 0]] : [[0, 1, 0]];
   for (const [far, ks, da] of wings) {
@@ -654,7 +657,7 @@ const stand = (r, B, o = {}) => ({
   headS: B.headS / 0.92, arms: 'hang', legW: B.legW ?? 0.3, footL: B.sitFoot ?? 0.8, hunch: r.range(-0.05, 0.1), face: r.range(-0.25, 0.1), thigh: 0.7, ...o,
 });
 const ball = (r, B, o = {}) => ({ type: 'mammalBall', r: B.r * 1.25, wide: r.range(1.08, 1.22), headS: B.headS / 1.25 * 0.95, ...o });
-const sp = (name, w, fn) => ({ name, w, genes: r => { const G = fn(r); G.limbs ??= limbs(); G.dorsal ??= none(); G.crown ??= none(); G.tail ??= none(); G.surface ??= { eyes: 'dot' }; Object.defineProperty(G.chassis, 'own', { value: G, enumerable: false }); return G; } });
+const sp = (name, w, fn, hybrid) => ({ name, w, ...(hybrid ? { hybrid } : {}), genes: r => { const G = fn(r); G.limbs ??= limbs(); G.dorsal ??= none(); G.crown ??= none(); G.tail ??= none(); G.surface ??= { eyes: 'dot' }; Object.defineProperty(G.chassis, 'own', { value: G, enumerable: false }); return G; } });
 
 // =====================================================================
 // SPECIES
@@ -847,7 +850,7 @@ const species = [
       crown: sugar ? ear('point', 1.1, 0.8, { lean: -0.3 }) : ear('round', 0.6, 0.65, { lean: -0.2 }),
       tail: sugar ? tBrush({ pk: CLUB, pl: r.range(6.5, 8), pw: 0.75, fluff: 2, pwave: r.range(0.4, 1.2) }) : tBrush({ pk: [[0, 0.3], [0.3, 0.75], [0.75, 0.85], [1, 0.5]], pl: r.range(5, 6.2), pw: 1, fluff: 2, pwave: r.range(0.2, 0.8) }),
     };
-  }),
+  }, { keep: ['tail'] }),
 
   sp('rabbit', 4, r => {
     const B = { r: r.range(10, 12), len: r.range(19, 23), clr: 0.18, headS: r.range(0.7, 0.78), arch: 0.7, rump: 1, chest: 0.85, neckW: 0.72, footL: 1.1, haunch: 1.1, sitH: r.range(15, 18), sitFoot: 1.1, sitHaunch: 1.1, standH: 22, neckAng: 0.5, neckLen: 0.15 };

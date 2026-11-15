@@ -27,6 +27,17 @@ cottontail), whiskered pointed snouts, hedgehog and porcupine spines, bat wings.
 eyes: a small white dot.
 
 ## State
+**M8 phase 2 chimeras (2026-11-14), judged on 48 seeds at hybrid 1, cell 60/110:**
+- Chimeras mostly hold together: sitters, walkers, stalk climbers, gliders, bats and molehills
+  all appear as chassis; no one chassis dominates.
+- Fixed: lent bat wings (`mammalBatWing`) took the dorsal slot on ~1 in 6 bodies and made
+  upright sitters read as gremlins/dragons; now drawn on ~40% of the bodies that get it, 18%
+  smaller. Glide chassis with a foreign tail read as a splat: flying squirrel has
+  `hybrid: { keep: ['tail'] }` (`sp()` takes an optional 4th arg, the hybrid hint).
+- Still weak: molehill with lent ears/dorsal (lumpy castle), sitting bodies with lent wings
+  still a little dragon-like, bat chassis with foreign heads.
+- Sheet: `out/roads/07-mammal-chimeras.png`.
+
 **M3b batch 3 (2026-11-14), user's M3 decisions applied, judged at `--cell 60`:**
 - Beaver: one fix attempt kept. The side-view paddle (`tips.mammalPaddle`) is now a thicker oval
   (peak 0.72 q, was 0.5) lifted a little off the ground, and the species tilts it up 0.1-0.28 rad.
