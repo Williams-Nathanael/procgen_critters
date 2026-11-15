@@ -10,6 +10,7 @@
     "serve:test": "node tools/build.mjs && node tools/serve.mjs --no-open --port 4188",
     "sheet": "node tools/sheet.mjs",
     "review": "node tools/review-page.mjs",
+    "review:chimeras": "node tools/review-chimeras.mjs",
     "test:export": "node tools/test-export.mjs",
     "test:pdfs": "node tools/test-pdfs.mjs",
     "test:ui": "node tools/ff.mjs tools/ui-smoke.mjs"
