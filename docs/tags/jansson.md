@@ -40,6 +40,15 @@ Signature features to lend: big round ringed eyes, a soft rounded snout or long 
 tasselled tail, tufts and single hairs, small props, the upright pear body.
 
 ## State
+- **Chimera fix round (2026-11-14), 30 species.** Judged at --hybrid 1 --cell 60, seeds 1000/1100/1200 (`out/roads/07-jansson-chimeras.png`).
+  Blob folk each carry an outline trait: stack has a white crease between members; huddle members spaced so each keeps its outline;
+  stone peeper always has a pebble ledge and a white crack; pot always has handles and a white rim band. Shy lump, huddle, stack,
+  stone peeper and pot dweller keep their chassis unblended (`keep: ['chassis']`), so blob+blob chassis blends no longer happen.
+  Comma crawler bigger (k 1.45-1.8), almost always single; query hook belly min 5.4; curled sleeper bigger, shorter tail.
+  Loop runner: 2-3 loops, larger, big eyed head raised on a neck. Spiral snail: calligraphic flourish loop off the back of the foot.
+  Shag: 7 broad strands per side, min length. Grass lurker: 5-8 short blades, short in front of the head. Farm sprite hat
+  blunter (1.1-1.5) and always tilted, pom more often. Ampersand pure: no big ball (checked).
+  Weak still: comma crawler pairs, query hook chimeras (thin, tall), suitcase traveller, curled sleeper.
 - **M3b eye fix (2026-11-13), still 30 species.** Bracket peeper: the two eyes are now small
   white points (r = 0.11 hr) set high in the head, no longer goggly discs. Ampersand knot: the
   right-hand ball keeps no eye; one small ringed eye sits in an ink knob on the top loop, so the

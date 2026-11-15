@@ -81,7 +81,7 @@ function fuzzEdge(C, B, len, down = 0, nj = 11) {
   for (const sd of [-1, 1]) for (let j = 0; j < nj; j++) {
     const t = mix(down ? 0.06 : 0.1, 0.97, j / (nj - 1)), p = B.at(t, sd, 0.9), ao = angOf(c, p);
     const a = ao + (((PI / 2 + sd * 0.35 - ao + 3 * PI) % (2 * PI)) - PI) * down * (0.55 + 0.45 * t);
-    ink.poly(leaf(p, a + rng.range(-0.2, 0.2), len * rng.range(0.8, 1.3) * (down ? 0.75 + 0.6 * t : 1), len * 0.62, rng.range(-0.15, 0.15), 0.3));
+    ink.poly(leaf(p, a + rng.range(-0.2, 0.2), len * rng.range(0.8, 1.3) * (down ? 0.75 + 0.6 * t : 1), len * (down ? 1.0 : 0.62), rng.range(-0.15, 0.15), 0.3));
   }
   ink.poly(leaf(B.c(0.95), -PI / 2 + rng.range(-0.25, 0.25), len * 1.3, len * 0.62, 0, 0.3));
 }
@@ -251,7 +251,7 @@ chassis.janssonFolk = (C, g) => {
   const { ink, rng } = C, w = g.w * C.plump, h = g.hk * w, lift = Math.min(C.lift, 1.4) * w * (g.liftK ?? 0.6), lean = g.lean ?? 0;
   const B = body({ y0: -lift, h, w, keys: SHAPES[g.shape] ?? SHAPES.lump, lean, tb: g.tb ?? 0.3, tt: g.tt ?? 0.4 });
   ink.poly(B.pts);
-  if (g.fuzz) fuzzEdge(C, B, g.fuzz * w, g.shag ?? 0, g.shag ? 13 : 11);
+  if (g.fuzz) fuzzEdge(C, B, Math.max(g.fuzz, g.shag ? 0.42 : 0) * w, g.shag ?? 0, g.shag ? 7 : 11);
   const jan = {}; let head, yTop;
   if (g.face === 'side') {
     const p = B.c(g.neckT ?? 0.9), hs = w * (g.headS ?? 0.8);
@@ -311,7 +311,7 @@ chassis.janssonGroup = (C, g) => {
     let y0 = -Math.min(C.lift, 1) * g.w * 0.5, w = g.w * k, x = 0; const Bs = [];
     for (let i = 0; i < g.n; i++) {
       const h = w * rng.range(1.45, 1.8), B = lumpling(C, eyes, { x, y0, w, h, shape: rng.pick(['lump', 'egg', 'lump']), feet: false, top: i < g.n - 1 ? 'none' : null });
-      if (i > 0) for (const sd of [-1, 1]) ink.oval([x + sd * w * 0.62, y0 - w * 0.1], w * 0.3, w * 0.2, sd * 0.5);
+      if (i > 0) { for (const sd of [-1, 1]) ink.oval([x + sd * w * 0.62, y0 - w * 0.1], w * 0.3, w * 0.2, sd * 0.5); ink.poly(tube(spline([[x - w * 0.5, y0 + w * 0.02], [x, y0 + w * 0.12], [x + w * 0.5, y0 + w * 0.02]], 4), Math.max(w * 0.06, 0.55)), 'w'); }
       if (i === 0) for (const [dx, far] of [[-0.42, true], [0.42, false]]) limbs.push({ p: [dx * w, y0 - w * 0.3], dir: PI / 2, s: w * 0.9, role: 'hind', far, ground: 0, fwd: 0, side: 1 });
       Bs.push(B); y0 -= h * 0.9; x += rng.range(-0.22, 0.22) * w; w *= rng.range(0.68, 0.8);
     }
@@ -334,7 +334,7 @@ chassis.janssonGroup = (C, g) => {
     let x = 0, prevW = 0; const Bs = [];
     for (let i = 0; i < g.n; i++) {
       const w = g.w * k * rng.range(0.62, 1.1), h = w * rng.range(1.5, 2.7);
-      x += (prevW + w) * rng.range(0.74, 0.86);
+      x += (prevW + w) * rng.range(0.9, 1.0);
       Bs.push({ x, w, h }); prevW = w;
     }
     const tall = Bs.reduce((a, b) => (b.h > a.h ? b : a));
@@ -363,7 +363,8 @@ chassis.janssonPeeper = (C, g) => {
     const xs = [-sw * rng.range(0.92, 1.0), -sw * rng.range(0.5, 0.7), sw * rng.range(0.1, 0.4), sw * rng.range(0.8, 0.95)];
     const rock = [[-sw, 0], ...xs.map((x, i) => [x, -sh * ys[i]]), [sw * 1.02, 0]];
     ink.poly(rock);
-    if (rng.chance(0.6)) { const px = sw * rng.range(1.05, 1.25), pw = sw * rng.range(0.25, 0.4), ph = sh * rng.range(0.15, 0.3); ink.poly([[px - pw, 0], [px - pw * 0.7, -ph], [px + pw * 0.4, -ph * rng.range(0.8, 1.1)], [px + pw, 0]]); }
+    { const px = sw * rng.range(1.05, 1.25), pw = sw * rng.range(0.25, 0.4), ph = sh * rng.range(0.15, 0.3); ink.poly([[px - pw, 0], [px - pw * 0.7, -ph], [px + pw * 0.4, -ph * rng.range(0.8, 1.1)], [px + pw, 0]]); }
+    { const cx = sw * rng.range(-0.55, -0.2); ink.poly(tube(polyline([[cx, -sh * 0.15], [cx + sw * 0.08, -sh * 0.32], [cx - sw * 0.02, -sh * 0.48]], 2), 0.6), 'w'); }
     // top edge between facet points 1 and 2 is where it peeps over
     const ea = [xs[1], -sh * ys[1]], eb = [xs[2], -sh * ys[2]], u = rng.range(0.3, 0.6), edge = x => mix(ea[1], eb[1], (x - ea[0]) / (eb[0] - ea[0] || 1));
     hr = g.hr * k; const hx = mix(ea[0], eb[0], u); hc = [hx, edge(hx) - hr * rng.range(0.45, 0.65)];
@@ -389,7 +390,7 @@ chassis.janssonPeeper = (C, g) => {
     eyes.push(...frontEyes(B, 0.6, 1.05));
     const n = g.blades;
     for (let i = 0; i < n; i++) {
-      const u = i / (n - 1) * 2 - 1 + rng.range(-0.08, 0.08), len = w * rng.range(1.7, 3.2) * (1 - 0.3 * u * u);
+      const u = i / (n - 1) * 2 - 1 + rng.range(-0.08, 0.08), len = w * rng.range(1.1, 1.9) * (1 - 0.3 * u * u) * (Math.abs(u) < 0.45 ? 0.6 : 1);
       ink.poly(leaf([u * w * 1.7, -0.2], -PI / 2 + u * 0.75 + rng.range(-0.12, 0.12), len, w * rng.range(0.34, 0.5), u * 0.12 + rng.range(-0.08, 0.08), 0.3));
       if (rng.chance(0.14)) ink.oval(polar([u * w * 1.7, -0.2], -PI / 2 + u * 0.75, len * 0.98), w * 0.2, w * 0.36, u * 0.75);
     }
@@ -401,7 +402,8 @@ chassis.janssonPeeper = (C, g) => {
     if (g.kind === 'pot') {
       const B = body({ y0: -lift, h: g.ph, w, keys: [[0, 0.66], [0.78, 0.98], [0.8, 1.12], [1, 1.12]], tb: 0.04, tt: 0.02 });
       ink.poly(B.pts); rimY = -lift - g.ph; rimW = w * 0.95;
-      if (g.handles) for (const sd of [-1, 1]) stroke(ink, [B.at(0.8, sd, 0.9), add(B.at(0.74, sd), [sd * w * 0.42, 0]), add(B.at(0.5, sd), [sd * w * 0.3, 0]), B.at(0.46, sd, 0.9)], 1.5);
+      ink.poly(rrect(-w * 1.2, -lift - g.ph * 0.81, w * 2.4, Math.max(g.ph * 0.025, 0.55), 0.2), 'w');
+      for (const sd of [-1, 1]) stroke(ink, [B.at(0.8, sd, 0.9), add(B.at(0.74, sd), [sd * w * 0.42, 0]), add(B.at(0.5, sd), [sd * w * 0.3, 0]), B.at(0.46, sd, 0.9)], 1.5);
       for (const [dx, far] of [[-0.4, true], [0.4, false]]) limbs.push({ p: [dx * w, -lift - w * 0.2], dir: PI / 2, s: w * 0.8, role: 'hind', far, ground: 0, fwd: 0, side: 1 });
       back = sideStrip(B, 0.15, 0.7, 7);
     } else if (g.kind === 'boot') {
@@ -561,7 +563,7 @@ chassis.janssonGlyph = (C, g) => {
     case 'comma': {
       let x = 0;
       for (let i = 0; i < g.n; i++) {
-        const q = k * (i === 0 ? 1 : rng.range(0.62, 0.86)), lq = lg * q / k, Q = (a, b) => [x + a * q, -(lq + b * q)];
+        const q = k * (i === 0 ? 1 : rng.range(0.78, 0.9)), lq = lg * q / k, Q = (a, b) => [x + a * q, -(lq + b * q)];
         const c = Q(5, 7.2 + j(0.8)), pts = [c, Q(2.6, 3.4), Q(-3, 2.0), Q(-9, 1.7), Q(-13, 3.6 + g.curl * 1.5)];
         if (g.curl > 0.5) pts.push(Q(-14.6, 7.2), Q(-12.4, 9.6), Q(-10.6, 8));
         ink.poly(tube(spline(pts, 8), profile([[0, 4.2 * q], [0.2, 3.3 * q], [0.5, 1.9 * q], [1, 0.55]])));
@@ -612,9 +614,9 @@ chassis.janssonGlyph = (C, g) => {
         tick((x + 0.4) * k, -lg - 0.6 * k, i % 2 ? -1 : 1);
       }
       const xl = (n - 1) * p;
-      pts.push(P(xl + p * 0.5, 1), P(xl + p + 0.2, 4.4), P(xl + p + 1.2, 7));
+      pts.push(P(xl + p * 0.5, 1), P(xl + p + 0.6, 5), P(xl + p + 2.2, 10));
       penG(ink, pts, 2.2 * k, { con: 0.5, t0: 0.5 });
-      hc = ball(P(xl + p + 1.6, 8.2), 3.9 * k); hr = 3.9 * k;
+      hc = ball(P(xl + p + 3.4, 13.2), 5.2 * k); hr = 5.2 * k;
       tick((xl + p * 0.6) * k, -lg - 0.6 * k);
       tailP = P(-p * 0.9, 5.2); tailDir = -PI * 0.7;
       break;
@@ -690,6 +692,7 @@ chassis.janssonGlyph = (C, g) => {
       penG(ink, sp, 2.5 * k, { con: 0.5, t0: 0.6, per: 6 });
       hr = (g.hr ?? 3.3) * k; hc = ball(Pm(R + 4.5 + 5.1 * nl, 6.8 * nl + 1.6), hr);
       ink.poly(tube(polyline([Pm(-R * 0.7, 0.8), Pm(R + 7, 0.8)], 4), 0.75 * k));
+      { const fx = -R * 0.7, fh = g.fh ?? 1; penG(ink, [Pm(fx, 0.9), Pm(fx - 3.5, 1.6), Pm(fx - 6.5, 4.5 * fh), Pm(fx - 5.5, 8 * fh), Pm(fx - 2.6, 7.6 * fh), Pm(fx - 2.8, 4.6 * fh), Pm(fx - 6, 3.4 * fh), Pm(fx - 9, 5.5 * fh)], 1.7 * k, { con: 0.5, t0: 1, t1: 0.4 }); }
       tailP = Pm(-R * 0.95, 1); tailDir = PI;
       break;
     }
@@ -906,24 +909,24 @@ const glyph = (r, ch, o = {}) => ({ chassis: { type: 'janssonGlyph', lg: r.range
 
 const species = [
   // ----- word-creatures -----
-  sp('comma crawler', 3.5, r => glyph(r, { kind: 'comma', k: r.range(1.25, 1.6), n: r.wpick([[3, 1], [2, 2], [0.7, 3]]), curl: r.range(0, 1), legs: r.int(2, 4) })),
+  sp('comma crawler', 3.5, r => glyph(r, { kind: 'comma', k: r.range(1.45, 1.8), n: r.wpick([[6, 1], [1, 2]]), curl: r.range(0, 1), legs: r.int(2, 4) })),
   sp('ampersand knot', 3.5, r => glyph(r, { kind: 'amp', k: r.range(1.35, 1.65) })),
   sp('minim caterpillar', 3, r => glyph(r, { kind: 'minim', k: r.range(1.25, 1.55), n: r.int(2, 5), amp: r.range(0, 2.2), ph: r.range(0, 6) })),
-  sp('loop runner', 3, r => glyph(r, { kind: 'loop', k: r.range(1.2, 1.45), tall: Array.from({ length: r.int(2, 4) }, () => r.chance(0.5)) })),
-  sp('query hook', 3, r => glyph(r, { kind: 'query', k: r.range(1.15, 1.55), hs: r.range(0.75, 1.3), hv: r.range(0.7, 1.45), bw: r.range(4.2, 7.5), nk: r.range(-1, 6), hr: r.range(3, 4.6), flip: r.chance(0.3), arms: r.chance(0.4) }, { tail: r.chance(0.5) ? tassel(r, { tailLen: r.range(3, 5) }) : none() })),
+  sp('loop runner', 3, r => glyph(r, { kind: 'loop', k: r.range(1.35, 1.6), tall: Array.from({ length: r.int(2, 3) }, () => r.chance(0.5)) })),
+  sp('query hook', 3, r => glyph(r, { kind: 'query', k: r.range(1.15, 1.55), hs: r.range(0.75, 1.3), hv: r.range(0.7, 1.45), bw: r.range(5.4, 7.5), nk: r.range(-1, 6), hr: r.range(3, 4.6), flip: r.chance(0.3), arms: r.chance(0.4) }, { tail: r.chance(0.5) ? tassel(r, { tailLen: r.range(3, 5) }) : none() })),
   sp('spiral snail', 3.5, r => glyph(r, { kind: 'at', k: r.range(1.05, 1.4), R: r.range(6.5, 11.5), turns: r.range(1.25, 1.85), es: r.range(0.8, 1.35), nl: r.range(0.55, 1.6), hr: r.range(2.6, 4.2) }, { crown: r.chance(0.75) ? { type: 'antennae', len: r.range(1.2, 2.4), curve: r.range(-0.4, 0.2), club: true, pair: true } : none() })),
   sp('bracket peeper', 3, r => glyph(r, { kind: 'bracket', k: r.range(1.2, 1.45), br: r.wpick([[2.2, 'paren'], [1, 'brace'], [1.3, 'square']]), H: r.range(17, 22), gap: r.range(7, 8.5) }, { crown: r.chance(0.5) ? hair(r, { n: r.int(1, 3), len: r.range(0.8, 1.3) }) : none() }), { keep: ['head', 'tail'] }),
   sp('swash inchworm', 3, r => glyph(r, { kind: 'swash', k: r.range(1.15, 1.45), arch: r.range(-1.5, 6), curl: r.range(-1, 3) })),
 
   // ----- single folk -----
-  sp('shy lump', 4, r => std(r, { chassis: { type: 'janssonFolk', ...r.wpick([[1.5, { shape: 'squat', w: r.range(11.5, 13.5), hk: r.range(0.85, 1.1) }], [1, { shape: 'lump', w: r.range(11, 13), hk: r.range(1.0, 1.25) }]]), face: 'front', eyeK: r.range(0.95, 1.2) }, limbs: limbsFolk(r, { len: r.range(0.5, 0.75) }), crown: r.wpick([[2, { type: 'tuft', n: r.int(2, 4), spread: r.range(0.4, 0.8), len: r.range(0.6, 1.0) }], [1.2, none()], [1, earsRound(r)], [0.8, cap(r)], [0.7, earsLong(r)]]), tail: r.chance(0.5) ? { tailLen: r.range(2, 3.5), w0: 0.18, mid: 0.5, w1: 0.14, curl: 0.8, wave: 0.6, tip: 'pom', tipS: 0.75 } : none() })),
+  sp('shy lump', 4, r => std(r, { chassis: { type: 'janssonFolk', ...r.wpick([[1.5, { shape: 'squat', w: r.range(11.5, 13.5), hk: r.range(0.85, 1.1) }], [1, { shape: 'lump', w: r.range(11, 13), hk: r.range(1.0, 1.25) }]]), face: 'front', eyeK: r.range(0.95, 1.2) }, limbs: limbsFolk(r, { len: r.range(0.5, 0.75) }), crown: r.wpick([[2, { type: 'tuft', n: r.int(2, 4), spread: r.range(0.4, 0.8), len: r.range(0.6, 1.0) }], [1.2, none()], [1, earsRound(r)], [0.8, cap(r)], [0.7, earsLong(r)]]), tail: r.chance(0.5) ? { tailLen: r.range(2, 3.5), w0: 0.18, mid: 0.5, w1: 0.14, curl: 0.8, wave: 0.6, tip: 'pom', tipS: 0.75 } : none() }), { keep: ['chassis'] }),
   sp('shaggy mop', 2.5, r => std(r, { chassis: { type: 'janssonFolk', shape: r.pick(['drop', 'tall']), w: r.range(7.5, 9), hk: r.range(2.5, 3.2), face: 'front', fuzz: r.range(0.38, 0.52), shag: r.range(0.7, 0.95), arms: 0, eyeT: r.range(0.55, 0.66), eyeK: r.range(0.85, 1.05), liftK: r.range(0.7, 1.1) }, head: hd(r, { nose: r.chance(0.45) ? r.range(0.2, 0.5) : 0, fuzz: 0.4, alt: 'round' }), limbs: limbsFolk(r, { len: r.range(0.7, 0.95) }), crown: r.wpick([[2, { type: 'tuft', n: r.int(3, 5), spread: r.range(0.5, 1.0), len: r.range(1.0, 1.6) }], [1.5, hair(r, { n: r.int(1, 2), len: r.range(1.2, 1.8) })], [1, none()]]), tail: none() })),
   sp('pear sitter', 3, r => std(r, { chassis: { type: 'janssonFolk', shape: 'pear', w: r.range(9, 11), hk: r.range(1.6, 1.9), face: 'side', sit: true, lean: r.range(-0.03, 0.08), headS: r.range(0.7, 0.82), tb: 0.2 }, head: hd(r, { kind: r.wpick([[2, 'long'], [1.6, 'round'], [0.8, 'soft'], [0.6, 'beak']]) }), limbs: limbsFolk(r, { stance: r.range(0.45, 0.7), lift: 0 }), tail: tassel(r, { tailLen: r.range(2.6, 3.8), up: r.chance(0.6), curl: r.range(0.6, 1.8) }) })),
   sp('back-turned sitter', 2.5, r => std(r, { chassis: { type: 'janssonFolk', shape: 'pear', w: r.range(9, 12), hk: r.range(1.7, 2.1), face: 'back', arms: 0, tb: 0.2 }, head: hd(r, { nose: 0 }), limbs: limbsFolk(r, { lift: 0 }), crown: r.wpick([[2, earsPoint(r)], [2, earsLong(r)], [1.5, { type: 'tuft', n: r.int(3, 5), spread: 1.2, len: r.range(0.9, 1.4) }], [1, hair(r, { n: r.int(2, 3) })]]), tail: tassel(r, { tailLen: r.range(4.5, 6.5), up: r.chance(0.6), curl: r.range(1.2, 2.6), wave: r.range(0.8, 2) }) }), { keep: ['limbs'] }),
   sp('tall wanderer', 3, r => std(r, { chassis: { type: 'janssonFolk', shape: 'tall', w: r.range(4.8, 6.2), hk: r.range(4, 5.6), face: 'side', lean: r.range(0.01, 0.06), headS: r.range(0.95, 1.15), prop: r.wpick([[2, 'bundle'], [1.5, 'lantern'], [1, null]]), armT: 0.62 }, head: hd(r, { kind: r.pick(['long', 'round', 'beak']) }), crown: r.wpick([[2, earsLong(r)], [1.5, { type: 'tuft', n: r.int(3, 5), spread: r.range(0.6, 1.2), len: r.range(1.0, 1.6) }], [1, hair(r, { n: r.int(2, 3) })]]), tail: r.chance(0.4) ? tassel(r) : none() })),
   sp('long-nose scuttler', 3, r => std(r, { chassis: { type: 'janssonBean', r: r.range(6.5, 8), len: r.range(12, 19), tilt: r.range(-0.12, 0.1), headS: r.range(0.78, 0.9), neck: r.range(0.3, 0.7) }, head: hd(r, { kind: 'long', nlen: r.range(2, 3.2), droop: r.range(-0.2, 0.35), knob: r.chance(0.3) }), limbs: limbsFolk(r, { len: r.range(0.9, 1.2), lift: r.range(0.3, 0.6), stance: 0.3 }), tail: r.wpick([[2, tassel(r, { up: true })], [1, { tailLen: r.range(4, 6), w0: 0.2, mid: 0.5, w1: 0.1, curl: r.range(1.5, 2.6), wave: 0.5, tip: 'point', up: true }]]), crown: r.wpick([[2, earsRound(r)], [2, earsPoint(r)], [1, hair(r)], [1, earsLong(r)]]), dorsal: r.chance(0.25) ? fuzz(r) : none() })),
   sp('hunched troll', 2.5, r => std(r, { chassis: { type: 'janssonFolk', shape: r.pick(['lump', 'pear']), w: r.range(10, 12), hk: r.range(1.55, 1.85), face: 'side', lean: r.range(0.14, 0.24), neckT: 0.84, headS: r.range(0.68, 0.8), look: r.range(0.15, 0.4), armT: 0.6 }, head: hd(r, { kind: r.wpick([[3, 'bulb'], [1, 'long']]), blen: r.range(0.5, 0.9), bulbR: r.range(0.55, 0.72), nlen: r.range(1.5, 2.3), droop: r.range(0.3, 0.6), knob: true, eyeR: 0.17 }), limbs: limbsFolk(r, { arm: 1.35, bend: r.range(0.2, 0.5) }), crown: r.wpick([[2, { type: 'ears', len: r.range(0.9, 1.3), wid: 0.6, lean: -0.3, fat: 0.4, pair: true, size: 0.8 }], [1.5, { type: 'tuft', n: r.int(3, 5), spread: 1.0, len: r.range(0.8, 1.3) }], [1, hair(r, { n: r.int(2, 3) })]]), dorsal: r.chance(0.5) ? { type: 'janssonFuzz', n: r.int(5, 7), len: r.range(0.3, 0.45), hairs: 0 } : none(), tail: tassel(r, { tailLen: r.range(3.5, 5.5) }) })),
-  sp('farm sprite', 2.5, r => std(r, { chassis: { type: 'janssonTomte', w: r.range(7, 8.8), hk: r.range(1.5, 1.9), hat: r.range(1.2, 1.9), flop: r.chance(0.5) ? r.range(0.2, 0.8) : 0, pom: r.chance(0.4), nose: r.range(0.3, 0.4), beard: r.range(0.6, 0.85), eye: r.chance(0.5), lean: r.range(0, 0.06), prop: r.wpick([[3, null], [1, 'lantern']]), arms: r.chance(0.6) }, limbs: none(), crown: none(), tail: none() })),
+  sp('farm sprite', 2.5, r => std(r, { chassis: { type: 'janssonTomte', w: r.range(7, 8.8), hk: r.range(1.5, 1.9), hat: r.range(1.1, 1.5), flop: r.range(0.45, 0.9), pom: r.chance(0.65), nose: r.range(0.3, 0.4), beard: r.range(0.6, 0.85), eye: r.chance(0.5), lean: r.range(0, 0.06), prop: r.wpick([[3, null], [1, 'lantern']]), arms: r.chance(0.6) }, limbs: none(), crown: none(), tail: none() })),
   sp('bird folk', 2.5, r => std(r, { chassis: { type: 'janssonBean', two: true, r: r.range(6.5, 8.5), len: r.range(9, 14), tilt: r.range(0.25, 0.6), liftK: r.range(1.1, 2.4), rear: 0.6, front: 0.8, headS: r.range(0.68, 0.8), neck: r.range(0.7, 1.1) }, head: hd(r, { kind: 'beak', blen: r.range(0.6, 2.2), two: false }), limbs: limbsFolk(r, { len: 1.5, w: 0.15, taper: 0.9, lift: 1, stance: 0.15, foot: 'janssonBird' }), tail: { tailLen: r.range(0.8, 1.6), w0: 0.5, mid: 0.5, w1: 0.4, curl: r.range(0, 0.6), wave: 0, tip: 'janssonFan', tipS: r.range(0.8, 1.2), up: true }, crown: r.wpick([[2, hair(r)], [1.5, { type: 'tuft', n: 3, spread: 0.8, len: r.range(0.9, 1.5) }], [1, none()]]) })),
 
   // ----- bearers -----
@@ -934,14 +937,14 @@ const species = [
   sp('flag bearer', 2.5, r => std(r, { chassis: folkBody(r, { prop: r.pick(['flag', 'flag', 'quill', 'net']) }) })),
 
   // ----- several on one base, peepers, oddities -----
-  sp('huddle', 3.5, r => std(r, { chassis: { type: 'janssonGroup', mode: 'huddle', n: r.wpick([[3, 2], [1, 3]]), w: r.range(7.5, 9) }, tail: r.chance(0.4) ? tassel(r, { tailLen: r.range(3.5, 5.5) }) : none() })),
-  sp('stack', 1.8, r => std(r, { chassis: { type: 'janssonGroup', mode: 'stack', n: r.int(2, 3), w: r.range(8.5, 10.5) }, limbs: limbsFolk(r, { arm: 0.9, bend: 0.3 }), tail: r.chance(0.4) ? tassel(r) : none() })),
-  sp('stone peeper', 2.5, r => std(r, { chassis: { type: 'janssonPeeper', kind: 'stone', sw: r.range(12, 16), sh: r.range(9, 13), hr: r.range(4.2, 5.4) }, crown: r.wpick([[2, earsPoint(r)], [1.5, earsLong(r)], [1.5, hair(r)], [1, earsRound(r)]]), tail: tassel(r, { tailLen: r.range(3.5, 6) }) }), { keep: ['dorsal', 'limbs'] }),
+  sp('huddle', 3.5, r => std(r, { chassis: { type: 'janssonGroup', mode: 'huddle', n: r.wpick([[3, 2], [1, 3]]), w: r.range(7.5, 9) }, tail: r.chance(0.4) ? tassel(r, { tailLen: r.range(3.5, 5.5) }) : none() }), { keep: ['chassis'] }),
+  sp('stack', 1.8, r => std(r, { chassis: { type: 'janssonGroup', mode: 'stack', n: r.int(2, 3), w: r.range(8.5, 10.5) }, limbs: limbsFolk(r, { arm: 0.9, bend: 0.3 }), tail: r.chance(0.4) ? tassel(r) : none() }), { keep: ['chassis'] }),
+  sp('stone peeper', 2.5, r => std(r, { chassis: { type: 'janssonPeeper', kind: 'stone', sw: r.range(12, 16), sh: r.range(9, 13), hr: r.range(4.2, 5.4) }, crown: r.wpick([[2, earsPoint(r)], [1.5, earsLong(r)], [1.5, hair(r)], [1, earsRound(r)]]), tail: tassel(r, { tailLen: r.range(3.5, 6) }) }), { keep: ['chassis', 'dorsal', 'limbs'] }),
   sp('burrow peeper', 2, r => std(r, { chassis: { type: 'janssonPeeper', kind: 'burrow', hr: r.range(8.5, 10.5) }, crown: r.wpick([[2, earsPoint(r)], [2, earsLong(r)], [1.5, hair(r)], [1, earsRound(r)]]), tail: r.chance(0.65) ? tassel(r, { tailLen: r.range(3.5, 6), up: true, curl: r.range(0.6, 1.6) }) : none() })),
-  sp('pot dweller', 3, r => std(r, { chassis: { type: 'janssonPeeper', kind: r.wpick([[2.5, 'pot'], [1, 'boot'], [2, 'cup']]), pw: r.range(8.5, 10.5), ph: r.range(15, 20), handles: r.chance(0.75), cap: r.chance(0.6) }, limbs: limbsFolk(r, { lift: r.chance(0.5) ? 0 : r.range(0.4, 0.9) }), tail: r.chance(0.35) ? tassel(r, { tailLen: r.range(3.5, 5.5) }) : none() })),
-  sp('grass lurker', 2, r => std(r, { chassis: { type: 'janssonPeeper', kind: 'grass', hr: r.range(7, 8.5), blades: r.int(8, 12) }, crown: r.wpick([[2, earsPoint(r)], [1, earsLong(r)], [1, none()]]), tail: r.chance(0.5) ? tassel(r, { tailLen: r.range(4, 6) }) : none() })),
+  sp('pot dweller', 3, r => std(r, { chassis: { type: 'janssonPeeper', kind: r.wpick([[2.5, 'pot'], [1, 'boot'], [2, 'cup']]), pw: r.range(8.5, 10.5), ph: r.range(15, 20), handles: r.chance(0.75), cap: r.chance(0.6) }, limbs: limbsFolk(r, { lift: r.chance(0.5) ? 0 : r.range(0.4, 0.9) }), tail: r.chance(0.35) ? tassel(r, { tailLen: r.range(3.5, 5.5) }) : none() }), { keep: ['chassis'] }),
+  sp('grass lurker', 2, r => std(r, { chassis: { type: 'janssonPeeper', kind: 'grass', hr: r.range(7, 8.5), blades: r.int(5, 8) }, crown: r.wpick([[2, earsPoint(r)], [1, earsLong(r)], [1, none()]]), tail: r.chance(0.5) ? tassel(r, { tailLen: r.range(4, 6) }) : none() })),
   sp('snail folk', 2.5, r => std(r, { chassis: { type: 'janssonSnail', r: r.range(8.5, 11), shell: r.wpick([[2.5, 'coil'], [1.5, 'spire'], [1.5, 'house']]) }, head: hd(r, { kind: r.pick(['round', 'soft']), R: 1, len: 0.5, tipR: 0.6, droop: 0.1, two: false, eyeR: 0.22 }), crown: { type: 'antennae', len: r.range(1.6, 2.4), curve: r.range(-0.3, 0.1), club: true, pair: true }, tail: none() })),
-  sp('curled sleeper', 2, r => std(r, { chassis: { type: 'janssonSleeper', w: r.range(13, 16), hg: r.range(9.5, 12), snout: r.range(0.6, 1.0) }, head: hd(r, { nose: 0 }), crown: r.wpick([[2, { ...earsPoint(r), pair: false }], [1.5, { ...earsLong(r), pair: false }], [1, { ...earsRound(r), pair: false }]]), tail: tassel(r, { tailLen: r.range(5.5, 7), up: true, curl: r.range(2.6, 3.3), wave: 0 }), dorsal: r.chance(0.2) ? fuzz(r) : none() }), { keep: ['head'] }),
+  sp('curled sleeper', 2, r => std(r, { chassis: { type: 'janssonSleeper', w: r.range(14, 17), hg: r.range(11, 13.5), snout: r.range(0.6, 1.0) }, head: hd(r, { nose: 0 }), crown: r.wpick([[2, { ...earsPoint(r), pair: false }], [1.5, { ...earsLong(r), pair: false }], [1, { ...earsRound(r), pair: false }]]), tail: tassel(r, { tailLen: r.range(3.8, 5), up: true, curl: r.range(2.4, 3.0), wave: 0 }), dorsal: r.chance(0.2) ? fuzz(r) : none() }), { keep: ['head'] }),
 ];
 
 export default {
