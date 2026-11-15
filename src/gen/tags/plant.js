@@ -17,7 +17,7 @@
 //     instead when the head is lent to a non-plant body.
 //   - on a non-plant body every plant head grows from a small round "receptacle" knob,
 //     which carries the eye, so plant-headed animals still read as creatures.
-import { add, lerp, angOf, polar, angDiff, clamp, mix, MINW, frame, spline, polyline, profile, pathAt, tube, ellipse, leaf } from '../core.js';
+import { makeRng, add, lerp, angOf, polar, angDiff, clamp, mix, MINW, frame, spline, polyline, profile, pathAt, tube, ellipse, leaf } from '../core.js';
 import { chassis, heads, feet, tips, crowns, dorsals } from '../parts.js';
 
 const PI = Math.PI, TAU = 2 * PI, UP = -PI / 2, DOWN = PI / 2;
@@ -568,13 +568,117 @@ function stripOf(path, rad, t0, t1, n, sd) {
   return out;
 }
 
+
+// ---------------------------------------------------------------------
+// CHIMERA MELD. In a within-tag chimera the head, crown, dorsal and tail slots come from sibling
+// plants. Hung on the plant chassis as animal parts they made collages (stalks and bits side by
+// side), so here they are muted and their UNITS grow on the chassis's own stem system instead:
+// head -> the main stem's crowning unit; crown -> side-stem flowers (or leaves if leafy);
+// dorsal -> stem leaves (or side flowers); tail -> rosette leaves. Each unit is measured and
+// scaled to the part it replaces, so it attaches with a real join at a sensible size.
+// ---------------------------------------------------------------------
+const LEAFY = new Set(['leaf', 'jag', 'sword', 'fat', 'ivy', 'trilobe', 'nepLeaf', 'peltate', 'leaves', 'strap', 'drosera', 'needles', 'heart', 'lobed', 'ginkgo', 'frond', 'sundew', 'flytrap']);
+const leafy = sp => !!sp && (LEAFY.has(sp.u) || (sp.type === 'plantLeaf' && LEAFY.has(sp.unit?.u)) || sp.type === 'plantTuft');
+const BLADE = new Set(['leaf', 'jag', 'sword', 'strap', 'fat', 'drosera', 'flytrap', 'sundew', 'heart', 'ivy', 'trilobe']), LONG = new Set(['sword', 'strap', 'jag', 'drosera']);
+const NOSIDE = new Set(['tendril', 'thorn', 'hang', 'strap']); // units that make no flower of their own
+const extCache = new Map();
+function extOf(spec) { // size of a unit drawn at s = 1 (max of width and height)
+  const key = JSON.stringify(spec);
+  if (extCache.has(key)) return extCache.get(key);
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  const base = { poly(pts) { for (const [x, y] of pts) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); } return this; } };
+  const pen = new Pen(base, 0); pen.floor = 1e9;
+  try { drawUnit({ ink: pen, rng: makeRng(7), plantDraw: true, plan: null, plump: 1, lift: 0 }, [0, 0], UP, 10, spec); } catch { /* unmeasurable: assume unit size */ }
+  const e = x1 > x0 ? Math.max(x1 - x0, y1 - y0) / 10 : 1.5;
+  extCache.set(key, e);
+  return e;
+}
+const fitTo = (spec, ext) => ext / extOf(spec);
+function meldOf(G, tok) {
+  const foreign = x => x && x._tok && x._tok !== tok && x.type !== 'none';
+  const M = {};
+  if (foreign(G.head) && G.head.lend) { const { size, ...h } = G.head.lend; void size; M.head = h; }
+  for (const s of ['crown', 'dorsal', 'tail']) {
+    const x = G[s];
+    if (foreign(x) && x.unit) M[s] = x.unit;
+    if (x && x._tok && x.type !== 'none') mute(x); // a sibling plant's ornaments never hang off a plant
+  }
+  return Object.keys(M).length ? M : null;
+}
+// same drawn size as the unit it replaces, within reason
+const sizeLike = (old, oldS, nw, lo, hi) => clamp(oldS * extOf(old), lo, hi) / extOf(nw);
+const MELD = {
+  stems(g0, M) {
+    const g = { ...g0, stems: g0.stems.map(st => ({ ...st, leaves: st.leaves && { ...st.leaves } })), basal: g0.basal?.map(b => ({ ...b })) };
+    const hOf = st => (st.h < 3 ? 14 : st.h); // pitcher clumps have stub stems
+    let st0 = g.stems[0];
+    // a clump of stub-stalked units (pitchers, cobra lilies) is the plant itself: leave it, and
+    // let the borrowed head rise from its middle on a stem as tall as the clump
+    if (M.head && st0 && st0.h < 3) {
+      const ch = Math.max(...g.stems.map(st => st.h < 3 && st.head ? st.hs * extOf(st.head) : 0));
+      st0 = { x: 0, lean: 0, h: Math.max(ch * 0.85, 14), w: 0.9, w1: 0.65 }; g.stems.unshift(st0);
+      g.keepHead = true;
+    }
+    if (M.head) {
+      if (!st0) {
+        const bs = Math.max(8, ...(g.basal ?? []).map(b => b.s));
+        st0 = { x: 0, lean: 0, h: bs * 1.3, w: 0.9, w1: 0.65 }; g.stems.unshift(st0);
+      }
+      const H = hOf(st0);
+      if (st0.head) {
+        const oldE = st0.hs * extOf(st0.head);
+        st0.hs = sizeLike(st0.head, st0.hs, M.head, Math.max(5, H * 0.18), Math.max(9, H * 0.42));
+        st0.h = Math.max(st0.h, (st0.h + oldE - st0.hs * extOf(M.head)) * 0.9); // keep the plant's height when a tall spire gives way
+      } else st0.hs = fitTo(M.head, clamp(H * 0.3, 6, 13));
+      st0.head = M.head;
+    }
+    const side = [M.crown, M.dorsal, M.tail].find(u => u && !leafy(u) && !NOSIDE.has(u.u));
+    const leafU2 = [M.dorsal, M.crown].find(u => u && leafy(u));
+    if (side) {
+      let n = 0;
+      g.stems.forEach((st, i) => { if (i && st.head && st.h >= 3) { st.hs = sizeLike(st.head, st.hs, side, 4, Math.max(8, hOf(st) * 0.35)); st.head = side; n++; } });
+      if (!n && st0 && st0.h > 12 && !g.stems.some(st => st.h < 3)) {
+        const sd = (st0.x ?? 0) > 0 ? -1 : 1, h = st0.h * 0.62;
+        g.stems.push({ x: (st0.x ?? 0) + sd * 2.2, lean: sd * 0.38, arc: -sd * 0.25, h, w: Math.max((st0.w ?? 1) * 0.7, 0.55), w1: 0.5, head: side, hs: fitTo(side, clamp(h * 0.3, 5, 10)) });
+      }
+    }
+    if (leafU2) {
+      let n = 0;
+      for (const st of g.stems) if (st.leaves) { st.leaves.s = sizeLike(st.leaves.spec, st.leaves.s, leafU2, 3, 12); st.leaves.spec = leafU2; n++; }
+      if (!n && st0 && st0.h > 14 && !g.basal?.length) st0.leaves = { n: 2, t0: 0.3, t1: 0.55, ang: 0.95, s: fitTo(leafU2, clamp(st0.h * 0.28, 5, 10)), k1: 0.8, spec: leafU2 };
+    }
+    const ros = M.tail && BLADE.has(M.tail.u) ? M.tail : null; // single blades only: clusters in a rosette merge into a lump
+    if (ros && g.basal?.length) for (const b of g.basal) { b.s = sizeLike(b.spec, b.s, ros, 4, LONG.has(ros.u) ? 22 : 12); b.spec = ros; }
+    return g;
+  },
+  vine(g0, M) {
+    const g = { ...g0, sd: g0.sd >= 0 ? 1 : -1, nodes: { ...g0.nodes }, hang: g0.hang?.map(h => ({ ...h })), flowers: g0.flowers?.map(f => ({ ...f })) };
+    const side = [M.crown, M.head, M.dorsal].find(u => u && !leafy(u) && !NOSIDE.has(u.u));
+    const leafU2 = [M.dorsal, M.crown, M.tail].find(u => u && leafy(u));
+    if (leafU2) { g.nodes.s = sizeLike(g.nodes.spec, g.nodes.s, leafU2, 4, 10); g.nodes.spec = leafU2; }
+    if (side) {
+      if (g.flowers?.length) for (const f of g.flowers) { f.s = sizeLike(f.spec, f.s, side, 4, 9); f.spec = side; }
+      else g.flowers = [{ t: 0.7, sd: -(g.sd ?? 1), s: fitTo(side, 7), spec: side }];
+    }
+    return g;
+  },
+};
+// forms with a clear top where a sibling's head may flower (cacti and succulents bloom on top)
+const TOPPED = new Set(['cactus', 'pear', 'lithops']);
 const FORMS = {};
+const mute = o => { for (const k of Object.keys(o)) delete o[k]; o.type = 'none'; };
 chassis.plant = (C, g) => {
-  const own = g._own, ownLimbs = !!own && C.lift === own.lift;
-  if (own) for (const o of own.mute) { for (const k of Object.keys(o)) delete o[k]; o.type = 'none'; } // lend-only ornaments
+  const own = g._own, G = g._g;
+  // root legs from any plant (own or a chimera sibling) mean "no legs": the plant stays rooted
+  const ownLimbs = !!own && (C.lift === own.lift || (!!G?.limbs?._tok && G.limbs.lift === C.lift));
+  if (own) for (const o of own.mute) mute(o); // lend-only ornaments
+  const M = G ? meldOf(G, g._tok) : null;
+  if (M) g = MELD[g.form]?.(g, M) ?? g;
+  if (g.sd != null && Math.abs(g.sd) !== 1) g = { ...g, sd: g.sd >= 0 ? 1 : -1 }; // a blended side sign
   const R0 = g.R ?? 6, dy = ownLimbs ? 0 : C.lift * R0 * 1.1 + R0 * 0.7;
   const K = new Pen(C.ink, dy), Cp = { ...C, ink: K, plantDraw: true, ownLimbs };
   const o = FORMS[g.form](Cp, g);
+  if (M?.head && !o.main && TOPPED.has(g.form)) o.main = { p: o.head.p, a: UP, s: fitTo(M.head, clamp((o.r ?? 5) * 1.7, 6, 13)), spec: M.head };
   const sh = p => [p[0], p[1] - dy];
   const r = clamp(o.r, 3.5, 9), limbs = [];
   if (!ownLimbs) { // a root-ball to walk on
@@ -1180,7 +1284,13 @@ function lends(r, o) {
 function build(r, form, o) {
   const L = lends(r, o);
   form.type = 'plant'; form._own = { lift: L.limbs.lift, mute: [L.tail, L.dorsal, L.crown] };
-  return { chassis: form, ...L, surface: { eyes: r.chance(0.85) ? 'dot' : 'none' } };
+  const G = { chassis: form, ...L, surface: { eyes: r.chance(0.85) ? 'dot' : 'none' } };
+  // hidden links (copied by chimera clones, re-pointed by critter.js relink): the gene set the
+  // chassis ends up in, and a token marking this species' own lend objects
+  const tok = {};
+  for (const x of [form, L.head, L.limbs, L.tail, L.dorsal, L.crown]) Object.defineProperty(x, '_tok', { value: tok, configurable: true });
+  Object.defineProperty(form, '_g', { value: G, configurable: true });
+  return G;
 }
 const leafU = (len = 1, wid = 0.45) => ({ u: 'leaf', len, wid });
 
