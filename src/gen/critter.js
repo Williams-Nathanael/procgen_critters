@@ -58,7 +58,11 @@ const plain = x => x && typeof x === 'object' && !Array.isArray(x);
 // t of the way from a toward b for every numeric gene both share (recursing into nested
 // plain objects of the same type); integers stay integers. Booleans, strings, arrays untouched.
 // Copy a gene keeping non-enumerable links (e.g. arthropod's chassis.root), which spread drops.
-const clone = o => Object.defineProperties({}, Object.getOwnPropertyDescriptors(o));
+const clone = o => {
+  const ds = Object.getOwnPropertyDescriptors(o);
+  for (const d of Object.values(ds)) d.configurable = true; // so relink can re-point them
+  return Object.defineProperties({}, ds);
+};
 // After a chimera swaps slots, re-point a copied gene's hidden links from its parent's gene
 // set (and that set's slots) to the chimera's own.
 function relink(gene, src, g) {
@@ -169,7 +173,10 @@ function hybridize(tag, sp0, g, donors, seed, amount) {
   if (g.chassis !== chassisP.g.chassis) relink(g.chassis, chassisP.g, g);
   const parents = [...used.keys()].map(p => p.sp.name);
   if (parents.length < 2) return null;
-  return { parents, from, chassis: chassisP.sp.name };
+  // the name lists the parents that supply a slot (chassis first), at most 4, then +n
+  const main = [...new Set([from.chassis, ...LENDABLE.map(s => from[s])].filter(x => x != null).map(x => [].concat(x)[0]))];
+  const shown = main.slice(0, 4), name = shown.join(' × ') + (parents.length > shown.length ? ` +${parents.length - shown.length}` : '');
+  return { parents, name, from, chassis: chassisP.sp.name };
 }
 
 export function makeCritter(tags, seed, opts = {}) {
@@ -198,10 +205,10 @@ export function makeCritter(tags, seed, opts = {}) {
   }
   if (donors.head !== (donors.primary ?? donors.chassis) && lent[donors.head]) g.surface = lent[donors.head].surface;
   const hy = opts.hybrid ?? HYBRID;
-  let hybrid = null, chassisFrom = sp0.name;
+  let hybrid = null, chassisFrom = sp0.name, parents = null;
   if (hy > 0) {
     const hx = hybridize(donors.primary ?? donors.chassis, sp0, g, donors, seed, hy);
-    if (hx) { names[donors.primary ?? donors.chassis] = hx.parents.join(' × '); hybrid = hx.from; chassisFrom = hx.chassis; }
+    if (hx) { names[donors.primary ?? donors.chassis] = hx.name; hybrid = hx.from; chassisFrom = hx.chassis; parents = hx.parents; }
   }
   for (const s of SLOTS) if (g[s] == null) g[s] = { type: 'none' };
   const ink = new Ink();
@@ -238,5 +245,5 @@ export function makeCritter(tags, seed, opts = {}) {
   const dy = plan.view === 'top' ? -b.y1 : (b.y1 > allow ? allow - b.y1 : 0);
   rings = rings.map(r => r.map(([x, y]) => [x + dx, y + dy]));
   b = ringsBBox(rings);
-  return { rings, bbox: b, view: plan.view, donors, tags, seed, species: names, base: hybrid ? null : sp0.name, hybrid };
+  return { rings, bbox: b, view: plan.view, donors, tags, seed, species: names, base: hybrid ? null : sp0.name, hybrid, parents };
 }

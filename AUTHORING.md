@@ -36,7 +36,8 @@ rises); per slot, with chance `hybrid`:
 
 Coherence: parts hang off the chassis's sockets, so they scale to the receiving body; a tail
 from a parent other than the chassis's goes through the lent-tail cap (and `onBody` on rooted
-bodies). The result's `species[tag]` lists all parents (`a × b × ...`, no base), `base` is
+bodies). The result's `species[tag]` names the parents that supply a slot, chassis first, at most 4
+(`a × b × c × d +n`, n counting the rest incl. blend mates); `parents` holds the full list, `base` is
 null for a chimera, and `hybrid` maps each slot to its parent name (or `[parent, blend mate]`).
 
 Optional hints on a species object, read from the tag file:
