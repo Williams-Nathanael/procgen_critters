@@ -775,7 +775,7 @@ heads.fungusFB = (C, sock, g) => {
   if (fz) {
     // a chimera (head from another parent than the chassis): every fruit body on the chassis
     // becomes the head's kind, sized to fit the stalk it sits on, so the whole thing is one organism
-    const hyb = g.hid !== fz.hid, K = pen(ink, fz.dy, true), fit = sp => hyb ? clamp((sp / g.span) ** 0.75, 0.62, 1.6) : 1;
+    const hyb = g.hid !== fz.hid, K = pen(ink, fz.dy, true), fit = sp => hyb ? clamp((sp / g.span) ** 0.75, 0.62, 1.3) : 1;
     const gh = hyb && g.skirt ? { ...g, skirt: g.skirt * 0.6 } : g;
     // a stalked fruit body landing on a ground-level seat (a puffball's or coral's socket) grows a stout stalk
     const stalk = (p, ax, ss) => {
@@ -869,7 +869,7 @@ feet.fungusBulb = (C, p, ang, s, g, k) => {
 // =====================================================================
 // GENE HELPERS
 // =====================================================================
-const STALKED = new Set(['cap', 'inkcap', 'thimble', 'saddle', 'morel', 'brain', 'cage']);
+const STALKED = new Set(['cap', 'inkcap', 'thimble', 'saddle', 'morel', 'brain', 'cage', 'mane']);
 const FZ_LIFT = 0.1307; // marks fungus limb genes (constant, so blends keep it)
 const st = (x, h, r, o = {}) => ({ x, h, r, lean: 0, sway: 0, arc: 0.12, flare: 1.25, taper: 0.82, ...o });
 

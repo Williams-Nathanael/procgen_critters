@@ -25,6 +25,28 @@ gills/frills, puffball tails and coral antlers read well. Default eyes: none.
 
 ## State (update this section when you work on the tag)
 
+### M8 phase 2: chimeras (2026-11-14, judged at --cell 60, hybrid 1)
+- **41 species** (was 42): oyster mushroom cut (user). Jelly ear redone: 2-3 wrinkled, lobed ears
+  (new `jwrink` drawer, thick pale rim fold like an ear's helix) hanging off the sides of a slim
+  upright snag; no lying log, so no flat baseline and no snail read. Could be more wrinkled.
+- **One organism per chimera**: the chassis no longer draws its fruit bodies; it records their
+  seats (`plan.fungus.fbs`: side stalks, body-seated heads, wood items) and `heads.fungusFB`
+  draws them. When the head comes from a different parent (`hid` string set in `build`), every
+  seat takes the head's kind, sized by span ratio (`(own/head span)^0.75`, clamped 0.62-1.3), so a
+  troop/tuft/log carries one kind of fruit body. Stalked kinds (`STALKED`: caps, inkcaps,
+  thimbles, saddles, morels, brains, cages, manes) landing on a ground seat grow a stout stalk.
+  Wood stubs without items get the head on top. Veiled-lady skirts shrink to 60% on foreign stalks.
+- Fungus limb genes carry a constant `lift` marker (`FZ_LIFT`); when the limbs are fungus (any
+  parent) the body grows no legs, the tail socket is zero-size and sibling fungus ornaments
+  (growth troops, sprouts, tail tips) skip drawing, so no loose stalks or bits. Foreign tags'
+  parts on a fungus chassis are unaffected. Root sliver: max 0.3% of height below the line.
+- Weak, by name: devil's fingers / pixie cup heads on thick stalks read as bare "Y"s; ball heads
+  (puffballs, earthball) on tall troop stalks read as lollipop trees; earth tongue and hare's ear
+  heads as flat blades; cordyceps chassis with a foreign head on the caterpillar is odd but cute;
+  fly agaric's narrow neck above the ring looks nearly detached at print size (pre-existing).
+- Sheet: `out/roads/07-fungus-chimeras.png` (3 seeds x 18, cell 60).
+
+
 ### M3 critic fix round (2026-11-14, judged at --cell 60)
 - **42 species** (was 43; snow fungus cut: a frond-spray rebuild read as seaweed/coral, the old
   ear-ball as a cloud mound).
