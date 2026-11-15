@@ -203,13 +203,13 @@ function frontHind(C, sock, g) {
   seg(C, [kn, add(lerp(kn, an, 0.5), [sd * 0.12 * s, 0]), an], hw * 0.66, ar, hw * 0.62);
   const tb = [an[0] + sd * g.hf * s * 0.55, G - ar * 0.8], base = sd > 0 ? 0 : PI;
   C.ink.poly(tube(polyline([an, tb], 3), ar * 0.85));
-  toes(C, tb, 0, s, { n: 3, len: g.toeLen * 0.9, angs: [base, base - sd * 0.4, base - sd * 0.85], lens: [1, 0.9, 0.7], pad: g.pad, web: g.web, maxY: G, tr: g.tr });
+  toes(C, tb, 0, s, { n: 3, len: g.toeLen * 0.9, angs: [base, base - sd * 0.4, base - sd * 0.85], lens: [1, 0.9, 0.7], pad: g.pad, web: g.web, maxY: G, tr: Math.max(g.tr ?? 0, 0.13) });
 }
 function frontFore(C, sock, g) {
   const s = sock.s, sd = sock.side, G = sock.ground ?? 0, sh = sock.p, r0 = Math.max(g.fw * s * 1.1, MINW * 0.9);
   const hand = [sh[0] - sd * 0.08 * s, G - r0 * 0.8], el = add(lerp(sh, hand, 0.5), [sd * 0.14 * s, 0]), base = sd > 0 ? 0 : PI;
   seg(C, [sh, el, hand], r0, r0 * 0.8);
-  toes(C, hand, 0, s, { n: 3, len: g.toeLen * 0.62, angs: [base, base - sd * 0.5, PI - base], lens: [1, 0.8, 0.75], pad: g.pad, web: 0, maxY: G, tr: g.tr });
+  toes(C, hand, 0, s, { n: 3, len: g.toeLen * 0.62, angs: [base, base - sd * 0.5, PI - base], lens: [1, 0.8, 0.75], pad: g.pad, web: 0, maxY: G, tr: Math.max(g.tr ?? 0, 0.12) });
 }
 
 // Top view. Angles are measured from "forward" (0) round through "outward" (PI/2) to "back" (PI).
@@ -566,7 +566,7 @@ heads.amphibianFrog = (C, sock, g) => {
   // Darwin's frog: a fleshy proboscis off the snout tip
   if (g.nose) ink.poly(leaf(F(sn * 0.9, 0.04 - tipH * 0.4), sock.face - 0.12, (g.nose + 0.15) * s, s * 0.3, 0, 0.3));
   // casque-headed tree frog: a flat bony helmet over the skull, its back edge jutting over the neck
-  if (g.casque) ink.poly([F(-0.4, -0.3), F(-0.75 - g.casque * 1.3, -0.62 * hh - g.casque * 0.55), F(-0.35, -0.86 * hh - g.casque * 0.3), F(0.35, -0.8 * hh - g.casque * 0.15), F(sn * 0.9, -0.2 * hh), F(sn * 0.5, -0.1)]);
+  if (g.casque) ink.poly([F(-0.4, -0.3), F(-0.85 - g.casque * 1.9, -0.7 * hh - g.casque * 0.8), F(-0.35, -0.9 * hh - g.casque * 0.5), F(0.35, -0.84 * hh - g.casque * 0.3), F(sn * 0.9, -0.2 * hh), F(sn * 0.5, -0.1)]);
   const up = sock.face - PI / 2;
   return {
     eyes: [{ p: ep, r: s * 0.15 }], spots: [],
@@ -637,18 +637,21 @@ dorsals.amphibianHair = (C, plan, st, sd, si, g) => {
     if (si > 0) return;
     // shaggy fringe round the back of the haunch, and a few down the lower flank
     const c = hip ? hip.p : pathAt(plan.path, 0.1).p, G = hip?.ground ?? 0;
-    for (let i = 0; i < g.n; i++) {
-      const u = (i + rng.range(0.2, 0.8)) / g.n, a = mix(PI * 0.32, PI * 1.06, u), len = r * g.len * rng.range(0.75, 1.15);
-      const b = polar(c, a, r * 0.46), h = a + 0.45;
-      const e = polar(b, h, len); e[1] = Math.min(e[1], G - MINW);
-      ink.poly(tube(spline([b, polar(lerp(b, e, 0.5), h + PI / 2, len * 0.1), e], 4), profile([[0, Math.max(r * 0.16, MINW * 0.9)], [0.6, Math.max(r * 0.08, MINW * 0.7)], [1, MINW * 0.55]])));
+    // a few thick strands from flank and thigh, hanging back and down, ends kept off the ground
+    const n = clamp(Math.round(g.n / 2.4), 5, 7);
+    for (let i = 0; i < n; i++) {
+      const u = (i + rng.range(0.3, 0.7)) / n, a = mix(PI * 0.15, PI * 0.95, u), len = r * g.len * rng.range(0.6, 0.85);
+      const b = polar(c, a, r * 0.5), h = a + 0.35;
+      const e = polar(b, h, len); e[1] = Math.min(e[1], G - r * 0.35);
+      ink.poly(tube(spline([b, polar(lerp(b, e, 0.5), h + PI / 2, len * 0.08), e], 4), profile([[0, Math.max(r * 0.2, MINW * 1.2)], [0.6, Math.max(r * 0.13, MINW)], [1, Math.max(r * 0.07, MINW * 0.8)]])));
     }
     return;
   }
   if (plan.amphLimbless) return; // on a caecilian or tadpole the fringe turns it into a centipede
-  for (let i = 0; i < Math.ceil(g.n / 2); i++) {
-    const k = st[Math.round(mix(0, st.length - 1, (i + 0.5) / Math.ceil(g.n / 2)))], a = k.dir + sd * rng.range(0.2, 0.6) * 0, len = r * g.len * rng.range(0.6, 1);
-    ink.poly(tube(spline([polar(k.p, k.dir, -r * 0.1), polar(k.p, a, len * 0.5), polar(polar(k.p, a, len), a + PI / 2, len * 0.2 * sd)], 4), profile([[0, Math.max(r * 0.09, MINW * 0.7)], [1, MINW / 2]])));
+  const m = clamp(Math.round(g.n / 4), 3, 4);
+  for (let i = 0; i < m; i++) {
+    const k = st[Math.round(mix(0, st.length - 1, (i + 0.5) / m))], a = k.dir, len = r * g.len * rng.range(0.45, 0.7);
+    ink.poly(tube(spline([polar(k.p, k.dir, -r * 0.1), polar(k.p, a, len * 0.5), polar(polar(k.p, a, len), a + PI / 2, len * 0.15 * sd)], 4), profile([[0, Math.max(r * 0.16, MINW * 1.1)], [1, Math.max(r * 0.06, MINW * 0.8)]])));
   }
 };
 
@@ -658,12 +661,12 @@ dorsals.amphibianCrest = (C, plan, st, sd, si, g) => {
   if (si > 0 || plan.view !== 'side') return; // a crest is only an outline in profile
   // sized for a slim newt (r ~6): on fat bodies the same ratio made one huge shark fin
   const { ink, rng } = C, r = plan.r * clamp(6.5 / plan.r, 0.45, 1), n = st.length, at = u => { const x = clamp(u, 0, 1) * (n - 1), i = Math.min(Math.floor(x), n - 2); return { p: lerp(st[i].p, st[i + 1].p, x - i), dir: st[i].dir }; };
-  const pts = [];
-  for (let t = 0; t < g.n; t++) {
-    const u0 = t / g.n, w = 1 / g.n, hk = rng.range(0.92, 1.1);
-    for (const [f, hh] of [[0, 0.5], [0.38, hk], [0.62, hk * 0.93]]) {
-      const u = u0 + f * w, k = at(u);
-      pts.push(polar(k.p, k.dir, r * g.h * Math.sin(PI * u) ** 0.6 * hh));
+  const pts = [], nl = clamp(Math.round(g.n) - 1, 4, 6);
+  for (let t = 0; t < nl; t++) {
+    const u0 = 0.06 + 0.88 * t / nl, w = 0.88 / nl, hk = rng.range(0.9, 1.1);
+    for (let j = 0; j <= 6; j++) {
+      const f = j / 6, u = u0 + f * w, k = at(u), lobe = Math.sin(PI * f) ** 0.5;
+      pts.push(polar(k.p, k.dir, r * (0.1 + g.h * 0.6 * Math.sin(PI * u) ** 0.4 * hk * mix(0.3, 1, lobe))));
     }
   }
   pts.push(at(1).p);
@@ -697,26 +700,29 @@ dorsals.amphibianEggs = (C, plan, st, sd, si, g) => {
     if (si > 0) return;
     // a looped string of beads trailing from the hips to the heels
     const { ink, rng } = C, r = plan.r, er = Math.max(r * g.size * 0.78, MINW * 1.6), G = hip.ground ?? 0, h = hip.p, gy = G - er * 1.05;
-    const back = Math.max(plan.rad(0), r * 0.5) + r * rng.range(0.55, 0.8), sag = rng.range(0.1, 0.3);
+    const back = Math.max(plan.rad(0), r * 0.5) + r * rng.range(1.0, 1.3), sag = rng.range(0.1, 0.3);
     const path = spline([add(h, [-0.35 * r, -0.2 * r]), [h[0] - back, mix(h[1], gy, 0.25)], [h[0] - back * 0.85, gy - sag * r], [h[0] - 0.25 * r, gy]], 10);
-    ink.poly(tube(path, Math.max(er * 0.3, MINW * 0.6)));
-    let acc = 0;
-    for (let i = 1; i < path.length; i++) {
-      acc += dist(path[i - 1], path[i]);
-      if (acc >= er * 2.25) { acc = 0; const q = [path[i][0], Math.min(path[i][1], gy)]; ink.poly(ellipse(q, er, er, 0, 14)); }
+    ink.poly(tube(path, Math.max(er * 0.22, MINW * 0.6)));
+    // separate beads spaced evenly along the string, a clear gap between each
+    const cum = [0]; for (let i = 1; i < path.length; i++) cum.push(cum[i - 1] + dist(path[i - 1], path[i]));
+    const tot = cum[cum.length - 1], nb = clamp(g.n, 4, 5), br = Math.max(Math.min(er * 1.1, tot / nb / 2.3), MINW * 1.4);
+    for (let k = 0; k < nb; k++) {
+      const d = tot * (k + 0.5) / nb; let i = 1; while (i < cum.length - 1 && cum[i] < d) i++;
+      const q = lerp(path[i - 1], path[i], (d - cum[i - 1]) / Math.max(cum[i] - cum[i - 1], 1e-6));
+      ink.poly(ellipse([q[0], Math.min(q[1], G - br * 1.05)], br, br, 0, 14));
     }
     return;
   }
   // seen from above (any top-view or side body without legs): a clutch of beads heaped on the rump
   if (si > 0 || !plan.path) return;
   const { ink, rng } = C, r = plan.r, er = Math.max(r * g.size * 0.5, MINW * 1.6), q = pathAt(plan.path, 0.08);
-  const ux = Math.cos(q.ang), uy = Math.sin(q.ang), c = q.p, cnt = g.n + g.rows * 2;
+  const ux = Math.cos(q.ang), uy = Math.sin(q.ang), c = q.p, cnt = Math.min(g.n + g.rows, 8);
   for (let i = 0; i < cnt; i++) {
-    const a = i * 2.4 + rng.range(-0.2, 0.2), d = er * 1.15 * Math.sqrt(i + 0.3);
+    const a = i * 2.4 + rng.range(-0.15, 0.15), d = er * 2.5 * Math.sqrt(i + 0.3);
     const lx = -Math.abs(Math.cos(a)) * d * 0.9, ly = Math.sin(a) * d;
     const p = [c[0] + ux * lx - uy * ly, c[1] + uy * lx + ux * ly];
     if (plan.view === 'side') p[1] = Math.min(p[1], -er);
-    ink.dot(p, er * rng.range(0.9, 1.1));
+    ink.dot(p, er * rng.range(0.85, 0.95));
   }
 };
 
@@ -736,18 +742,18 @@ const topBody = (r, o) => ({ type: 'amphibianTop', r: r.range(8.5, 10.5), len: r
 const species = [
   // ---- sitting frogs, side view ----
   { name: 'common frog', w: 3, genes: r => ({
-    chassis: sit(r, {}), head: frogHead(r), limbs: legs(r, 'frog'), tail: none(), dorsal: none(), crown: popEyes(r), surface: look(r),
+    chassis: sit(r, { r: r.range(8, 11.5), len: r.range(17, 27), pitch: r.wpick([[2, r.range(0.45, 0.66)], [1, r.range(0.75, 0.95)], [1, r.range(0.15, 0.3)]]) }), head: frogHead(r), limbs: legs(r, 'frog'), tail: none(), dorsal: none(), crown: popEyes(r), surface: look(r),
   }) },
   { name: 'frog on a lily pad', w: 2, genes: r => ({
     chassis: sit(r, { type: 'amphibianPad', r: r.range(8.5, 10), padW: r.range(2.3, 2.9), padT: r.range(0.4, 0.55), curl: r.range(0, 1.2) }),
     head: frogHead(r), limbs: legs(r, r.pick(['frog', 'frog', 'tree'])), tail: none(), dorsal: none(), crown: popEyes(r), surface: look(r),
   }) },
-  { name: 'hairy frog', w: 1, genes: r => ({ // Trichobatrachus: breeding males grow hair-like filaments on flanks and thighs
+  { name: 'hairy frog', hybrid: { noLend: ['chassis'] }, w: 1, genes: r => ({ // Trichobatrachus: breeding males grow hair-like filaments on flanks and thighs
     chassis: sit(r, { r: r.range(9.5, 11), len: r.range(18, 22), pitch: r.range(0.42, 0.56), belly: 0.92 }),
     head: frogHead(r, { snout: r.range(0.95, 1.08), point: 0.05, deep: 0.7, eye: r.range(0.28, 0.33) }),
     limbs: legs(r, 'frog', { hw: r.range(0.46, 0.52) }), tail: none(), dorsal: { type: 'amphibianHair', n: r.int(13, 17), len: r.range(1.05, 1.35) }, crown: popEyes(r), surface: look(r, 0.3, 0),
   }) },
-  { name: 'calling frog', w: 2, genes: r => ({
+  { name: 'calling frog', hybrid: { noLend: ['chassis'] }, w: 2, genes: r => ({
     chassis: sit(r, { r: r.range(8, 9.5), len: r.range(18, 22), pitch: r.range(0.58, 0.75) }),
     head: frogHead(r, { pouch: r.range(0.95, 1.4), snout: r.range(1.05, 1.2), eye: r.range(0.32, 0.38) }),
     limbs: legs(r, r.pick(['frog', 'tree'])), tail: none(), dorsal: none(), crown: popEyes(r), surface: look(r, 0.3),
@@ -757,28 +763,28 @@ const species = [
     head: frogHead(r, { snout: r.range(1, 1.15), point: 0.1, eye: r.range(0.38, 0.46), eyeUp: 0.3 }),
     limbs: legs(r, 'tree'), tail: none(), dorsal: none(), crown: popEyes(r), surface: look(r, 0.4, 0.1),
   }) },
-  { name: 'tongue-flicking frog', w: 1.2, genes: r => ({
+  { name: 'tongue-flicking frog', hybrid: { noLend: ['chassis'] }, w: 1.2, genes: r => ({
     chassis: sit(r, { pitch: r.range(0.5, 0.7), face: r.range(0.25, 0.5) }), head: frogHead(r, { tongue: r.range(1.4, 2.6) }),
     limbs: legs(r, 'frog'), tail: none(), dorsal: none(), crown: popEyes(r), surface: look(r, 0.4),
   }) },
-  { name: 'leaf-litter horned frog', w: 1.5, genes: r => ({
+  { name: 'leaf-litter horned frog', hybrid: { noLend: ['chassis'] }, w: 1.5, genes: r => ({
     chassis: sit(r, { seat: r.range(0.55, 0.7), r: r.range(9, 10.5), len: r.range(18, 22), pitch: r.range(0.34, 0.5), belly: 0.96, hump: r.range(0.5, 0.9) }),
     head: frogHead(r, { snout: r.range(1.4, 1.7), point: 1, deep: 0.56, eye: r.range(0.24, 0.3), hh: 0.92, wide: 1.1 }),
     limbs: legs(r, 'frog', { hw: 0.36, web: 0.3 }), tail: none(), dorsal: none(), crown: { type: 'amphibianBrow', len: r.range(0.6, 1), lean: r.range(-0.1, 0.25), pair: true }, surface: look(r, 0.2, 0.2),
   }) },
-  { name: "Darwin's frog", w: 1.3, genes: r => ({ // Rhinoderma: a leaf-litter frog with a fleshy nose spike
+  { name: "Darwin's frog", hybrid: { noLend: ['chassis'] }, w: 1.3, genes: r => ({ // Rhinoderma: a leaf-litter frog with a fleshy nose spike
     chassis: sit(r, { r: r.range(7.5, 9), len: r.range(18, 22), pitch: r.range(0.45, 0.62) }),
     head: frogHead(r, { snout: r.range(1.2, 1.4), point: 1, deep: 0.58, eye: r.range(0.3, 0.36), nose: r.range(0.55, 0.9) }),
     limbs: legs(r, 'frog', { hl: r.range(1.05, 1.2) }), tail: none(), dorsal: none(), crown: popEyes(r), surface: look(r, 0.3, 0.2),
   }) },
-  { name: 'casque-headed frog', w: 1.3, genes: r => ({ // Triprion / Corythomantis: a flat bony helmet of a head
+  { name: 'casque-headed frog', hybrid: { noLend: ['chassis'] }, w: 1.3, genes: r => ({ // Triprion / Corythomantis: a flat bony helmet of a head
     chassis: sit(r, { r: r.range(7.5, 9), len: r.range(20, 24), pitch: r.range(0.3, 0.5), belly: 0.9, hump: r.range(0.1, 0.4), headS: r.range(1.05, 1.2) }),
     head: frogHead(r, { snout: r.range(1.2, 1.45), point: r.range(0.5, 0.9), deep: 0.56, eye: r.range(0.26, 0.32), casque: r.range(0.35, 0.65), hh: 0.9 }),
     limbs: legs(r, 'tree'), tail: none(), dorsal: none(), crown: none(), surface: look(r, 0.3, 0.1),
   }) },
   // ---- toads ----
   { name: 'common toad', w: 3, genes: r => ({
-    chassis: sit(r, { seat: r.range(0.35, 0.5), r: r.range(10.5, 12.5), len: r.range(15, 19), pitch: r.range(0.3, 0.46), rump: 0.74, belly: 1.08, chest: 0.92, neck: 0.8, hump: 0, headS: 0.84 }),
+    chassis: sit(r, { seat: r.range(0.35, 0.5), r: r.range(10.5, 12.5), len: r.range(15, 19), pitch: r.range(0.18, 0.55), rump: 0.74, belly: 1.08, chest: 0.92, neck: 0.8, hump: 0, headS: 0.84 }),
     head: frogHead(r, { snout: r.range(0.9, 1.02), point: 0, deep: 0.72, eye: r.range(0.25, 0.3), parotoid: r.range(1.2, 1.5), neck: 0.78 }),
     limbs: legs(r, 'toad', { hw: 0.5, fw: 0.3 }), tail: none(), dorsal: warts(r, { n: r.int(4, 6), size: r.range(0.2, 0.26) }), crown: popEyes(r), surface: look(r, 0.35, 0.5),
   }) },
@@ -788,7 +794,7 @@ const species = [
     limbs: legs(r, 'toad', { stride: true, lift: r.range(1.15, 1.45), ankleX: r.range(-1.1, -0.7), farDX: r.range(1.6, 2.1), reach: r.range(0.8, 1.1), farReach: r.range(-1.7, -1.3), hl: r.range(1.25, 1.4), fl: r.range(2.0, 2.3), hw: 0.36, fw: 0.24 }),
     tail: none(), dorsal: warts(r, { n: r.int(4, 6), size: r.range(0.11, 0.15) }), crown: popEyes(r), surface: look(r, 0.35, 0.5),
   }) },
-  { name: 'midwife toad', w: 1.2, genes: r => ({
+  { name: 'midwife toad', hybrid: { noLend: ['chassis'] }, w: 1.2, genes: r => ({
     chassis: sit(r, { seat: r.range(0.38, 0.5), r: r.range(9.5, 11), len: r.range(15, 19), pitch: r.range(0.26, 0.4), rump: 0.7, belly: 1.04, chest: 0.9, neck: 0.78, hump: 0, headS: 0.86 }),
     head: frogHead(r, { snout: r.range(0.9, 1.05), point: 0.05, deep: 0.68, eye: r.range(0.3, 0.36) }),
     limbs: legs(r, 'toad'), tail: none(), dorsal: { type: 'amphibianEggs', n: r.int(4, 6), rows: r.int(2, 3), size: r.range(0.55, 0.65) }, crown: popEyes(r), surface: look(r, 0.3, 0),
@@ -857,11 +863,11 @@ const species = [
     dorsal: none(), crown: popEyes(r), surface: look(r, 0.4, 0),
   }) },
   // ---- caecilians ----
-  { name: 'caecilian', w: 1.2, genes: r => ({
+  { name: 'caecilian', hybrid: { keep: ['limbs', 'dorsal'] }, w: 1.2, genes: r => ({
     chassis: { type: 'amphibianCaecilian', style: 'wave', r: r.range(3.6, 4.4), len: r.range(58, 72), amp: r.range(6, 10), k: r.range(1.1, 1.7), ring: r.range(0.75, 0.95) },
     head: { type: 'amphibianBlunt', len: r.range(1.2, 1.6), tipR: r.range(0.5, 0.62) }, limbs: legs(r, 'frog', { ownNone: true }), tail: none(), dorsal: none(), crown: none(), surface: { eyes: 'none' },
   }) },
-  { name: 'looped caecilian', w: 0.7, genes: r => ({
+  { name: 'looped caecilian', hybrid: { keep: ['limbs', 'dorsal'] }, w: 0.7, genes: r => ({
     chassis: { type: 'amphibianCaecilian', style: 'loop', r: r.range(3.2, 3.7), c: r.range(5.2, 6.2), R: r.range(12.5, 14.5), lead: r.range(0.9, 1.3), tailLead: r.range(0.7, 1.2), drift: r.range(-0.6, 0.6), ring: r.range(0.75, 0.95) },
     head: { type: 'amphibianBlunt', len: r.range(1.2, 1.6), tipR: r.range(0.5, 0.62) }, limbs: legs(r, 'frog', { ownNone: true }), tail: none(), dorsal: none(), crown: none(), surface: { eyes: 'none' },
   }) },

@@ -25,6 +25,20 @@ eyes, toe pads, inflated throat, tadpole tail. Default eyes: a small dot only wh
 helps; most should read without.
 
 ## State
+2026-11-14 M8 chimera fix round (hybrid 1, judged at --cell 60): still **27 species**. Sheet
+`out/roads/07-amphibian-chimeras.png` (seed rows 1000/1100/1200). Chassis spread: the seven
+species whose identity is a head or dorsal on a generic sitting frog (hairy, calling,
+tongue-flicking, horned, Darwin's, casque, midwife) carry `hybrid: { noLend: ['chassis'] }`,
+so chimeras take leap/top/front/tadpole/pad/newt bodies far more often (sit share ~48% -> ~30%);
+common frog pitch now crouch/upright/low-walk mix, wider size; toad pitch 0.18-0.55.
+Caecilians `keep: ['limbs', 'dorsal']`: chimera worms are legless, foreign head gives the eye.
+Crest: 4-6 broad rounded lobes, lower. Hair: 5-7 thick strands (3-4 per side top view), ends
+held r*0.35 above ground. Eggs: 4-5 separate beads spaced on the string; top-view clutch is
+<= 8 spaced beads. Casque overhang ~1.5x longer. Front-view toes thicker (tr >= 0.12-0.13).
+Not done: upright tadpole-profile neck notch, collage joins on mixed sit chassis.
+Weakest: tadpole profile chimeras (lumps), midwife eggs (small), hairy frog fringe (broom),
+caecilian heads (eye small).
+
 2026-11-14 M8 phase 2 (chimeras at hybrid 1, judged at --cell 60): **27 species** (was 25).
 Sheet `out/roads/07-amphibian-chimeras.png`. Added bold parts for meldings: Darwin's frog
 (head `nose` proboscis), casque-headed frog (head `casque` bony helmet, side and top), newt
