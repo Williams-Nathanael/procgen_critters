@@ -14,11 +14,52 @@ Page: https://claude.ai/artifact/Py2LfDvwLMuFgSZzTwihn1 (rebuilt with `npm run r
 The user does not want encrypted-PDF export (decided 2026-11-14; place-only with the
 notice stays).
 
+**M8 phase 2 result (2026-11-14, one overnight conversation at the user's request)**: all 8
+tags tuned for chimeras at hybrid 1 (the user said "go ahead on per-tag tuning" after trying
+phase 1b). Each tag: one `species-builder` run, a `critic` look at `--cell 60`, one fix run;
+the fix runs were NOT re-judged by the critic. Overseer looked at one 8-tag sheet
+(`out/roads/07-chimeras-tuned.png`, tag `road-07-chimeras-tuned`; per-tag sheets
+`out/roads/07-<tag>-chimeras.png`). **Phase 3 taste check is published and waiting on the
+user**: https://claude.ai/artifact/XMBa68NUA2LpyiZJKggFLz (rebuilt with
+`npm run review:chimeras`; answers in its database, collection `answers`, empty at publish).
+**Next: read the answers, record them in BRIEF.md, then fix rounds or M9.**
+- Clean copy of HEAD (52254f6): build, `test:export`, 8-tag hybrid-1 sheet and `--pairs`
+  sheet render without throws. `test:ui` and `test:pdfs` not run. Bench (default hybrid 1):
+  mean 8.07 ms, p95 13.8, max 28 (was 6.22 / 10.7 after the shared fix, 5.7 before M8);
+  slowest arthropod+fungus and salamander. Not investigated.
+- Species counts from the code: salamander 34 (+5), amphibian 27 (+2), arthropod 51
+  (woodlouse cut), fungus 41 (oyster cut), mammal 35, dragon 25, plant 50, jansson 30.
+- Shared fix (engineer, Opus; afd87ca, 2450cff, f620c27; the first two throw at hybrid 1 on
+  their own): `hybridize` keeps hidden gene links such as `chassis.root` (their loss gave
+  arthropod chimeras hairline legs); genes blend only between parents of the same part type
+  and form/view; `species` shows up to 4 parents then "+n", full list in `parents`.
+  Arthropod `--hybrid 0` output is not bit-identical to before the lift workaround was added
+  and removed (unverified whether it matches the session start).
+- Taste fixes folded in: woodlouse and oyster mushroom cut; jelly ear rebuilt (ears on a
+  snag, open inner curl); amphisbaena second head larger with an eye; ampersand knot lump
+  reduced; "hydra with an amphisbaena tail" occurs (dragon seed 1038).
+- Per tag, what changed and what is still weak is in each `docs/tags/<tag>.md` State.
+  In short: dragon (coiled wyrm no longer a chassis, hydra 2-3 necks; lindworm loops and
+  saint margaret still heavy, fire salamander small); amphibian (3 new species, sitting-frog
+  chassis 48% -> 30%, caecilian bodies legless; upright tadpole lumps and collage joins not
+  fixed); arthropod (borrowed stings/pincers show, long forms lie flat; small stick forms,
+  thin worms remain); fungus (single-stalk species no longer supply the body; flat heads on
+  row bodies make low "tables"); jansson (blob folk each carry an outline trait and keep
+  their chassis; comma crawler and query hook thin); mammal (fewer, folded borrowed wings,
+  molehill takes only a head; pure sheet pixel-identical); plant (sibling parts regrow on
+  the main plant's stems; solid bases always carry a borrowed part; barrel cactus and
+  dragon's blood tree weights lowered, which also changes pure frequency); salamander
+  (about half of top-view chimeras become side views, girth and limb variety, raised tails
+  capped at 30 degrees in pure species too; wide side views still bar-like).
+- Watch: sheet tool `tag@species --hybrid 1` renders chimeras without that species as base;
+  fungus wants a shared "remove what was drawn" call (it deletes and redraws stalks);
+  `07-salamander-chimeras.png` was rendered at cell 110; the taste page's click-to-mark and
+  reload behaviour was not exercised in a browser.
+
 **M8 phase 1b result (2026-11-14)**: chimera mechanism done in one engineer (Opus) run
 (5d61f3e) plus an overseer look. It replaces the phase 1 behaviour described below (kept as
 `road-05-hybrids-untuned`). Kept sheet: `out/roads/06-chimeras-untuned.png`, tag
-`road-06-chimeras-untuned`. **Waiting on the user's verdict on the direction (they try it in
-the app); then M8 phase 2 batch 1.**
+`road-06-chimeras-untuned`. (The user then said to go ahead; see phase 2 above.)
 - `opts.hybrid` default 1. At 1 there is no base species: one sibling sets the chassis
   type, its numbers are a weighted blend with 1-2 same-type siblings (pushed up to 35% past
   their average, clamped to their range widened 15%); head, limbs, tail, dorsal and crown
@@ -397,7 +438,9 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
      lump reduced. Suggested batches: dragon, amphibian, arthropod; fungus, jansson,
      mammal; salamander, plant.
      [critic at `--cell 60` per tag; overseer looks at one sheet per batch]
-   - Phase 3: taste check with the user (one page, hybrid sheets per tag).
+     **DONE 2026-11-14** (see "M8 phase 2 result" above).
+   - Phase 3: taste check with the user (one page, hybrid sheets per tag). **PUBLISHED
+     2026-11-14, waiting on the user's answers.**
 9. **M9 Mix verdicts from the 1.0 taste check** (engineer, model opus, `mix` tables in tag
    files; no tag workers running). Never: salamander+fungus. The user (2026-11-14): "either redesign it to be coherently
    salamander blended with fungus rather than 'salamander with a mushroom for a head,' or
