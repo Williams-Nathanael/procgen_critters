@@ -25,6 +25,23 @@ gills/frills, puffball tails and coral antlers read well. Default eyes: none.
 
 ## State (update this section when you work on the tag)
 
+### M8 phase 2 fix round (2026-11-14, critic sheet seeds 1000/1100/1200, --cell 60, hybrid 1)
+- 41 species (unchanged). Lone-stalk species (`LONE` = `hybrid: { noLend: ['chassis'] }`: fly agaric,
+  parasol, penny bun, wood blewit, witch's hat, funnel cap, hedgehog, horn of plenty, morel, false
+  morel, veiled lady, devil's fingers, lattice cage, earth tongue, hare's ear) no longer give a chimera
+  its body, so bodies are clusters, troops, brackets on wood, corals, cups, crusts and mounds.
+- Stalk trimming: stems record each stalk's polygons (`pen.last`); a chimera head takes them back
+  out of `ink.k` (and the ring if above the cut) and redraws the stalk to suit its kind: stalked heads
+  get at most ~1.5 head heights, balls/cups/vases a stub, arms a stub plus a small egg. (Painting the
+  top out with 'w' does not work: whites keep a black margin outline.) Ground-seat stalks also ~1.5x
+  head height, thicker. Grass is removed on chimeras (it was placed for the old fruit bodies).
+- `FBH`: hare's ear / earth tongue heads become a clump of 3 cupped ears on a knob; stag's horn/coral
+  heads are stouter (wid >= 0.42, depth 2, shorter). Wide flat caps on chimeras scale to 1.9 w and tip
+  0.15-0.4 rad. Jelly-ear heads grow from a knob. Pure jelly ear: pale fold is an open C, not a spiral.
+- Weak, by name: flat heads (turkey tail, chicken, parasol, wood blewit) on row chassis (bird's nest,
+  stag's horn twig, fairy ring) still give thin low "tables"; coral x veiled lady skirt dome; giant
+  puffball x parasol. Worst time ~22 ms (honey tuft x lattice cage), a few seeds per 800 over 15 ms.
+
 ### M8 phase 2: chimeras (2026-11-14, judged at --cell 60, hybrid 1)
 - **41 species** (was 42): oyster mushroom cut (user). Jelly ear redone: 2-3 wrinkled, lobed ears
   (new `jwrink` drawer, thick pale rim fold like an ear's helix) hanging off the sides of a slim
