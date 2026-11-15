@@ -96,6 +96,14 @@ tasselled tail, tufts and single hairs, small props, the upright pear body.
 - Removed dead duplicate `tail` key in `glyph()`.
 - Still weak: shaggy mop's shag barely reads at 60px; pot dweller without handles can still look like a blob; asterisk mite with strong curl is busy.
 
+### Hybrids M8 phase 2 (2026-11-14, 30 species)
+- Judged at --hybrid 1, cell 60 (`out/roads/07-jansson-chimeras.png`): chimeras read as whole folk.
+- Hints: bracket peeper keep head+tail; back-turned sitter keep limbs; stone peeper keep dorsal+limbs; curled sleeper keep head (fixes the detached pairs below).
+- Ampersand knot: head ball 3.7k -> 2.5k, pulled into the stroke end (user decision).
+- Glyph leg ticks thicker (1.2 -> 1.6/1.5) so comma crawler and loop runner legs survive print.
+- Shy lump vocabulary widened (caps, long ears, pom tail) so blob chimeras differ more.
+- Still weak: blob folk (shy lump, stack, stone peeper, pot dweller) still share a body template; suitcase traveller; curled sleeper.
+
 ### Hybrids (M8 phase 1, 2026-11-14, automated scan, not yet judged by eye)
 
 Within-tag hybrids are on by default (`hybrid` 0.85, see AUTHORING.md "Within-tag hybrids"). No throws over 2000 seeds. Worst combinations found by a heuristic over 3000 seeds (base + borrowed slot; "detached" = the silhouette falls into separate pieces where the pure base does not; "very long/tall" = aspect over 5:1):
