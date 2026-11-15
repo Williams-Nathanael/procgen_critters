@@ -145,3 +145,17 @@ Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.
 - Weak in chimeras: hydra chassis + raised wing (mass of necks and wing), saint margaret
   chassis (all belly) with big wings, coiled wyrm chassis frequent and samey, fire
   salamander chassis small and thin. Mean ~16 ms per critter under load (3 workers).
+
+### M8 chimera fix round (2026-11-14, hybrid 1, --cell 60, seeds 1000-1047)
+- Coiled wyrm never lends its chassis (`hybrid.noLend: ['chassis', 'limbs']`); spiral chimeras
+  now come only from the basilisk's spiral half, rarely.
+- Legless species (jaculus, sea serpent, serra, prow wyrm, coiled wyrm, sleeping drake) never
+  lend `limbs`: an empty limbs slot on a beast chassis made the bare floating squiggles.
+  Wave/loop serpent chassis without `legsAt` now get a fore pair at their lowest forward point,
+  so lent legs show (pure serpents are unchanged: their limbs are none).
+- Hydra: 2 necks most often (3 sometimes, 4 rarely); any wing on a hydra body is drawn small,
+  laid back, no far wing (`plan.hydra`). Hydra x amphisbaena tail still occurs (1038).
+- Saint margaret chassis carries `wingK` 0.6-0.7 (wings scaled down on its belly).
+- Amphisbaena tail head at least 0.62 x the main head socket size.
+- Sleeping drake tucked forepaw kept on the chest (was a detached speck on pitched chimeras, 1044).
+- Still weak: lent legs on serpent chassis are short stubs; saint margaret + wings still heavy.

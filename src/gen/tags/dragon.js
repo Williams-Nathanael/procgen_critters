@@ -108,13 +108,14 @@ chassis.dragonBeast = (C, g) => {
   } else if (legs === 'sejant') {
     mk(H, 0.75, 'fore', false, 0.1); mk(S, 0.35, 'fore', true); mk(S, -0.1, 'fore', false);
   } else if (legs === 'lie') {
-    ov(ink, [S[0] + r * 1.15, -r * 0.24], r * 0.62, r * 0.24, 0); // tucked forepaw
+    ov(ink, [S[0] + r * 0.95, Math.min(-r * 0.24, S[1] + r * 0.6)], r * 0.62, r * 0.24, 0); // tucked forepaw (kept on the chest when a chimera pitches the body)
   }
   const plan = {
     view: 'side', r, path, rad,
     head: { p: N, dir: na, face: g.face ?? clamp(na * 0.25 + 0.1, -0.5, 0.25), s: r * g.headS, sym: false },
     tail: { p: T, dir: angOf(H, T) + (g.tailAng ?? 0), s: r * 0.6 },
     limbs, back: [strip(path, rad, tk[1] - 0.03, tk[3] + (tk[4] - tk[3]) * 0.3, 14, -1)],
+    hydra: (g.extraNecks ?? 0) > 0, wingK: g.wingK ?? 1,
   };
   if (g.shell) { // tarasque: domed carapace; ornaments ride on the dome
     const c = add(lerp(H, S, 0.5), [0, r * 0.1]), A = L / 2 + r * 1.05, B = r * (g.shell + 1), dome = [], st = [];
@@ -176,7 +177,15 @@ chassis.dragonSerpent = (C, g) => {
   const path = pts.map(([px, ph], i) => { const t = i / (N - 1); return [px, -(ph + rad(t) + clear * sm((t - c0) / (c1 - c0)))]; });
   ink.poly(tube(path, rad));
   const limbs = [];
-  for (const lg of g.legsAt ?? []) {
+  let legsAt = g.legsAt;
+  if (!legsAt && (mode === 'wave' || mode === 'loop')) { // chimeras: a serpent body lent legs gets a pair of forelegs at its lowest forward point
+    let best = -1, lo = -1e9;
+    const by = i => path[i][1] + rad(i / (N - 1));
+    for (let i = Math.round(N * 0.4); i < N - 4; i++) lo = Math.max(lo, by(i));
+    for (let i = Math.round(N * 0.4); i < N - 4; i++) if (by(i) > lo - 0.4 && by(i) > -r * 1.2) best = i;
+    if (best > 0) legsAt = [{ t: best / (N - 1), role: 'fore' }];
+  }
+  for (const lg of legsAt ?? []) {
     const q = pathAt(path, lg.t).p, ls = r * (g.legS ?? 1.2);
     limbs.push({ p: add(q, [r * 0.3, rad(lg.t) * 0.3]), dir: PI / 2, s: ls, role: lg.role, far: true, ground: 0, fwd: 0, side: 1 });
     limbs.push({ p: add(q, [-r * 0.3, rad(lg.t) * 0.3]), dir: PI / 2, s: ls, role: lg.role, far: false, ground: 0, fwd: 0, side: 1 });
@@ -338,13 +347,14 @@ function featherWing(g) {
 const WING = { membrane: membraneWing, bat: membraneWing, feather: featherWing, bird: featherWing };
 dorsals.dragonWings = (C, plan, st, sd, si, g, at) => {
   const side = plan.view === 'side' && !plan.rooted, r = plan.r, k = at(g.at ?? 0.8);
-  const S = Math.min(r, 8) * g.size * (plan.view === 'top' ? 0.85 : 1), shape = (WING[g.kind] ?? membraneWing)(g);
+  // a hydra's necks fill the sky (wing laid back small); a fat belly wants a smaller wing
+  const fold = side && plan.hydra, S = Math.min(r, 8) * g.size * (plan.view === 'top' ? 0.85 : 1) * (plan.wingK ?? 1) * (fold ? 0.6 : 1), shape = (WING[g.kind] ?? membraneWing)(g);
   // side view: the arm angle is mostly absolute (up, leaning back by tilt) so a pitched body
   // does not bury the trailing fingers in its own back
-  const tilt = plan.rooted ? -0.3 : (g.tilt ?? 0.2), base = polar(k.p, k.dir, -r * 0.25);
+  const tilt = plan.rooted ? -0.3 : (g.tilt ?? 0.2) + (fold ? 1.1 : 0), base = polar(k.p, k.dir, -r * 0.25);
   const up = side ? angDiff(k.dir, -PI / 2) * 0.35 - PI / 2 : k.dir;
   const draw = F => C.ink.poly(shape.map(q => F(q[0], q[1])));
-  if (side && g.far !== false) draw(frame(polar(base, k.dir - sd * PI / 2, r * (g.farX ?? 0.1)), up + sd * (tilt - (g.farA ?? 0.42)), S * (g.farS ?? 0.88), sd));
+  if (side && g.far !== false && !fold) draw(frame(polar(base, k.dir - sd * PI / 2, r * (g.farX ?? 0.1)), up + sd * (tilt - (g.farA ?? 0.42)), S * (g.farS ?? 0.88), sd));
   draw(frame(base, up + sd * tilt, S, sd));
 };
 
@@ -409,7 +419,7 @@ function tipEnd(C, kind, e, a, s, g) {
   else if (kind === 'trefoil') trefoil(ink, e, a, q);
   else if (kind === 'head') { // g.face2: the tail head turns to face the front head
     const hp = C.plan.head?.p, ang = g.face2 && hp ? angOf(e, [hp[0], hp[1] - C.plan.r * g.face2]) : a;
-    const hs = s * (g.tipS ?? 1) * 0.95, m = miniHead(ink, e, ang, hs, { gape: g.gape2 ?? 0.4 });
+    const hs = Math.max(s * (g.tipS ?? 1) * 0.95, (C.plan.head?.s ?? 0) * 0.62), m = miniHead(ink, e, ang, hs, { gape: g.gape2 ?? 0.4 });
     if (hs > 1.6) { ink.dot(m.eye, Math.max(hs * 0.24, 0.7), 'w'); ink.dot(m.eye, Math.max(hs * 0.11, 0.38), 'k2'); }
   }
   else if (kind === 'fluke') for (const sd of [-1, 1]) ink.poly(lf(polar(e, a, -q * 0.3), a + sd * 0.72, q * 2.3, q * 1.1, sd * 0.18, 0.55));
@@ -581,7 +591,7 @@ const species = [
     dorsal: r.wpick([[3, roundw(r, { size: r.range(2.6, 3.2) })], [1, stub(r)]]), crown: r.wpick([[2, ears(r, { len: r.range(1, 1.5) })], [1, horns(r, { len: r.range(0.9, 1.4) })], [1, none()]]), surface: eye(),
   }) },
   { name: 'saint margaret dragon', w: 1.6, genes: r => ({ // all belly and gaping mouth
-    chassis: beast(r, { legs: 'quad', len: r.range(15, 19), r: r.range(8.2, 9.6), pitch: r.range(0, 0.12), arch: r.range(0.4, 0.7), headS: r.range(0.95, 1.1), neckA: r.range(-0.6, -0.3), neckL: 1.1, neckW: 0.7, face: r.range(-0.25, 0) }),
+    chassis: beast(r, { legs: 'quad', len: r.range(15, 19), r: r.range(8.2, 9.6), pitch: r.range(0, 0.12), arch: r.range(0.4, 0.7), headS: r.range(0.95, 1.1), neckA: r.range(-0.6, -0.3), neckL: 1.1, neckW: 0.7, wingK: r.range(0.6, 0.7), face: r.range(-0.25, 0) }),
     head: dog(r, { gape: r.range(0.7, 0.95), jawK: r.range(0.9, 1), mz: r.range(1.5, 1.9), tipR: r.range(0.42, 0.5), tongue: r.pick(['barb', null]) }),
     limbs: legs(r, { lift: r.range(0.3, 0.5), len: r.range(1.5, 1.9) }), tail: r.wpick([[2, knot(r, { tailLen: r.range(4.5, 6.5) })], [1, tl(r, { tailLen: r.range(6, 8), curl: 2.2 })]]),
     dorsal: r.wpick([[2, stub(r)], [1.5, ridge(r, 'saw')], [1, none()]]), crown: ears(r, { len: r.range(0.9, 1.3) }), surface: eye(),
@@ -629,25 +639,25 @@ const species = [
     limbs: legs(r, { len: r.range(2, 2.3), w: 0.62, lift: 0.7, stance: 0.4, hindW: 1.15 }), tail: tl(r, { tailLen: 1, w0: 0.3, w1: 0.2, curl: 0, wave: 0, tip: 'dragonFlame', tipS: r.range(1.2, 1.5) }),
     dorsal: { type: 'dragonFlames', n: r.int(5, 7), h: r.range(2.5, 3.1), wid: 0.5, lean: r.range(0.45, 0.7), base: 0.32, tall: r.int(2, 3) }, crown: none(), surface: eye(),
   }) },
-  { name: 'jaculus', w: 1.5, genes: r => ({ // the javelin-snake that flies
+  { name: 'jaculus', w: 1.5, hybrid: { noLend: ['limbs'] }, genes: r => ({ // the javelin-snake that flies
     chassis: serpent(r, { mode: 'wave', len: r.range(24, 32), amp: r.range(2.4, 3.6), humps: 1, rise: r.range(3, 4.5), riseA: r.range(0.7, 1.1), backT: [0.5, 0.92], r: r.range(4.2, 5) }),
     head: dog(r, { mz: r.range(1.3, 1.7), tongue: 'fork', gape: r.range(0.3, 0.45), neck: sneck(r, 0.6, 1.2) }),
     limbs: none(), tail: tl(r, { tailLen: r.range(5, 8), up: r.chance(0.5), curl: r.range(0.6, 1.4), tip: r.pick(['dragonBarb', 'point']) }),
     dorsal: r.wpick([[2, feather(r, { at: 0.72, size: r.range(5, 6), tilt: r.range(0.3, 0.55) })], [1, batw(r, { at: 0.72, size: r.range(5, 6) })]]), crown: r.wpick([[1, ears(r)], [1, none()]]), surface: eye(),
   }) },
   { name: 'hydra', w: 2, genes: r => ({
-    chassis: beast(r, { legs: r.pick(['quad', 'biped']), extraNecks: r.int(2, 4), pitch: r.range(0.1, 0.3), len: r.range(17, 21), r: r.range(7, 8.4), headS: r.range(0.56, 0.64), legAt: 0.3, neckA: r.range(-0.5, -0.2) }),
+    chassis: beast(r, { legs: r.pick(['quad', 'biped']), extraNecks: r.wpick([[3, 2], [2, 3], [0.6, 4]]), pitch: r.range(0.1, 0.3), len: r.range(17, 21), r: r.range(7, 8.4), headS: r.range(0.56, 0.64), legAt: 0.3, neckA: r.range(-0.5, -0.2) }),
     head: dog(r, { neck: sneck(r, 2.4, 3.4), mz: r.range(1.4, 1.7), tongue: r.pick(['fork', null]) }),
     limbs: legs(r, { lift: r.range(0.5, 0.8) }), tail: r.wpick([[2, tl(r, { curl: r.range(1, 2) })], [1, knot(r)]]),
     dorsal: r.wpick([[2, none()], [1, ridge(r, 'saw', { n: r.int(4, 6) })]]), crown: ears(r, { len: r.range(1, 1.4) }), surface: eye(),
   }) },
-  { name: 'sea serpent', w: 2, genes: r => ({ // arches rising from the line
+  { name: 'sea serpent', w: 2, hybrid: { noLend: ['limbs'] }, genes: r => ({ // arches rising from the line
     chassis: serpent(r, { mode: 'wave', len: r.range(28, 36), amp: r.range(3.2, 4.2), humps: r.wpick([[3, 2], [1, 1]]), rise: r.range(4, 5.5), riseA: r.range(1.1, 1.4), backT: [0.1, 0.95], r: r.range(6.4, 7.4), headS: r.range(0.9, 1) }),
     head: r.wpick([[2, longjaw(r, { neck: sneck(r, 0.8, 1.4) })], [1, dog(r, { neck: sneck(r, 0.8, 1.4) })]]),
     limbs: none(), tail: tl(r, { tailLen: r.range(3.5, 5.5), up: true, curl: r.range(1.2, 2), wave: 0, tip: 'dragonFluke', w1: 0.3 }),
     dorsal: r.wpick([[2, ridge(r, 'fin', { n: r.int(5, 8), h: r.range(0.8, 1.1), wid: 0.36 })], [1, ridge(r, 'saw', { n: r.int(7, 10), wid: 0.34 })], [1, none()]]), crown: r.wpick([[1, ears(r)], [1, horns(r)], [1, none()]]), surface: eye(),
   }) },
-  { name: 'serra', w: 1.2, genes: r => ({ // the bestiary's winged saw-fish that races ships
+  { name: 'serra', w: 1.2, hybrid: { noLend: ['limbs'] }, genes: r => ({ // the bestiary's winged saw-fish that races ships
     chassis: beast(r, { lie: true, legs: 'none', len: r.range(18, 24), r: r.range(7, 8.4), arch: r.range(0.3, 0.5), headS: r.range(0.78, 0.9), neckA: r.range(-0.25, 0.05), neckL: 1.1, neckW: 0.75, tailLift: 0.45, face: 0 }),
     head: dog(r, { mz: r.range(1.3, 1.7), gape: r.chance(0.6) ? r.range(0.3, 0.5) : 0, tongue: null }),
     limbs: none(), tail: tl(r, { tailLen: r.range(4, 6), up: true, curl: r.range(0.8, 1.6), wave: 0, w1: 0.34, tip: 'dragonFluke', tipS: 1.2 }),
@@ -677,13 +687,13 @@ const species = [
     limbs: legs(r, { w: 0.5, len: r.range(2.6, 3.2), lift: r.range(1.5, 2), hindW: 1.3 }), tail: knot(r, { tailLen: r.range(9, 12), w0: 0.8, w1: 0.26, knotR: 1.5, knotOut: r.range(3, 4.5), tip2: r.pick(['trefoil', 'barb']), up: true, curl: r.range(1, 1.8) }),
     dorsal: none(), crown: { type: 'dragonLappet', len: r.range(2.6, 3.6) }, surface: eye(),
   }) },
-  { name: 'prow wyrm', w: 1.2, genes: r => ({ // longship: tall maned neck at one end, a great spiral at the other
+  { name: 'prow wyrm', w: 1.2, hybrid: { noLend: ['limbs'] }, genes: r => ({ // longship: tall maned neck at one end, a great spiral at the other
     chassis: serpent(r, { mode: 'wave', stern: r.range(4, 5.5), len: r.range(20, 26), amp: 0, humps: 1, rise: r.range(8, 10), riseA: r.range(1.5, 1.7), r: r.range(5.6, 6.6), headS: r.range(0.8, 0.9), backT: [0.62, 0.97], radKeys: [[0, 0.75], [0.3, 1.05], [0.6, 1], [0.85, 0.74], [1, 0.62]] }),
     head: dog(r, { neck: { len: r.range(1.2, 1.8), sway: 1.3, w0: 0.66, w1: 0.5 }, gape: r.range(0.35, 0.55), tongue: r.pick(['barb', null]) }),
     limbs: none(), tail: tl(r, { tailLen: r.range(7, 9), w0: 1.05, w1: 0.3, up: true, curl: r.range(5.4, 6.6), spiral: true, wave: 0, tip: 'point', curlSign: 1 }),
     dorsal: ridge(r, 'scallop', { n: r.int(6, 9), h: r.range(0.8, 1), wid: 0.36 }), crown: r.wpick([[2, { type: 'dragonLappet', len: r.range(2.4, 3.2) }], [1, ears(r)]]), surface: eye(),
   }) },
-  { name: 'coiled wyrm', w: 2.2, genes: r => ({ // flat spiral coil, head up; winged it is the alchemists' serpent
+  { name: 'coiled wyrm', w: 2.2, hybrid: { noLend: ['chassis', 'limbs'] }, genes: r => ({ // flat spiral coil, head up; winged it is the alchemists' serpent
     chassis: serpent(r, { mode: 'spiral', turns: r.range(1.6, 2.15), gapW: r.range(1.9, 2.5), r: r.range(3.3, 4), rise: r.range(2.5, 4), riseA: r.range(0.9, 1.3), headS: r.range(1.15, 1.35), backT: [0.82, 0.97], radKeys: [[0, 0.4], [0.25, 0.9], [0.7, 1], [1, 0.72]] }),
     head: dog(r, { mz: r.range(1.2, 1.6), tongue: r.pick(['fork', 'barb', null]), neck: sneck(r, 0.8, 1.6) }),
     limbs: none(), tail: none(),
@@ -701,7 +711,7 @@ const species = [
     limbs: legs(r, { lift: r.range(0.35, 0.5), len: r.range(1.5, 1.8), hindW: 1.1 }), tail: tl(r, { tailLen: r.range(5, 7), up: r.chance(0.5), curl: r.range(0.8, 1.6) }),
     dorsal: ridge(r, 'saw', { n: r.int(6, 9), h: r.range(0.6, 0.9), wid: 0.34, lean: 0 }), crown: r.wpick([[2, { type: 'tuft', n: r.int(3, 4), spread: 1, len: r.range(0.9, 1.3) }], [1, ears(r, { len: 1 })]]), surface: eye(),
   }) },
-  { name: 'sleeping drake', w: 1.5, genes: r => ({
+  { name: 'sleeping drake', w: 1.5, hybrid: { noLend: ['limbs'] }, genes: r => ({
     chassis: beast(r, { lie: true, legs: 'lie', len: r.range(16, 20), r: r.range(7.4, 8.8), arch: r.range(0.5, 0.8), headS: r.range(0.74, 0.84), neckA: r.range(0.2, 0.35), neckL: 1.1, neckW: 0.7, face: 0.02, tailLift: 0.2 }),
     head: dog(r, { gape: 0, tongue: null, mz: r.range(1.3, 1.7), up: 0 }),
     limbs: none(), tail: r.wpick([[2, coil(r, { tailLen: r.range(8, 10) })], [1, tl(r, { up: false, curl: 0.2, wave: 1.2, tailLen: r.range(6, 9) })]]),
