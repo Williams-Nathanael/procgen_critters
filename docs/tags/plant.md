@@ -123,3 +123,23 @@ Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.
 - Still weakish: fritillary-chassis chimeras (tangle of nodding stems), horsetail x fern
   (whorls plus fiddles read as a ladder), teasel/thistle chassis with leaf clusters (lumpy).
   Sheet: `out/roads/07-plant-chimeras.png`.
+
+### Chimera fix round (2026-11-14, critic findings at --hybrid 1 --cell 60)
+
+- Solid-bodied bases no longer read as catalogue plants: `borrow()` in `plant.js` makes every
+  non-meldable base (cactus, prickly pear, trees, bulb, taproot, mandrake, potato, weeds,
+  welwitschia, air plant) grow at least one sibling unit. Cacti/pear: units on short visible
+  stalks on the top and on arm/pad/ball tips (`o.tips`). Trees: 2-4 units hanging on stalks from
+  canopy spots (`o.hang`: baobab branch tips, dragon dome underside, bonsai pads, monkey-puzzle
+  rope ends). Others: a flowering scape (with borrowed blade leaves) from the crown, taller on
+  carrot/radish/mandrake so it clears the leaf tuft. A borrowed head on cactus/pear/lithops tops
+  now sits on a short stalk instead of fusing into the body.
+- Barrel cactus w 1.6 -> 1.2, dragon's blood tree w 1.8 -> 1.3 (lent as chassis less often).
+- Fritillary: 1 stem (or 2, second smaller), one dominant bell hs 3.8-4.4, thicker stem.
+- Wisteria raceme: a solid tapered tassel body with bead bumps (was beads on a hairline).
+- Teasel: stem w 2.1, 1-2 leaf pairs, larger and wider.
+- Radish tail floored so the tube stays within a ~0.2 sliver.
+- Still weak: saguaro chimeras (units on arm tips can look like fused knobs), dragon's blood
+  hanging units partly lost in the dome fringe, living stones (only the head on top), units
+  with thin petals (lady's slipper) read small for their measured extent (`extOf` is a bbox).
+
