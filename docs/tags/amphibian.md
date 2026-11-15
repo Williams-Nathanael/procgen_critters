@@ -25,6 +25,21 @@ eyes, toe pads, inflated throat, tadpole tail. Default eyes: a small dot only wh
 helps; most should read without.
 
 ## State
+2026-11-14 M8 phase 2 (chimeras at hybrid 1, judged at --cell 60): **27 species** (was 25).
+Sheet `out/roads/07-amphibian-chimeras.png`. Added bold parts for meldings: Darwin's frog
+(head `nose` proboscis), casque-headed frog (head `casque` bony helmet, side and top), newt
+larva (crown `amphibianGills`, three feathery plumes, paired; long finned tail, spindly
+legs). Fixes: `amphibianCrest` draws only in side view and its height is sized for a newt
+(r capped at 6.5) so on fat frogs/tadpoles it is a saw-back, not one shark fin;
+`amphibianEggs` off a side-view hip is now a bead clutch on the rump (was rows of loose
+dots, detached on caecilians); `amphibianHair` skips limbless (caecilian/tadpole) top
+bodies. Checked parents: Pipa chassis keeps its own head/limbs (foreign heads overlap its
+triangle, acceptable); tadpole/caecilian legs (`ownNone`) and `amphibianNone` head still
+lend frog legs/head, no headless or legless results seen. No `hybrid` hints needed.
+Tried and cut: Titicaca water frog (skin folds never read in silhouette; merged into the
+belly). Weakest: crested newt crest on chimeras (busy), caecilian chimeras (frog legs on a
+worm), midwife egg clutch (lump), hairy frog fringe, casque (subtle at 60px).
+
 2026-11-14 critic fix round (judged at --cell 60), still **25 species**. Four-legged tadpole:
 round fat body-blob (short topBody, wide profile), small head, stub legs, much fatter tail fin.
 Surinam toad: bigger squarer body, smaller narrower pointed head, thicker arms reaching
