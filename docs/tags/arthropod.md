@@ -32,6 +32,23 @@ outline are welcome).
 
 ## State
 
+**2026-11-14 M8 chimera fix round** (after shared f620c27, seeds 1000-1047, hybrid 1): 51 species.
+Sheet `out/roads/07-arthropod-chimeras.png` (seeds 1000-1711, cell 60).
+- Every slot gene carries a non-enumerable `arthroForm` (the body form of its species); the
+  chassis calls a part foreign when its form differs (`foreignOf`), and a critter with any
+  foreign head/limbs/tail/crown is a chimera (`K.chim`, plan `arthroChim`).
+- Chain and plated chimeras: foreign tails/heads get sockets sized to the body (a sting or tail
+  fan now shows), borrowed clawed legs draw a pair of front pincers (`chimPincers`).
+- Long forms (plated, trilobite, stomatopod, chain, lobster, eurypterid, radiodont, marrella)
+  lie flat (rot 0) in chimeras: no more bodies standing on end.
+- Shield (triops, horseshoe) chimeras with borrowed legs draw them past the rim (no legless
+  ovals); triops head socket moved onto the carapace (antennae were floating off the front).
+- Insect-form chimeras: min thorax 3.2, abdomen 3.4, leg width 2.1 (no hairline sticks).
+- Antennae on chimeras capped at 2.6 x body r and drawn a bit thicker. Hermit shell 0.8x.
+- Still weak: small side-view mantis/stick chimeras (thick enough now, but small in the cell),
+  trilobite chimeras with hornworm/beetle bits (lumpy), squat-lobster chimeras laid flat with
+  crossing antennae, occasional thin worm-form chimeras (1209, 1710), weevil heads on crabs.
+
 **2026-11-14 M8 phase 2 (chimeras at hybrid 1)**: 52 -> 51 species (woodlouse cut, user decision).
 Sheet `out/roads/07-arthropod-chimeras.png` (8 seeds x 12, cell 60).
 - Root cause of thin/sparse chimeras: `hybridize` copies the chassis gene by spread, which drops

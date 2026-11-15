@@ -156,7 +156,7 @@ heads.arthropodHead = (C, sock, g) => {
 // In the mount frame F, +y sweeps outward (top view) or backward (side view).
 // ---------------------------------------------------------------------------
 crowns.arthropodAntenna = (C, m, F, s, g) => {
-  const k = C.ink, L = g.len * s, w = Math.max((g.w ?? 0.17) * s, MA * 1.15), fl = m.flip, a0 = m.dir, turn = fl * (g.curve ?? 0.5);
+  const ch = C.plan?.arthroChim, k = C.ink, L = ch ? Math.min(g.len * s, C.plan.r * 2.6) : g.len * s, w = Math.max((g.w ?? 0.17) * s, MA * (ch ? 1.4 : 1.15)), fl = m.flip, a0 = m.dir, turn = fl * (g.curve ?? 0.5);
   const base = F(-0.1, 0);
   switch (g.style) {
     case 'elbow': { // scape, then a bent funicle (ants, weevils)
@@ -354,12 +354,25 @@ const WINGS = (kind, size, o = {}) => ({ type: 'arthropodWings', kind, size, ...
 // CHASSIS: dispatch to a body form
 // ---------------------------------------------------------------------------
 const FORMS = {};
+const LONG = new Set(['plated', 'trilobite', 'stomatopod', 'chain', 'lobster', 'eurypterid', 'radiodont', 'marrella']);
+// chimera helpers: does slot sl come from a species of another body form?
+const foreignOf = g => sl => { const R = g.root, v = R && R[sl]; return !!(v && v.type !== 'none' && v.arthroForm && v.arthroForm !== g.form); };
+// a borrowed clawed leg set shows as a pair of pincers at the front of a long body
+function chimPincers(K, g, p, ang, w0, rr) {
+  if (!foreignOf(g)('limbs') || g.root.limbs.foreFoot !== 'arthropodChela') return;
+  for (const sd of [-1, 1]) {
+    const base = polar(p, ang + sd * PI / 2, w0 * 0.7);
+    const a = arm(K.k, base, [[ang + sd * 0.95, rr * 1.5], [ang - sd * 0.15, rr * 1.4]], Math.max(rr * 0.75, 2.4));
+    chela(K.k, a.p, ang - sd * 0.25, rr * 1.7, { flip: -sd, fat: 0.44, open: 0.35 });
+  }
+}
 chassis.arthropodBody = (C, g) => {
   const root = g.root, nat = !!(root && root.limbs && root.limbs.arthro);
   // a chimera blends rot between 0 and UP: snap to the nearer of the two views
-  const rot = g.rot == null ? 0 : (g.rot < -PI / 4 ? -PI / 2 : 0), k = new Pen(C.ink, rot), socks = [];
+  const fo = foreignOf(g), chim = ['head', 'limbs', 'tail', 'crown'].some(fo);
+  const rot = g.rot == null || (chim && LONG.has(g.form)) ? 0 : (g.rot < -PI / 4 ? -PI / 2 : 0), k = new Pen(C.ink, rot), socks = [];
   const K = {
-    k, rng: C.rng, nat, pl: C.plump, C,
+    k, rng: C.rng, nat, pl: C.plump, C, chim,
     // a leg: drawn by us when the limbs are our own, otherwise offered as a socket (role null: never a socket)
     limb(p, dir, s, role, side, draw, far) { if (nat) { if (draw) draw(); } else if (role) socks.push({ p, dir, s, role, side, far }); },
   };
@@ -372,7 +385,7 @@ chassis.arthropodBody = (C, g) => {
   if (g.wings && root && root.dorsal !== g.wings) back.forEach((st, si) => { const n = st.length; dorsals.arthropodWings(C, { view: pl.view, r: pl.r, back }, st, si ? 1 : -1, si, g.wings, u => st[clamp(Math.round(u * (n - 1)), 0, n - 1)]); });
   const h = pl.head, t = pl.tail;
   return {
-    view: pl.view, r: pl.r, path, rad, back, ...(pl.rooted ? { rooted: true } : {}),
+    view: pl.view, r: pl.r, path, rad, back, ...(pl.rooted ? { rooted: true } : {}), ...(chim ? { arthroChim: true } : {}),
     head: { p: tp(h.p), dir: h.dir + rot, face: (h.face ?? h.dir) + rot, s: h.s, sym: !sideV, arthroBare: !!h.bare, arthroW: h.W },
     tail: { p: tp(t.p), dir: t.dir + rot, s: t.s },
     limbs: socks.map(s => ({ p: tp(s.p), dir: s.dir + rot, s: s.s, role: s.role, side: s.side ?? 1, far: s.far, fwd: sideV ? 0 : rot, ...(sideV && s.role !== 'arm' ? { ground: 0 } : {}) })),
@@ -500,7 +513,10 @@ FORMS.chain = (K, g) => {
     }
   });
   const e = pathAt(path, 1), b = pathAt(path, 0);
-  return { view: 'top', r: Math.max(g.r, 4), path, rad, head: { p: polar(e.p, e.ang, -L / n * 0.3), dir: e.ang, s: rad(1) * g.headS }, tail: { p: polar(b.p, b.ang, L / n * 0.4), dir: b.ang + PI, s: rad(0.02) * (g.tailS ?? 0.9) } };
+  // chimera: parts from other body forms get sockets big enough to read (else it is just a centipede)
+  const fo = foreignOf(g), fH = fo('head'), fT = fo('tail'), rr = g.r * K.pl;
+  chimPincers(K, g, e.p, e.ang, rad(1), rr);
+  return { view: 'top', r: Math.max(g.r, 4), path, rad, head: { p: polar(e.p, e.ang, -L / n * 0.3), dir: e.ang, s: rad(1) * g.headS * (fH ? 1.45 : 1) }, tail: { p: polar(b.p, b.ang, L / n * 0.4), dir: b.ang + PI, s: fT ? Math.max(rr * 1.5, 5) : rad(0.02) * (g.tailS ?? 0.9) } };
 };
 
 // Plated ovals: woodlice, giant isopods and trilobites. Head shield, pleural points, tail shield.
@@ -521,7 +537,9 @@ FORMS.plated = (K, g) => {
   if (g.genal) for (const sd of [-1, 1]) tb(k, [[xh + hl * 0.35, sd * Wc * 0.78], [xh - g.genal * 0.5, sd * Wc * 1.04], [xh - g.genal, sd * Wc * (g.genalIn ?? 0.98)]], profile([[0, hl * 0.3], [0.5, hl * 0.2], [1, 0.3]]));
   if (g.tailPts) symP(k, [[xt + seg * 0.5, 0], [xt + seg * 0.5, Wp], [xt - tl * 0.25, Wp * 1.02], [xt - tl * 0.55, Wp * 0.62], [xt - tl * 0.4, Wp * 0.45], [xt - tl * 0.95, Wp * 0.3], [xt - tl * 0.7, Wp * 0.12], [xt - tl * 1.1, 0]]);
   else sym(k, [[xt + seg * 0.6, 0], [xt + seg * 0.5, Wp], [xt - tl * 0.35, Wp * 0.88], [xt - tl * 0.8, Wp * 0.5], [-L / 2, 0]]);
-  return { view: 'top', r: W * 0.8, path: axis(-L / 2, L / 2), rad: t => W * g.env(t), head: { p: [L / 2 - hl * 0.15, 0], dir: 0, s: Wc * 0.55, bare: true, W: 0.6 }, tail: { p: [-L / 2 + 1, 0], dir: PI, s: Math.max(Wp * 0.4, 2.2) } };
+  const fo = foreignOf(g);
+  chimPincers(K, g, [L / 2 - hl * 0.3, 0], 0, Wc, W * 0.75);
+  return { view: 'top', r: W * 0.8, path: axis(-L / 2, L / 2), rad: t => W * g.env(t), head: { p: [L / 2 - hl * 0.15, 0], dir: 0, s: Wc * (fo('head') ? 0.8 : 0.55), bare: true, W: 0.6 }, tail: { p: [-L / 2 + 1, 0], dir: PI, s: fo('tail') ? W * 0.95 : Math.max(Wp * 0.4, 2.2) } };
 };
 
 // Trilobite: half-moon cephalon with genal spines, a thorax whose pleural tips saw-tooth
@@ -658,6 +676,12 @@ FORMS.shrimp = (K, g) => {
 // Insects in side view: thorax, abdomen (smooth, scalloped, domed, or on a waist), and three
 // leg pairs (near and far), with special legs: jumping hind legs, raptorial or digging forelegs.
 FORMS.insect = (K, g) => {
+  // chimeras of slim insects come out as hairline sticks at print size: give them some body
+  if (K.chim) {
+    const ay0 = g.aProf ? Math.max(...g.aProf.map(q => q[1])) : g.ay, f = Math.max(1, 3.4 / ay0);
+    g = Object.assign(Object.create(g), { ty: Math.max(g.ty, 3.2), ay: Math.max(g.ay, 3.4), ...(g.aProf ? { aProf: g.aProf.map(([t, v]) => [t, v * f]) } : {}),
+      legs: g.legs.map(L => ({ ...L, w: Math.max(L.w, 2.1) })) });
+  }
   const { k } = K, tx = g.tx, ty = g.ty * K.pl, cy = -(g.legH + ty), T0 = [0, cy];
   // ----- abdomen
   const aTilt = g.aTilt ?? 0.1, ax = g.ax, ay = g.ay * K.pl;
@@ -785,6 +809,7 @@ FORMS.pillball = (K, g) => {
 
 // Hermit crab in side view: a stepped spiral shell, the crab's front end out of the aperture.
 FORMS.hermit = (K, g) => {
+  if (K.chim) g = Object.assign(Object.create(g), { S: g.S * 0.8 }); // borrowed parts get a share of the critter
   const { k } = K, S = g.S * K.pl, lift = g.lift, c = [-S * 0.25, -(S + lift)];
   oval(k, c, S * (g.bodyX ?? 1.05), S, g.tilt ?? -0.15);
   let p = c, rr = S, a = PI + (g.spireA ?? 0.75);
@@ -823,8 +848,11 @@ FORMS.shield = (K, g) => {
     for (const sd of [-1, 1]) whip(k, e, PI + sd * g.splay, g.T, sd * 0.15, Math.max(Wc * 0.1, MA * 1.2), MA);
     tailP = e; tailS = Wc * 0.15;
   }
-  for (const [x, role] of [[0.6, 'fore'], [0.15, 'mid'], [-0.25, 'hind']]) for (const sd of [-1, 1]) K.limb([Lp * x, sd * Wp * 0.75], sd * (PI / 2 + x * -0.6), Wp * 0.4, role, sd, null);
-  return { view: 'top', r: Wp * 0.8, path: axis(tailP[0], Lp), rad: t => Wp * 0.7, head: { p: [Lp * 0.8, 0], dir: 0, s: Wp * 0.35, bare: true, W: 0.9 }, tail: { p: tailP, dir: PI, s: tailS } };
+  // a chimera with borrowed legs shows them past the shield rim (else it is a legless oval)
+  const tri = g.kind !== 'horseshoe', fl = K.chim && foreignOf(g)('limbs'), xs = tri ? [0.3, 0.1, -0.12] : [0.6, 0.15, -0.25];
+  if (fl && g.root.limbs.foreFoot === 'arthropodChela') chimPincers(K, g, [Lp * (tri ? 0.42 : 0.8), 0], 0, Wp * 0.5, Wp * 0.3);
+  xs.forEach((x, i) => { const role = ['fore', 'mid', 'hind'][i]; for (const sd of [-1, 1]) { const base = [Lp * x, sd * Wp * 0.75], a0 = sd * (PI / 2 + (i - 1) * 0.55); K.limb(base, a0, Wp * 0.4, role, sd, fl ? () => tleg(k, base, a0, sd * (i < 1 ? -0.4 : 0.45), Wp * 0.85, Math.max(Wp * 0.13, 2.2)) : null); } });
+  return { view: 'top', r: Wp * 0.8, path: axis(tailP[0], Lp), rad: t => Wp * 0.7, head: { p: [Lp * (tri ? 0.42 : 0.8), 0], dir: 0, s: Wp * 0.35, bare: true, W: 0.9 }, tail: { p: tailP, dir: PI, s: tailS } };
 };
 
 // Anomalocaris and Opabinia from above: lobed swimming flaps down both sides, a tail fan of
@@ -1051,6 +1079,8 @@ const CLAWED = (r, o = {}) => LEND(r, { foreFoot: 'arthropodChela', clawS: r.ran
 function G(ch, o = {}) {
   const g = { chassis: { type: 'arthropodBody', ...ch }, head: o.head ?? HEAD(), limbs: o.limbs, tail: o.tail ?? none(), dorsal: o.dorsal ?? none(), crown: o.crown ?? none(), surface: { eyes: 'none' } };
   Object.defineProperty(g.chassis, 'root', { value: g, enumerable: false });
+  // each slot remembers the body form it came from, so a chimera chassis can tell foreign parts
+  for (const sl of ['head', 'limbs', 'tail', 'dorsal', 'crown']) if (g[sl]) Object.defineProperty(g[sl], 'arthroForm', { value: ch.form, configurable: true });
   if (ch.form === 'flyer' && g.dorsal.type === 'arthropodWings') Object.defineProperty(g.chassis, 'wings', { value: g.dorsal, enumerable: false });
   return g;
 }
