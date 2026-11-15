@@ -99,3 +99,27 @@ Within-tag hybrids are on by default (`hybrid` 0.85, see AUTHORING.md "Within-ta
 - carrot + dorsal of mandrake: 2/4 detached
 
 Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.
+
+### Chimeras (M8 phase 2, 2026-11-14), judged at --cell 60, 64+96 seeds
+
+- Plant chimeras are now one organism. Cause of the old collages: sibling plants' tail, dorsal
+  and crown lends were hung on the plant chassis as animal parts (the `_own` mute only caught
+  the chassis parent's own), and sibling root legs put the plant on a walking root ball.
+- Fix (all in `plant.js`, no shared code): `build()` gives each species' lend objects a hidden
+  `_tok` and the chassis a hidden `_g` link (re-pointed by critter.js `relink`). `chassis.plant`
+  mutes every plant-made tail/dorsal/crown, treats any plant root legs as rooted (no ball), and
+  MELDs the siblings' units into its own stem system: head -> main stem's crowning unit (sized
+  like what it replaces, stem lengthened so the plant keeps its height); non-leafy crown/dorsal/
+  tail -> side-stem flowers (replacing secondary stem heads, or one new side stem); leafy
+  dorsal/crown -> stem leaves (clusters capped small); single-blade tail -> basal rosette. Stub
+  clumps (pitchers, cobra lily) keep their units and get a central stem for the head. Vines:
+  leafy unit -> node leaves, flowers -> side flowers. Cactus, prickly pear, living stones: a
+  sibling head may bloom on top. Trees, bulbs, taproots, mandrake, potato, weeds, welwitschia,
+  air plant: not melded (only the chassis numeric blend), decided as unmeldable forms.
+  Units are measured once (`extOf`, cached) to scale them.
+- Blended vine `sd` (side sign) could land at 0 and straighten the arch; now re-signed.
+- No `hybrid` hints needed after this; the phase-1 detached combos no longer occur (lent parts
+  never hang on plant bodies). Root sliver is the shared 5%/2-unit allowance; no dips seen.
+- Still weakish: fritillary-chassis chimeras (tangle of nodding stems), horsetail x fern
+  (whorls plus fiddles read as a ladder), teasel/thistle chassis with leaf clusters (lumpy).
+  Sheet: `out/roads/07-plant-chimeras.png`.

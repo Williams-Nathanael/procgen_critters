@@ -579,7 +579,7 @@ function stripOf(path, rad, t0, t1, n, sd) {
 // ---------------------------------------------------------------------
 const LEAFY = new Set(['leaf', 'jag', 'sword', 'fat', 'ivy', 'trilobe', 'nepLeaf', 'peltate', 'leaves', 'strap', 'drosera', 'needles', 'heart', 'lobed', 'ginkgo', 'frond', 'sundew', 'flytrap']);
 const leafy = sp => !!sp && (LEAFY.has(sp.u) || (sp.type === 'plantLeaf' && LEAFY.has(sp.unit?.u)) || sp.type === 'plantTuft');
-const BLADE = new Set(['leaf', 'jag', 'sword', 'strap', 'fat', 'drosera', 'flytrap', 'sundew', 'heart', 'ivy', 'trilobe']), LONG = new Set(['sword', 'strap', 'jag', 'drosera']);
+const BLADE = new Set(['leaf', 'jag', 'sword', 'strap', 'drosera', 'flytrap', 'sundew', 'ivy', 'trilobe']), LONG = new Set(['sword', 'strap', 'jag', 'drosera']);
 const NOSIDE = new Set(['tendril', 'thorn', 'hang', 'strap']); // units that make no flower of their own
 const extCache = new Map();
 function extOf(spec) { // size of a unit drawn at s = 1 (max of width and height)
@@ -644,8 +644,9 @@ const MELD = {
     }
     if (leafU2) {
       let n = 0;
-      for (const st of g.stems) if (st.leaves) { st.leaves.s = sizeLike(st.leaves.spec, st.leaves.s, leafU2, 3, 12); st.leaves.spec = leafU2; n++; }
-      if (!n && st0 && st0.h > 14 && !g.basal?.length) st0.leaves = { n: 2, t0: 0.3, t1: 0.55, ang: 0.95, s: fitTo(leafU2, clamp(st0.h * 0.28, 5, 10)), k1: 0.8, spec: leafU2 };
+      const cl = !BLADE.has(leafU2.u); // clusters (leaflet fans, needles, tufts) stay small or they clot
+      for (const st of g.stems) if (st.leaves) { st.leaves.s = sizeLike(st.leaves.spec, st.leaves.s, leafU2, 3, cl ? 6.5 : 12); st.leaves.spec = leafU2; n++; }
+      if (!n && st0 && st0.h > 14 && !g.basal?.length) st0.leaves = { n: 2, t0: 0.3, t1: 0.55, ang: 0.95, s: fitTo(leafU2, clamp(st0.h * 0.28, 5, cl ? 6.5 : 10)), k1: 0.8, spec: leafU2 };
     }
     const ros = M.tail && BLADE.has(M.tail.u) ? M.tail : null; // single blades only: clusters in a rosette merge into a lump
     if (ros && g.basal?.length) for (const b of g.basal) { b.s = sizeLike(b.spec, b.s, ros, 4, LONG.has(ros.u) ? 22 : 12); b.spec = ros; }
