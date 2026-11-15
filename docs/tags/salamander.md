@@ -108,3 +108,11 @@ Within-tag hybrids are on by default (`hybrid` 0.85, see AUTHORING.md "Within-ta
 - great crested newt + head of ribbed newt: 0/4 detached, 2 very long/tall
 
 Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.
+
+### M8 phase 2 (2026-11-14): chimera vocabulary
+- Species 29 -> 34. New lenders: paddle-tailed newt (oar tail, `kind: 'paddle'`, `keysTop`), banded newt (spined sail `salamanderSail`; top view scalloped flank frill), shovel-nosed salamander (square flat `shovel` head), mushroom-tongue salamander (prehensile curled tail, disc feet), spiny newt (`salamanderSpines`: rib spikes top / spine row side; crown `salamanderHorns`).
+- New crowns: `salamanderGlands` (parotoids; fire, rough-skinned, ribbed, crocodile newt), `salamanderHorns`. Without them almost every chimera wore gills (the hybrid picker prefers non-empty crowns).
+- Head `kind` (round/broad/shovel/point/horned, + `brow` spikes) and tail `kind` (plain/paddle/whip/club/prehensile), gills `kind` = style: bold shapes blend only within their kind, so they survive melding.
+- Chassis carry a non-enumerable `root` link to the gene set. Side chassis refit any salamander legs (`limbs.salL`) to their own legK/stance and lift (lift follows leg length, min 0.4: fixes dark bars on short feet for hellbender/giant/mole/spotted chimeras); top chassis restore sprawl legs and take the gill keep-out zone from the crown actually worn.
+- No `hybrid` hints needed so far.
+- Weak: banded newt top-view frill (reads as bumps), horns small in top view, shovel head still roundish from above, lent finned tails start with a step on low-backed side chassis, giant-with-gills top views blobby.
