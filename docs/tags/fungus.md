@@ -44,6 +44,8 @@ gills/frills, puffball tails and coral antlers read well. Default eyes: none.
   (puffballs, earthball) on tall troop stalks read as lollipop trees; earth tongue and hare's ear
   heads as flat blades; cordyceps chassis with a foreign head on the caterpillar is odd but cute;
   fly agaric's narrow neck above the ring looks nearly detached at print size (pre-existing).
+- Side seats of a chimera use `lite` fruit bodies (cages at 4 cells) to stay fast: worst case ~21 ms
+  (honey tuft x lattice cage), ~0.3% of seeds over 15 ms.
 - Sheet: `out/roads/07-fungus-chimeras.png` (3 seeds x 18, cell 60).
 
 

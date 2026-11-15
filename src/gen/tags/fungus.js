@@ -784,7 +784,8 @@ heads.fungusFB = (C, sock, g) => {
       K.poly(tube(spline([p, lerp(p, e, 0.5), e], 5), profile([[0, ss * 0.36], [0.3, ss * 0.26], [1, ss * 0.22]])));
       return e;
     };
-    for (const q of fz.fbs) { const ss = q.s * fit(q.g.span); FB[hyb ? g.form : q.g.form](K, rng, stalk(q.p, q.ax, ss), q.ax, ss, hyb ? gh : q.g); }
+    const gl = hyb && fz.fbs.length > 1 ? { ...lite(g), ...(g.form === 'cage' ? { cells: 4 } : {}) } : gh; // many seats: the lighter fruit body keeps it fast and legible
+    for (const q of fz.fbs) { const ss = q.s * fit(q.g.span); FB[hyb ? g.form : q.g.form](K, rng, stalk(q.p, q.ax, ss), q.ax, ss, hyb ? gl : q.g); }
     if (fz.muteHead && !(hyb && !fz.fbs.length)) return { eyes: [], mounts: [{ p: sock.p, dir: sock.dir, flip: 1, s: s0 }], spots: [], isCap: true };
     const s1 = s0 * fit(fz.span0), r = FB[g.form](K, rng, stalk([sock.p[0], sock.p[1] + fz.dy], sock.dir, s1), sock.dir, s1, gh);
     const up = p => [p[0], p[1] - fz.dy];
