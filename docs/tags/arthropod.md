@@ -32,6 +32,21 @@ outline are welcome).
 
 ## State
 
+**2026-11-14 M8 phase 2 (chimeras at hybrid 1)**: 52 -> 51 species (woodlouse cut, user decision).
+Sheet `out/roads/07-arthropod-chimeras.png` (8 seeds x 12, cell 60).
+- Root cause of thin/sparse chimeras: `hybridize` copies the chassis gene by spread, which drops
+  the non-enumerable `root`, so the body thought its legs were foreign and the shared limb()
+  drew hairline LEND legs. Fix inside the tag: every LEND gene carries `lift: ARTHRO_LIFT`
+  (0.7317, a constant, so blends keep it exact); the body draws its own legs when
+  `C.lift === ARTHRO_LIFT` and no root. (Shared fix would be: keep `root` or pass the gene set.)
+- `rot` was blended between 0 and UP (diagonal bodies): snapped to the nearer view.
+- Hints: wings (`noLend: dorsal`) of mantis, cicada, treehopper (black wing blobs on top-view
+  bodies); `noLend: chassis` for spindly or odd bodies: stick insect, water strider,
+  hallucigenia, harvestman, house centipede, treehopper, both barnacles, marrella, pill bug.
+- Weak still: some side-view `insect`-form chimeras come out thin; chain-form (centipede-like)
+  chimeras read familiar; occasional pillball/hermit heads oversized. Foreign genes with
+  form-specific meanings blend by name (W, legL), so proportions sometimes land small.
+
 **2026-11-13 M3 taste run**: 64 -> 52 species. Cut the 21 BRIEF rejects (ant, bumblebee,
 butterfly, coiled millipede, copepod, crane fly, dragonfly, dung beetle, flea, fly, giant water
 bug, grasshopper, hairy caterpillar, inchworm, ladybird, longhorn beetle, mayfly, millipede,
