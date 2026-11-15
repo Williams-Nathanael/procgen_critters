@@ -355,7 +355,7 @@ const WINGS = (kind, size, o = {}) => ({ type: 'arthropodWings', kind, size, ...
 // ---------------------------------------------------------------------------
 const FORMS = {};
 chassis.arthropodBody = (C, g) => {
-  const root = g.root, nat = root ? !!(root.limbs && root.limbs.arthro) : C.lift === ARTHRO_LIFT;
+  const root = g.root, nat = !!(root && root.limbs && root.limbs.arthro);
   // a chimera blends rot between 0 and UP: snap to the nearer of the two views
   const rot = g.rot == null ? 0 : (g.rot < -PI / 4 ? -PI / 2 : 0), k = new Pen(C.ink, rot), socks = [];
   const K = {
@@ -1046,11 +1046,7 @@ FORMS.marrella = (K, g) => {
 const HEAD = (o = {}) => ({ type: 'arthropodHead', len: 1, wid: 0.9, ...o });
 const ANT = (len, curve, o = {}) => ({ type: 'arthropodAntenna', len, curve, pair: true, ...o });
 // the generic part of a limb gene: what another tag's body gets when it borrows our legs
-// Chimeras copy the chassis gene by spread, which drops the non-enumerable `root`; our
-// limbs genes carry this exact lift (blends of equal values stay equal) so the body can
-// still tell its own legs from a lent tag's.
-const ARTHRO_LIFT = 0.7317;
-const LEND = (r, o = {}) => ({ arthro: true, len: r.range(2.4, 3.2), w: r.range(0.26, 0.34), taper: 0.5, bend: r.range(0.9, 1.3), joints: 3, angular: true, foot: 'arthropodDactyl', toeLen: 0.8, lift: ARTHRO_LIFT, stance: 0.6, arm: 0.9, kneeFlip: true, ...o });
+const LEND = (r, o = {}) => ({ arthro: true, len: r.range(2.4, 3.2), w: r.range(0.26, 0.34), taper: 0.5, bend: r.range(0.9, 1.3), joints: 3, angular: true, foot: 'arthropodDactyl', toeLen: 0.8, lift: r.range(0.6, 0.9), stance: 0.6, arm: 0.9, kneeFlip: true, ...o });
 const CLAWED = (r, o = {}) => LEND(r, { foreFoot: 'arthropodChela', clawS: r.range(0.9, 1.3), ...o });
 function G(ch, o = {}) {
   const g = { chassis: { type: 'arthropodBody', ...ch }, head: o.head ?? HEAD(), limbs: o.limbs, tail: o.tail ?? none(), dorsal: o.dorsal ?? none(), crown: o.crown ?? none(), surface: { eyes: 'none' } };

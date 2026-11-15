@@ -57,13 +57,25 @@ const isNum = x => typeof x === 'number' && Number.isFinite(x);
 const plain = x => x && typeof x === 'object' && !Array.isArray(x);
 // t of the way from a toward b for every numeric gene both share (recursing into nested
 // plain objects of the same type); integers stay integers. Booleans, strings, arrays untouched.
+// Copy a gene keeping non-enumerable links (e.g. arthropod's chassis.root), which spread drops.
+const clone = o => Object.defineProperties({}, Object.getOwnPropertyDescriptors(o));
+// After a chimera swaps slots, re-point a copied gene's hidden links from its parent's gene
+// set (and that set's slots) to the chimera's own.
+function relink(gene, src, g) {
+  for (const [k, d] of Object.entries(Object.getOwnPropertyDescriptors(gene))) {
+    if (d.enumerable || !('value' in d)) continue;
+    const v = d.value, s = v === src ? null : Object.keys(src).find(s => src[s] === v);
+    if (v === src) Object.defineProperty(gene, k, { ...d, value: g });
+    else if (s) Object.defineProperty(gene, k, { ...d, value: g[s] });
+  }
+}
 function blend(a, b, t) {
   for (const k of Object.keys(a)) {
     const x = a[k], y = b[k];
     if (isNum(x) && isNum(y)) {
       const v = x + (y - x) * t;
       a[k] = Number.isInteger(x) && Number.isInteger(y) ? Math.round(v) : v;
-    } else if (plain(x) && plain(y) && x.type === y.type) { a[k] = { ...x }; blend(a[k], y, t); }
+    } else if (plain(x) && plain(y) && x.type === y.type) { a[k] = clone(x); blend(a[k], y, t); }
   }
 }
 // Weighted blend of several same-type genes into a (a's keys), pushed a little beyond the
@@ -80,7 +92,7 @@ function blendMany(a, others, ws, ex) {
       if (hi <= 0) v = Math.min(v, hi < 0 ? hi * 0.85 : 0);
       a[k] = vs.every(Number.isInteger) ? Math.round(v) : v;
     } else if (vs.every(x => plain(x) && x.type === a[k].type)) {
-      a[k] = { ...a[k] }; blendMany(a[k], vs.slice(1), ws, ex);
+      a[k] = clone(a[k]); blendMany(a[k], vs.slice(1), ws, ex);
     }
   }
 }
@@ -114,7 +126,7 @@ function hybridize(tag, sp0, g, donors, seed, amount) {
       chassisP = pick(p => !p.sp.hybrid?.noLend?.includes('chassis')) ?? P0;
       const T = chassisP.g.chassis.type;
       const mates = hr.shuffle(pool.filter(p => p !== chassisP && p.g.chassis?.type === T && !p.sp.hybrid?.noLend?.includes('chassis'))).slice(0, hr.int(1, 2));
-      g.chassis = { ...chassisP.g.chassis };
+      g.chassis = clone(chassisP.g.chassis);
       if (mates.length && !keepOf(chassisP).includes('chassis')) {
         const ws = [hr.range(0.5, 1), ...mates.map(() => hr.range(0.25, 1) * amount)];
         blendMany(g.chassis, mates.map(m => m.g.chassis), ws, hr.range(0, 0.35) * amount);
@@ -124,7 +136,7 @@ function hybridize(tag, sp0, g, donors, seed, amount) {
       used.set(chassisP, (used.get(chassisP) ?? 0) + 1);
     } else {
       const m = pick(p => p !== P0 && p.g.chassis?.type === g.chassis.type && !p.sp.hybrid?.noLend?.includes('chassis'));
-      if (m && amount > 0) { g.chassis = { ...g.chassis }; blend(g.chassis, m.g.chassis, hr.range(0.2, 0.5) * amount); from.chassis = [P0.sp.name, m.sp.name]; used.set(m, 1); }
+      if (m && amount > 0) { g.chassis = clone(g.chassis); blend(g.chassis, m.g.chassis, hr.range(0.2, 0.5) * amount); from.chassis = [P0.sp.name, m.sp.name]; used.set(m, 1); }
     }
   }
   if (from.chassis == null) { from.chassis = P0.sp.name; used.set(P0, (used.get(P0) ?? 0) + 1); }
@@ -148,9 +160,10 @@ function hybridize(tag, sp0, g, donors, seed, amount) {
     use(p, s);
     if (none(g[s])) continue;
     const m = pick(q => q !== p && can(q) && q.g[s]?.type === g[s].type);
-    if (m) { g[s] = { ...g[s] }; blend(g[s], m.g[s], hr.range(0.2, 0.6) * amount); from[s] = [p.sp.name, m.sp.name]; used.set(m, (used.get(m) ?? 0) + 1); }
+    if (m) { g[s] = clone(g[s]); blend(g[s], m.g[s], hr.range(0.2, 0.6) * amount); from[s] = [p.sp.name, m.sp.name]; used.set(m, (used.get(m) ?? 0) + 1); }
   }
   if (none(g.head)) { const p = pick(q => !none(q.g.head)); if (p) { g.head = p.g.head; g.surface = p.g.surface; use(p, 'head'); } }
+  if (g.chassis !== chassisP.g.chassis) relink(g.chassis, chassisP.g, g);
   const parents = [...used.keys()].map(p => p.sp.name);
   if (parents.length < 2) return null;
   return { parents, from, chassis: chassisP.sp.name };
