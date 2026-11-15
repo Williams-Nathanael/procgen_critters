@@ -409,7 +409,8 @@ function tipEnd(C, kind, e, a, s, g) {
   else if (kind === 'trefoil') trefoil(ink, e, a, q);
   else if (kind === 'head') { // g.face2: the tail head turns to face the front head
     const hp = C.plan.head?.p, ang = g.face2 && hp ? angOf(e, [hp[0], hp[1] - C.plan.r * g.face2]) : a;
-    miniHead(ink, e, ang, s * (g.tipS ?? 1) * 0.95, { gape: g.gape2 ?? 0.4 });
+    const hs = s * (g.tipS ?? 1) * 0.95, m = miniHead(ink, e, ang, hs, { gape: g.gape2 ?? 0.4 });
+    if (hs > 1.6) { ink.dot(m.eye, Math.max(hs * 0.24, 0.7), 'w'); ink.dot(m.eye, Math.max(hs * 0.11, 0.38), 'k2'); }
   }
   else if (kind === 'fluke') for (const sd of [-1, 1]) ink.poly(lf(polar(e, a, -q * 0.3), a + sd * 0.72, q * 2.3, q * 1.1, sd * 0.18, 0.55));
   else if (kind === 'flame') for (const [da, k] of [[-0.6, 0.8], [0, 1.3], [0.55, 0.9]]) ink.poly(lf(polar(e, a, -q * 0.3), a + da, q * 2 * k, q * 0.95, da * 0.5 + 0.12, 0.42));
@@ -611,7 +612,7 @@ const species = [
     dorsal: r.wpick([[2, stub(r, { at: 0.6, size: r.range(2.8, 3.3), far: false })], [1, ridge(r, 'saw', { n: r.int(5, 7), h: 0.7 })]]), crown: { type: 'dragonCrown', len: r.range(1.6, 2) }, surface: eye(),
   }) },
   { name: 'lindworm', w: 2.2, genes: r => ({ // wingless, two stout forelegs, the rest serpent tied in a loop
-    chassis: serpent(r, { mode: r.wpick([[2, 'loop'], [1, 'wave']]), r: r.range(6, 7), len: r.range(26, 34), amp: r.range(0.6, 1.4), humps: r.int(1, 2), loopR: r.range(0.2, 0.6), rise: r.range(2.4, 3.2), riseA: r.range(0.9, 1.2), clear: r.range(1.1, 1.4), clearT: [0.6, 0.78], legsAt: [{ t: 0.84, role: 'fore' }], legS: 1.1, headS: r.range(0.8, 0.92), loopAt: r.range(0.25, 0.4), radKeys: [[0, 0.3], [0.25, 0.75], [0.6, 0.95], [0.85, 1], [1, 0.7]] }),
+    chassis: serpent(r, { mode: r.wpick([[2, 'loop'], [1, 'wave']]), r: r.range(6, 7), len: r.range(26, 34), amp: r.range(0.6, 1.4), humps: r.int(1, 2), loopR: r.range(0.9, 1.4), rise: r.range(2.4, 3.2), riseA: r.range(0.9, 1.2), clear: r.range(1.1, 1.4), clearT: [0.6, 0.78], legsAt: [{ t: 0.84, role: 'fore' }], legS: 1.1, headS: r.range(0.8, 0.92), loopAt: r.range(0.25, 0.4), radKeys: [[0, 0.3], [0.25, 0.75], [0.6, 0.95], [0.85, 1], [1, 0.7]] }),
     head: r.wpick([[2, dog(r, { neck: sneck(r, 0.9, 1.5), beard: r.chance(0.4) ? 0.9 : 0 })], [1, longjaw(r, { neck: sneck(r, 0.8, 1.3) })]]),
     limbs: legs(r, { lift: 1, w: 0.6, hindW: 1, len: r.range(2, 2.4) }), tail: r.wpick([[2, tl(r, { tailLen: r.range(4, 6), up: true, curl: r.range(1, 2), tip: 'dragonBarb', w1: 0.24 })], [1, knot(r, { tailLen: r.range(3, 4.5) })]]),
     dorsal: r.wpick([[2, ridge(r, 'mane', { n: r.int(5, 8), h: r.range(0.6, 0.85) })], [1.5, ridge(r, 'saw', { n: r.int(8, 12), h: 0.6 })], [1, none()]]), crown: r.wpick([[2, ears(r)], [1, horns(r)]]), surface: eye(),
@@ -619,7 +620,7 @@ const species = [
   { name: 'amphisbaena', w: 2, genes: r => ({ // a low two-legged dragon whose tail, held high, ends in a second head
     chassis: beast(r, { legs: 'biped', pitch: r.range(-0.05, 0.1), r: r.range(6.6, 7.4), len: r.range(17, 20), headS: r.range(0.68, 0.78), legAt: 0.4, tailLift: r.range(0.1, 0.3) }),
     head: dog(r, { neck: { ...sneck(r, 2.2, 2.8), sway: r.range(-0.6, -0.2) }, tilt: r.range(-2.75, -2.5), gape: r.range(0.45, 0.65) }),
-    limbs: legs(r, { lift: 1, w: 0.55, len: r.range(2.3, 2.7) }), tail: tl(r, { tailLen: r.range(5.5, 7), w0: 1, w1: 0.6, mid: 0.4, up: true, curl: r.range(1.2, 1.6), wave: 0.2, tip: 'dragonHead2', tipS: r.range(1.3, 1.5), gape2: r.range(0.6, 0.8), face2: r.range(0.3, 0.9) }),
+    limbs: legs(r, { lift: 1, w: 0.55, len: r.range(2.3, 2.7) }), tail: tl(r, { tailLen: r.range(5.5, 7), w0: 1, w1: 0.6, mid: 0.4, up: true, curl: r.range(0.7, 1.1), wave: 0.2, tip: 'dragonHead2', tipS: r.range(1.45, 1.65), gape2: r.range(0.6, 0.8), face2: r.range(-0.2, 0.5) }),
     dorsal: r.wpick([[1, stub(r, { at: 0.6, far: false })], [2, none()]]), crown: ears(r), surface: eye(),
   }) },
   { name: 'fire salamander', w: 1.5, genes: r => ({ // the salamander that lives in fire: a low crested newt, its crest and tail all flame

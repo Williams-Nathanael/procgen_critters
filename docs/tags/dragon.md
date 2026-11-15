@@ -132,3 +132,16 @@ Within-tag hybrids are on by default (`hybrid` 0.85, see AUTHORING.md "Within-ta
 - sleeping drake + dorsal of heraldic dragon passant: 2/4 detached
 
 Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.
+
+### M8 phase 2: chimeras (2026-11-14, judged at hybrid 1, --cell 60)
+- Still 25 species. Sheet `out/roads/07-dragon-chimeras.png`. Dragon chimeras read as whole
+  dragon-like beasts at print size; no `hybrid` hints added (none needed so far; hydra keeps
+  lending its heads freely, and hydra-with-amphisbaena-tail occurs, e.g. seed 1007).
+- Amphisbaena tail head (`dragonHead2`) now has a white eye with pupil when big enough, is
+  larger (tipS 1.45-1.65) and curls less / faces the front head less (curl 0.7-1.1, face2
+  -0.2..0.5) so the two heads no longer crowd.
+- Lindworm loop opened (loopR 0.9-1.4): blended chimeras on its chassis were closing the
+  ring into a black ball.
+- Weak in chimeras: hydra chassis + raised wing (mass of necks and wing), saint margaret
+  chassis (all belly) with big wings, coiled wyrm chassis frequent and samey, fire
+  salamander chassis small and thin. Mean ~16 ms per critter under load (3 workers).
