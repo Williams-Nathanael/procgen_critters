@@ -404,10 +404,10 @@ const FB = {
     }
     K.poly(pts);
     if (H > 8) { // the cupped hollow: a thick pale fold following the rim, like the helix of an ear
-      const vw = Math.max(MINW * 1.4, W * 0.09), a0 = rng.range(-1.5, -1.15), a1 = rng.range(0.9, 1.3), arc = [];
+      const vw = Math.max(MINW * 1.1, W * 0.05), a0 = rng.range(-1.2, -0.95), a1 = rng.range(0.6, 0.9), arc = []; // mild, like the pre-rebuild crescent
       for (let i = 0; i <= 8; i++) { const a = mix(a0, a1, i / 8), k = 0.6 + 0.06 * Math.sin(i * 1.3 + ph); arc.push(F(0.56 + 0.42 * k * Math.cos(a), 0.42 * k * Math.sin(a))); }
-      K.poly(tube(spline(arc, 4), profile([[0, vw * 0.4], [0.3, vw], [0.75, vw], [1, vw * 0.4]])), 'w');
-      if ((g.veins ?? 2) > 2) K.poly(tube(spline([F(0.2, 0.02), F(0.42, rng.range(-0.08, 0.08))], 4), profile([[0, vw * 0.4], [1, vw * 0.7]])), 'w');
+      K.poly(tube(spline(arc, 4), profile([[0, vw * 0.3], [0.4, vw], [0.65, vw], [1, vw * 0.3]])), 'w');
+      if ((g.veins ?? 2) > 3) K.poly(tube(spline([F(0.2, 0.02), F(0.42, rng.range(-0.08, 0.08))], 4), profile([[0, vw * 0.4], [1, vw * 0.7]])), 'w');
     }
     return { top: F(1.0, 0), w: W, c: F(0.5, 0) };
   },

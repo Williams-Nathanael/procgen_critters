@@ -160,3 +160,5 @@ Within-tag hybrids are on by default (`hybrid` 0.85, see AUTHORING.md "Within-ta
 - chanterelle + crown of honey fungus tuft: 3/3 detached
 
 Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.
+
+- 2026-11-16: jelly ear (`jwrink`) pale fold made milder per user (thinner, about half width, shorter arc, extra vein only at veins>3), about as subtle as the pre-rebuild crescent. Shape unchanged. Before/after: out/roads/09-fungus-jelly-ear-mild.png (top old, bottom new).
