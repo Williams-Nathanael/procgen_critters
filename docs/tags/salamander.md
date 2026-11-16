@@ -27,6 +27,9 @@ external gills, newt crest. Default eyes: none.
 
 ## State
 
+- M9 (2026-11-16): the salamander+fungus mix is now a salamander body with fungal crest,
+  spore spots and gill-fan frills (all drawn from `fungus.js`); nothing changed here.
+
 Updated 2026-11-13 (review run on main; sheets `out/roads/03-salamander-species.png`,
 `out/roads/03-salamander-mixes.png`).
 

@@ -845,6 +845,7 @@ heads.fungusFB = (C, sock, g) => {
 // Growths along a back: a troop of little fruit bodies of differing sizes.
 dorsals.fungusGrowth = (C, plan, strip, sd, si, g, at) => {
   if (C.plan.fungus?.own) return; // on a fungus body, sibling ornaments would be loose bits
+  if (plan.tag === 'salamander') return salBrackets(C, plan, strip, sd, si, g, at);
   const { rng } = C, K = pen(C.ink), r = plan.r, n = g.n, side = plan.view === 'side';
   for (let i = 0; i < n; i++) {
     if (plan.alt && (i + si) % 2) continue;
@@ -868,9 +869,66 @@ dorsals.fungusFrill = (C, plan, strip, sd, si, g) => {
   }
 };
 
+// M9: on a salamander, fungus is worked into the skin rather than growing out of it.
+// Back: a crest of low, shingled shelf brackets (cap-like skin folds) leaning tailward, plus
+// pale spore spots on the flank. Not little mushrooms on stalks.
+function salBrackets(C, plan, strip, sd, si, g, at) {
+  const { rng, ink } = C, r = plan.r, side = plan.view === 'side';
+  if (plan.alt && si === 1 && side) return;
+  const hp = plan.head.p, d0 = Math.hypot(strip[0].p[0] - hp[0], strip[0].p[1] - hp[1]);
+  const d1 = Math.hypot(strip[strip.length - 1].p[0] - hp[0], strip[strip.length - 1].p[1] - hp[1]);
+  const back = d0 < d1 ? 1 : -1; // +1: tail lies toward u = 1
+  const n = side ? clamp(g.n, 3, 5) : clamp(g.n, 3, 5), hk = side ? 1.3 : 0.6;
+  for (let i = 0; i < n; i++) {
+    const u = mix(0.12, 0.84, n > 1 ? i / (n - 1) : 0.5), k = at(u), k2 = at(clamp(u + back * 0.05, 0, 1));
+    const tg = angOf(k.p, k2.p), env = Math.sin(PI * mix(0.15, 0.95, u)) ** 0.7;
+    const h = r * hk * env * clamp(g.size, 0.8, 1.15) * rng.range(0.85, 1.1), wd = r * (side ? 0.7 : 0.5) * env + h * 0.35;
+    // a half-cap: rounded margin out and back, base buried in the skin
+    const a = k.dir + (side ? 0.55 : 0.4) * angDiff(tg, k.dir), c = polar(k.p, k.dir, h * 0.15);
+    const P = [];
+    for (let j = 0; j <= 14; j++) {
+      const t = PI * j / 14, x = -Math.cos(t), y = Math.sin(t) ** 0.8;
+      P.push(add(polar(c, tg, x * wd * (x > 0 ? 1.15 : 0.8)), polar([0, 0], a, y * h)));
+    }
+    P.push(polar(c, k.dir, -r * 0.35));
+    ink.poly(P);
+    if (h > 2.2) ink.line([polar(polar(c, a, h * 0.3), tg, -wd * 0.1), polar(polar(c, a, h * 0.42), tg, wd * 0.9)], MINW, 'w');
+  }
+  // spore spots: a few pale dots scattered on the flank (side view: one strip only draws them)
+  if (si === 0 && plan.path?.length > 2 && plan.rad) {
+    const N = plan.path.length - 1, m = rng.int(3, 5);
+    for (let i = 0; i < m; i++) {
+      const t = mix(0.3, 0.75, (i + rng.range(0.2, 0.8)) / m), q = plan.path[Math.round(t * N)], rr = plan.rad(t);
+      if (rr < 2.2) continue;
+      ink.dot([q[0] + rng.range(-0.3, 0.3) * rr, q[1] + (side ? rng.range(-0.25, 0.25) : rng.range(-0.4, 0.4)) * rr], Math.max(rr * rng.range(0.16, 0.24), 0.75), 'w');
+    }
+  }
+}
+// Gill frills: three short gill stalks behind the head, each ending in a pleated fan like a
+// shelf's underside, so the external gills of a larva read as fungal lamellae.
+function salFrills(C, m, s, g) {
+  const { ink, rng } = C, far = !!m.far, sideV = C.plan.view === 'side', SF = [0.35, -0.35, -1.05], fan = [-0.35, 0.3, 0.95];
+  const dirAt = i => sideV ? -PI / 2 + SF[i] - 0.25 - (far ? 0.3 : 0) : m.dir + m.flip * (fan[i] + (far ? 0.25 : 0));
+  const k = clamp(g.hw ?? 0.6, 0.45, 0.8) / 0.6;
+  for (const i of [0, 1, 2]) {
+    if (far && i === 0) continue;
+    const a = dirAt(i), L = s * (i === 1 ? 0.75 : 0.6) * k * (far ? 0.8 : 1), e = polar(m.p, a, L);
+    ink.poly(tube(spline([polar(m.p, a, -s * 0.15), polar(m.p, a + 0.1, L * 0.5), e], 5), profile([[0, s * 0.17], [1, s * 0.11]])));
+    const fw = s * 0.72 * k * (i === 1 ? 1 : 0.85), P = [];
+    for (let j = 0; j <= 16; j++) {
+      const t = mix(-1.2, 1.2, j / 16), rr = fw * (1 + 0.12 * Math.cos(t * 7 + rng.range(-0.3, 0.3)));
+      P.push(polar(e, a + t, rr));
+    }
+    P.push(polar(e, a, -fw * 0.25));
+    ink.poly(P);
+    if (fw > 2.2) for (const t of [-0.6, 0, 0.6]) ink.line([polar(e, a + t, fw * 0.25), polar(e, a + t, fw * 0.8)], MINW, 'w');
+  }
+}
+
 // Fruit bodies sprouting from the head: little caps, coral antlers, pixie cups.
 crowns.fungusSprout = (C, m, F, s, g) => {
   if (C.plan.fungus?.own) return; // on a fungus body, sibling ornaments would be loose bits
+  if (C.plan.tag === 'salamander' && C.head?.tag === 'salamander') return salFrills(C, m, s, g);
   const { rng } = C, K = pen(C.ink), n = m.far ? 1 : (g.n ?? 1);
   for (let i = 0; i < n; i++) {
     const u = n > 1 ? i / (n - 1) * 2 - 1 : 0, sz = (i === 0 || n === 1 ? 1 : rng.range(0.55, 0.85));
@@ -1288,7 +1346,9 @@ export default {
   // M4: on salamander/amphibian bodies lend a cap for a head, not scattered growths;
   // a mushroom body with salamander bits sticking out was rejected, so rarely lead there.
   mix: {
-    salamander: { lead: 0.15, sig: { head: 3 }, headS: 1.3 },
+    // M9: fungal traits worked into a salamander body (bracket crest, spore spots, gill
+    // frills), never a cap for a head or a mushroom body with salamander bits
+    salamander: { lead: 0, sig: { dorsal: 3, crown: 2 }, want: [[1, 1], [3, 2]] },
     amphibian: { sig: { head: 3, crown: 0.8 }, want: [[3, 1], [1, 2]], headS: 1.25 },
     // on bug bodies a lone cap reads as a blob: lend cap and back growths together
     arthropod: { lead: 0.4, sig: { head: 2, dorsal: 3, crown: 1 }, want: [[1, 1], [3, 2]], headS: 1.2 },

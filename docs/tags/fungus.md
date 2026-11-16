@@ -25,6 +25,13 @@ gills/frills, puffball tails and coral antlers read well. Default eyes: none.
 
 ## State (update this section when you work on the tag)
 
+- M9 (2026-11-16): salamander+fungus redesigned. Fungus no longer leads (lead 0) and lends
+  dorsal/crown only, never the head. On a salamander, `fungusGrowth` draws a crest of shingled
+  shelf brackets plus white spore spots (`salBrackets`), `fungusSprout` draws pleated
+  gill-fan frills behind the head (`salFrills`). Other pairs and pure output bit-identical.
+  Open: at 60 px the traits read as frilly gills and a lumpy back more than as fungus;
+  mycelium toes not done (would need a limbs lend).
+
 ### M8 phase 2 fix round (2026-11-14, critic sheet seeds 1000/1100/1200, --cell 60, hybrid 1)
 - 41 species (unchanged). Lone-stalk species (`LONE` = `hybrid: { noLend: ['chassis'] }`: fly agaric,
   parasol, penny bun, wood blewit, witch's hat, funnel cap, hedgehog, horn of plenty, morel, false
