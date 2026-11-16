@@ -177,3 +177,16 @@ Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.
   unchanged except upright bipeds (wyvern, cockatrice) stand a little higher on sturdier legs.
 - Still weak: serra-chassis chimeras (legless fish body, can read as a lump), tall reared
   basilisk chimeras with long lent necks. Sheet: `out/roads/03-dragon-chimeras-fix.png`.
+
+### Chimera stance fix (2026-11-16, judged at --cell 60 --hybrid 1, families 1/4/9)
+- Reared-on-hind-legs serpent plan (basilisk legsAt hind, also when blended): forced to the
+  basilisk geometry (len <= 15, clear >= 2.4, rise 4.5-5.5, riseA >= 1.35), a thigh oval at the
+  leg point and the two feet spread +-0.5r. Fixes 4102, 4402.
+- dragonBeast: biped pitch 0.35-0.8 snaps to 0.3 (level) or 0.85 (upright), upright bipeds and
+  rampant spread their hind feet wider; rampant and sejant length capped (2.6r / sin p); sejant
+  lift <= 0.35r (haunch on the ground), rampant lift <= r. Fixes 1504, 9402; 4203 better.
+- Sturdier bits: arm sockets x1.15, urnes legs w 0.5, luttrell tails w1 0.3 (trefoil tipS 1.25),
+  basilisk crown prongs and balls wider.
+- Still weak: 4004 has a thin hairline arc above the head (likely heraldic wing leading edge on
+  the saint margaret chassis), not traced; 4203 rampant chimera arms still slender.
+- Ouroboros/lindworm rings untouched.

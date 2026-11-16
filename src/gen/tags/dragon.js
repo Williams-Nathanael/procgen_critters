@@ -80,14 +80,17 @@ chassis.dragonBeast = (C, g) => {
   // upright one stays upright, and a pitched two-legger stands on its hips, not mid-body.
   let p = g.pitch ?? 0, L = g.len, legAt = g.legAt ?? 0.12;
   if (legs === 'quad' || legs === 'six') p = clamp(p, -0.1, 0.28);
-  else if (legs === 'rampant') p = Math.max(p, 0.9);
-  else if (legs === 'sejant') p = Math.max(p, 0.75);
-  else if (legs === 'biped' && p > 0.4) {
+  else if (legs === 'rampant') { p = Math.max(p, 0.9); L = Math.min(L, r * 2.6 / Math.sin(p)); }
+  else if (legs === 'sejant') { p = Math.max(p, 0.75); L = Math.min(L, r * 2.6 / Math.sin(p)); }
+  if (legs === 'biped' && p > 0.35 && p < 0.8) p = p < 0.55 ? 0.3 : 0.85; // no half-reared two-leggers: level (draco) or upright (wyvern)
+  if (legs === 'biped' && p > 0.4) {
     L = Math.min(L, r * 2.5 / Math.sin(p));
     legAt = Math.min(legAt, r * 0.4 / (L * Math.sin(p)));
   }
   let lift = g.lie ? 0 : Math.max(C.lift, 0.12) * r * (g.liftK ?? 1);
   if (legs === 'biped' && p > 0.4) lift = Math.max(lift, r * 0.75); // an upright two-legger shows its legs
+  if (legs === 'sejant') lift = Math.min(lift, r * 0.35); // sitting: the haunch is on the ground, whatever legs are lent
+  if (legs === 'rampant') lift = Math.min(lift, r * 1.0);
   const H = [-L * Math.cos(p) / 2, -(lift + r * 0.9)];
   const S = add(H, [L * Math.cos(p), -L * Math.sin(p)]);
   const M = polar(lerp(H, S, 0.5), -p - PI / 2, (g.arch ?? 0.3) * r);
@@ -103,7 +106,7 @@ chassis.dragonBeast = (C, g) => {
   if (g.haunch ?? !g.lie) ov(ink, add(H, [r * 0.1, r * 0.22]), r * 0.82, r * 0.74, -p);
   const limbs = [], ls = r * (g.legS ?? 1) * (legs === 'biped' && p > 0.4 ? 1.15 : 1); // upright: sturdier legs, whoever lends them
   const mk = (base, dx, role, far, dy = 0.3) => limbs.push({ p: add(base, [dx * r, r * dy]), dir: PI / 2, s: ls, role, far, ground: 0, fwd: 0, side: 1 });
-  const arm = (dir, far) => limbs.push({ p: add(S, [r * (far ? 0.55 : 0.3), r * (far ? -0.1 : 0.3)]), dir, s: ls * (far ? 0.9 : 1), role: 'arm', fwd: -PI / 2, side: 1 });
+  const arm = (dir, far) => limbs.push({ p: add(S, [r * (far ? 0.55 : 0.3), r * (far ? -0.1 : 0.3)]), dir, s: ls * (far ? 1.05 : 1.15), role: 'arm', fwd: -PI / 2, side: 1 });
   if (legs === 'quad') {
     if (g.pawUp) arm(rng.range(0.25, 0.6), true); else mk(S, 0.3, 'fore', true);
     mk(H, -0.25, 'hind', true); mk(S, -0.2, 'fore', false); mk(H, 0.3, 'hind', false);
@@ -112,9 +115,9 @@ chassis.dragonBeast = (C, g) => {
     mk(S, -0.2, 'fore', false); mk(H, 0.3, 'hind', false); mk(M, -0.3, 'hind', false, 0.9);
   } else if (legs === 'biped') {
     const B = lerp(H, S, legAt);
-    mk(B, 0.45, 'hind', true); mk(B, -0.15, 'hind', false);
+    if (p > 0.4) { mk(B, 0.6, 'hind', true); mk(B, -0.4, 'hind', false); } else { mk(B, 0.45, 'hind', true); mk(B, -0.15, 'hind', false); }
   } else if (legs === 'rampant') {
-    mk(H, 0.35, 'hind', true); mk(H, -0.25, 'hind', false);
+    mk(H, 0.55, 'hind', true); mk(H, -0.4, 'hind', false);
     arm(rng.range(-0.7, -0.25), true); arm(rng.range(0.1, 0.5), false);
   } else if (legs === 'sejant') {
     mk(H, 0.75, 'fore', false, 0.1); mk(S, 0.35, 'fore', true); mk(S, -0.1, 'fore', false);
@@ -154,7 +157,7 @@ chassis.dragonSerpent = (C, g) => {
   const run = (len, f) => { const n = Math.max(4, Math.round(len / 1.5)); for (let i = 1; i <= n; i++) raw.push([x + len * i / n, f ? f(i / n) : 0]); x += len; hb = f ? f(1) : 0; };
   const hump = (A, n) => u => A * (1 - Math.cos(TAU * n * u)) / 2;
   const mode = g.mode ?? 'wave';
-  if (g.legsAt?.some(l => l.role === 'hind') && mode === 'wave') g = { ...g, len: Math.min(g.len, 16), amp: Math.min(g.amp ?? 0, 0.4) }; // reared on hind legs: no long humped trail behind them
+  if (g.legsAt?.some(l => l.role === 'hind') && mode === 'wave') g = { ...g, len: Math.min(g.len, 15), amp: Math.min(g.amp ?? 0, 0.4), clear: Math.max(g.clear ?? 0, 2.4), clearT: [0.1, 0.4], rise: clamp(g.rise ?? 0, 4.5, 5.5), riseA: Math.max(g.riseA ?? 0, 1.35) }; // reared on hind legs (basilisk plan, also in chimeras): short trail, clearly lifted hindquarter, upright forebody
   if (g.stern) { // the tail end rises in a curve like a ship's stern post (path runs tail -> head)
     const Hs = g.stern * r, n = 12; raw.length = 0;
     for (let i = 0; i <= n; i++) { const u = i / n, a = PI / 2 * u; raw.push([x + Hs * 0.8 * Math.sin(a), Hs * Math.cos(a)]); }
@@ -199,8 +202,10 @@ chassis.dragonSerpent = (C, g) => {
   }
   for (const lg of legsAt ?? []) {
     const q = pathAt(path, lg.t).p, ls = r * (g.legS ?? 1.2) * (lg.role === 'hind' ? 1.15 : 1);
-    limbs.push({ p: add(q, [r * 0.3, rad(lg.t) * 0.3]), dir: PI / 2, s: ls, role: lg.role, far: true, ground: 0, fwd: 0, side: 1 });
-    limbs.push({ p: add(q, [-r * 0.3, rad(lg.t) * 0.3]), dir: PI / 2, s: ls, role: lg.role, far: false, ground: 0, fwd: 0, side: 1 });
+    const sp = lg.role === 'hind' ? 0.5 : 0.3; // hind pair: a real hindquarter (thigh) with two feet apart
+    if (lg.role === 'hind') ov(ink, add(q, [0, rad(lg.t) * 0.35]), r * 0.95, r * 0.8, 0);
+    limbs.push({ p: add(q, [r * sp, rad(lg.t) * 0.3]), dir: PI / 2, s: ls, role: lg.role, far: true, ground: 0, fwd: 0, side: 1 });
+    limbs.push({ p: add(q, [-r * sp, rad(lg.t) * 0.3]), dir: PI / 2, s: ls, role: lg.role, far: false, ground: 0, fwd: 0, side: 1 });
   }
   const e = path[N - 1], t0 = path[0], bt = g.backT ?? [0.42, 0.9];
   const ha = g.rise || mode === 'ring' ? h : angOf(path[N - 4], e);
@@ -517,8 +522,8 @@ crowns.dragonCrown = (C, m, F, s, g) => {
   ink.poly([F(-0.2, y0), F(h * 0.3, y0 - 0.06), F(h * 0.3, y1 + 0.06), F(-0.2, y1)]);
   for (let i = 0; i < 3; i++) {
     const y = mix(y0 + 0.08, y1 - 0.08, i / 2), top = F(h * (i === 1 ? 1.05 : 0.85), y + (i - 1) * 0.1);
-    ink.poly([F(h * 0.2, y - 0.2), top, F(h * 0.2, y + 0.2)]);
-    dt(ink, top, 0.17 * s);
+    ink.poly([F(h * 0.2, y - 0.28), top, F(h * 0.2, y + 0.28)]);
+    dt(ink, top, 0.22 * s);
   }
 };
 // Branching antler (the long).
@@ -612,7 +617,7 @@ const species = [
     chassis: beast(r, { legs: 'biped', pitch: r.range(0.15, 0.45), len: r.range(13, 17), r: r.range(6, 7.4), headS: r.range(0.72, 0.85), legAt: 0.3 }),
     head: r.wpick([[1.5, beak(r, { neck: sneck(r, 1.6, 2.8) })], [1, dog(r, { neck: sneck(r, 1.6, 2.8), mz: r.range(1.2, 1.6) })], [1.5, beak(r, { regard: true, neck: sneck(r, 2.6, 3.4), lookDown: r.range(-0.1, 0.3) })]]), // regardant: looks back over its shoulder
     limbs: legs(r, { lift: r.range(0.8, 1.1) }),
-    tail: r.wpick([[2, tl(r, { tip: 'dragonTrefoil', curl: r.range(1.2, 2.4), w1: 0.2 })], [1.5, knot(r, { tip2: 'trefoil' })], [1.5, tl(r, { tailLen: r.range(4, 6), w1: 0.22, tip: 'dragonScroll', curl: 0.8 })]]),
+    tail: r.wpick([[2, tl(r, { tip: 'dragonTrefoil', curl: r.range(1.2, 2.4), w1: 0.3, tipS: 1.25 })], [1.5, knot(r, { tip2: 'trefoil' })], [1.5, tl(r, { tailLen: r.range(4, 6), w1: 0.3, tip: 'dragonScroll', curl: 0.8 })]]),
     dorsal: r.wpick([[2, none()], [1.2, stub(r)], [1, leafy(r, { size: r.range(2.2, 2.8) })], [1, ridge(r, 'scallop')]]), crown: longEars(r), surface: eye(),
   }) },
   { name: 'cockatrice', w: 2.6, genes: r => ({ // a cock with a serpent tail: upright, combed and wattled, wing raised
@@ -690,7 +695,7 @@ const species = [
   { name: 'interlace beast', w: 1.6, genes: r => ({ // Insular / Romanesque initial: knotted, biting back, leaf-tailed
     chassis: beast(r, { legs: 'quad', len: r.range(20, 26), r: r.range(4.6, 5.6), arch: r.range(0.3, 0.6), headS: r.range(0.78, 0.9), neckA: r.range(-1.25, -1), neckW: 0.6, haunch: true }),
     head: longjaw(r, { regard: true, neck: sneck(r, 3.2, 4.2), lookDown: r.range(0.2, 0.5), mz: r.range(1.8, 2.3), tongue: null }),
-    limbs: legs(r, { w: 0.42, lift: r.range(0.9, 1.2) }), tail: knot(r, { tip2: 'trefoil', tailLen: r.range(6, 8), knotR: 1.7, up: true }),
+    limbs: legs(r, { w: 0.5, lift: r.range(0.9, 1.2) }), tail: knot(r, { tip2: 'trefoil', tailLen: r.range(6, 8), knotR: 1.7, up: true }),
     dorsal: none(), crown: r.wpick([[2, { type: 'dragonLappet', len: r.range(2.2, 3.2) }], [1, ears(r)]]), surface: eye(),
   }) },
   { name: 'urnes ribbon beast', w: 1.5, genes: r => ({ // slender Norse greyhound-serpent, all loops
