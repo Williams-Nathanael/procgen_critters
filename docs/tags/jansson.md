@@ -40,6 +40,7 @@ Signature features to lend: big round ringed eyes, a soft rounded snout or long 
 tasselled tail, tufts and single hairs, small props, the upright pear body.
 
 ## State
+- **Taste-check cuts (2026-11-16), 28 species.** Cut bracket peeper and query hook (user verdict) with their glyph drawer cases; no hints or mixes referred to them. Ampersand knot head ball 2.5k -> 2.1k (about 16% smaller), nothing else. Checked 2,000 seeds at hybrid 1 and 500 at hybrid 0: no throws, nothing below the line. Sheets regenerated.
 - **Chimera fix round (2026-11-14), 30 species.** Judged at --hybrid 1 --cell 60, seeds 1000/1100/1200 (`out/roads/07-jansson-chimeras.png`).
   Blob folk each carry an outline trait: stack has a white crease between members; huddle members spaced so each keeps its outline;
   stone peeper always has a pebble ledge and a white crack; pot always has handles and a white rim band. Shy lump, huddle, stack,

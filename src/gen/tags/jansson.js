@@ -578,7 +578,7 @@ chassis.janssonGlyph = (C, g) => {
     case 'amp': {
       const raw = [[12.6, 3.2], [9.4, 0.7], [4.6, 4.4], [0.6, 10.6], [0.1, 15.4], [3.5, 18.8], [7, 15.6], [5, 11.4], [-1, 7.6], [-5.4, 3.4], [-3.4, 0.7], [1, 0.3], [5.6, 3.6], [8.4, 7.6], [9.6, 10.8]];
       penG(ink, raw.map(([a, b]) => P(a + j(0.5), b + j(0.5))), 2.5 * k, { con: 0.5, t0: 0.45 });
-      hr = 2.5 * k; hc = P(9.8, 11.4); ink.dot(hc, hr);
+      hr = 2.1 * k; hc = P(9.7, 11.3); ink.dot(hc, hr);
       { const ec = P(3.4, 18.1); ink.dot(ec, 2.1 * k); eyes.push({ p: [ec[0] + 0.3 * k, ec[1] + 0.1 * k], r: 0.85 * k }); } // one small eye set into the top loop
       for (const lx of [-3.6, 0.8, 9]) tick(lx * k, -(lg + 1 * k), rng.sign());
       tailP = P(12.6, 3.2); tailDir = 0;
@@ -619,19 +619,6 @@ chassis.janssonGlyph = (C, g) => {
       hc = ball(P(xl + p + 3.4, 13.2), 5.2 * k); hr = 5.2 * k;
       tick((xl + p * 0.6) * k, -lg - 0.6 * k);
       tailP = P(-p * 0.9, 5.2); tailDir = -PI * 0.7;
-      break;
-    }
-    case 'query': {
-      const hs = g.hs, hv = g.hv ?? 1, bw = g.bw ?? 5.7, nk = g.nk ?? 0, fl = g.flip ? -1 : 1, X = (a, b) => P(a * fl, b);
-      const by = bw * 0.88, top = by * 2 + nk;
-      ink.oval(X(0, by), bw * k, by * k);
-      stroke(ink, [X(0, by * 1.6), X(-0.3, top + 4.6)], 1.3 * k);
-      const H = (a, b) => X(a * hs, top + 4 + (b - 13) * hv);
-      penG(ink, [X(-0.3, top + 4), H(-3.7, 17.6), H(-3.2, 23), H(1, 26.6), H(5.6, 24.6), H(6.8, 20.6)], 2.7 * k, { con: 0.5, t0: 0.6 });
-      hr = (g.hr ?? 3.7) * k; hc = ball(H(6.6, 19), hr);
-      if (g.arms) for (const sd of [-1, 1]) { const a0 = X(sd * bw * 0.8, by * 1.2), a1 = X(sd * (bw + 3.5), by * 1.2 + 3 + j(1.5)); stroke(ink, [a0, a1], 1.2); ink.dot(a1, 1.1); }
-      tick(-bw * 0.45 * k, -lg - 1.5 * k, -1); tick(bw * 0.4 * k, -lg - 1.5 * k, 1);
-      tailP = X(-bw + 0.5, by * 0.8); tailDir = fl > 0 ? PI : 0;
       break;
     }
     case 'pilcrow': {
@@ -694,24 +681,6 @@ chassis.janssonGlyph = (C, g) => {
       ink.poly(tube(polyline([Pm(-R * 0.7, 0.8), Pm(R + 7, 0.8)], 4), 0.75 * k));
       { const fx = -R * 0.7, fh = g.fh ?? 1; penG(ink, [Pm(fx, 0.9), Pm(fx - 3.5, 1.6), Pm(fx - 6.5, 4.5 * fh), Pm(fx - 5.5, 8 * fh), Pm(fx - 2.6, 7.6 * fh), Pm(fx - 2.8, 4.6 * fh), Pm(fx - 6, 3.4 * fh), Pm(fx - 9, 5.5 * fh)], 1.7 * k, { con: 0.5, t0: 1, t1: 0.4 }); }
       tailP = Pm(-R * 0.95, 1); tailDir = PI;
-      break;
-    }
-    case 'bracket': { // a pair of brackets held like curtains, a head peeping out between them
-      const H = g.H, gp = g.gap, hy = H * rng.range(0.5, 0.62), br = gp * 0.62;
-      for (const sd of [-1, 1]) {
-        let pts;
-        if (g.br === 'paren') pts = [Pm(sd * gp * 0.7, H), Pm(sd * gp * 1.12, H * 0.66), Pm(sd * gp * 1.12, H * 0.34), Pm(sd * gp * 0.72, 0.9)];
-        else pts = [Pm(sd * gp * 0.62, H), Pm(sd * gp * 0.86, H * 0.92), Pm(sd * gp * 0.82, H * 0.62), Pm(sd * gp * 1.15, H * 0.5), Pm(sd * gp * 0.82, H * 0.38), Pm(sd * gp * 0.85, H * 0.1), Pm(sd * gp * 0.62, 0.9)];
-        if (g.br === 'square') { bar(ink, Pm(sd * gp, H), Pm(sd * gp, 0.9), 2.5 * k); for (const y of [H, 0.9]) bar(ink, Pm(sd * gp, y), Pm(sd * gp * 0.62, y), 2 * k); }
-        else penG(ink, pts, (g.br === 'brace' ? 2.1 : 2.6) * k, { con: 0.55, t0: 0.55, t1: 0.55, per: 6 });
-        tick(sd * gp * (g.br === 'square' ? 1 : 0.72) * k, -1.2 * k, sd);
-        const hxk = sd * gp * (g.br === 'square' ? 1 : g.br === 'paren' ? 1.08 : 0.95);
-        ink.oval(Pm(hxk, hy - 0.4), 1.5 * k, 1.1 * k);
-        bar(ink, Pm(hxk, hy - 0.4), Pm(sd * br * 0.7, hy - 0.2), 1.4 * k);
-      }
-      hr = br * k; hc = Pm(0, hy + 0.6); ink.dot(hc, hr);
-      eyes.push(...[-1, 1].map(sd => ({ p: [hc[0] + sd * hr * 0.36, hc[1] - hr * 0.12], r: hr * 0.11 })));
-      tailP = Pm(-gp, hy * 0.5); tailDir = PI;
       break;
     }
     default: { // 'word': a nonsense cursive word walking along
@@ -913,9 +882,7 @@ const species = [
   sp('ampersand knot', 3.5, r => glyph(r, { kind: 'amp', k: r.range(1.35, 1.65) })),
   sp('minim caterpillar', 3, r => glyph(r, { kind: 'minim', k: r.range(1.25, 1.55), n: r.int(2, 5), amp: r.range(0, 2.2), ph: r.range(0, 6) })),
   sp('loop runner', 3, r => glyph(r, { kind: 'loop', k: r.range(1.35, 1.6), tall: Array.from({ length: r.int(2, 3) }, () => r.chance(0.5)) })),
-  sp('query hook', 3, r => glyph(r, { kind: 'query', k: r.range(1.15, 1.55), hs: r.range(0.75, 1.3), hv: r.range(0.7, 1.45), bw: r.range(5.4, 7.5), nk: r.range(-1, 6), hr: r.range(3, 4.6), flip: r.chance(0.3), arms: r.chance(0.4) }, { tail: r.chance(0.5) ? tassel(r, { tailLen: r.range(3, 5) }) : none() })),
   sp('spiral snail', 3.5, r => glyph(r, { kind: 'at', k: r.range(1.05, 1.4), R: r.range(6.5, 11.5), turns: r.range(1.25, 1.85), es: r.range(0.8, 1.35), nl: r.range(0.55, 1.6), hr: r.range(2.6, 4.2) }, { crown: r.chance(0.75) ? { type: 'antennae', len: r.range(1.2, 2.4), curve: r.range(-0.4, 0.2), club: true, pair: true } : none() })),
-  sp('bracket peeper', 3, r => glyph(r, { kind: 'bracket', k: r.range(1.2, 1.45), br: r.wpick([[2.2, 'paren'], [1, 'brace'], [1.3, 'square']]), H: r.range(17, 22), gap: r.range(7, 8.5) }, { crown: r.chance(0.5) ? hair(r, { n: r.int(1, 3), len: r.range(0.8, 1.3) }) : none() }), { keep: ['head', 'tail'] }),
   sp('swash inchworm', 3, r => glyph(r, { kind: 'swash', k: r.range(1.15, 1.45), arch: r.range(-1.5, 6), curl: r.range(-1, 3) })),
 
   // ----- single folk -----
