@@ -919,5 +919,7 @@ export default {
   label: 'Little folk',
   short: 'Folk',
   sig: { head: 3, tail: 2, crown: 1.5, dorsal: 0.7 },
+  // M9: on a salamander pairing the folk figure leads with head and stance
+  mix: { salamander: { lead: 4 } },
   species,
 };

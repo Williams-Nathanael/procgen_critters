@@ -999,5 +999,7 @@ const species = [
 export default {
   id: 'salamander', label: 'Salamanders', short: 'Salamanders',
   sig: { tail: 3, limbs: 2, crown: 2, dorsal: 1.2, head: 1 },
+  // M9: on a jansson figure lend tail and limbs only
+  mix: { jansson: { sig: { tail: 3, limbs: 2 } } },
   species,
 };
