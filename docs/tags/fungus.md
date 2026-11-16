@@ -31,6 +31,10 @@ gills/frills, puffball tails and coral antlers read well. Default eyes: none.
   gill-fan frills behind the head (`salFrills`). Other pairs and pure output bit-identical.
   Open: at 60 px the traits read as frilly gills and a lumpy back more than as fungus;
   mycelium toes not done (would need a limbs lend).
+- M9 round 2: `salBrackets` now draws 2-3 big flat-topped shelves at uneven spacing (one
+  larger), standing proud on a narrow neck with a tailward overhang; 2 large spore spots;
+  `salFrills` has one big central gill fan, two small. Reads at 60 px; at 40 px only the
+  shelves still read, marginally. Other pairs pixel-identical.
 
 ### M8 phase 2 fix round (2026-11-14, critic sheet seeds 1000/1100/1200, --cell 60, hybrid 1)
 - 41 species (unchanged). Lone-stalk species (`LONE` = `hybrid: { noLend: ['chassis'] }`: fly agaric,
