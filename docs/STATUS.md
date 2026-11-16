@@ -3,7 +3,18 @@
 Single source of truth for "where are we, what is next". The overseer updates it at the end
 of every milestone. Per-tag detail lives in the State section of `docs/tags/<tag>.md`.
 
-## Where things stand (2026-11-16, after M9)
+## Where things stand (2026-11-16, 1.0)
+
+**1.0 is released** on the user's say-so ("Go ahead on 1.0", 2026-11-16): version 1.0.0 in
+`package.json`, git tag `v1.0.0`, pushed to `main` on GitHub with all tags.
+- Clean copy of HEAD (8fcf51f): build, `test:export`, 8-tag sheet and `--pairs` sheet at
+  `--cell 60` pass. Main checkout (same tree): `test:pdfs` and `test:ui` pass (slider
+  medians 2-20 ms). Bench: mean 7.93 ms, p95 14.09, max 26.6 (slowest salamander+fungus).
+- The user said go ahead without reporting on the M8 fixes or M9 mixes; no new taste
+  decisions were given. The open watch items below stand as post-1.0 candidates.
+**Next: nothing queued. Post-1.0 work starts from what the user asks for.**
+
+## Earlier state (2026-11-16, after M9)
 
 **M9 is done (mix verdicts), waiting on a user look.** One conversation: a `critic` triage of
 the six "less of this" pairs, three engineer (Opus) runs, a `critic` look at the 28-pair
@@ -527,7 +538,7 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    lower how often they blend. M8 changes these pairs, so re-render `--pairs` first. M9
    does not block 1.0 if the user is content. [critic on the 28-pair sheet; user check]
    **DONE 2026-11-16 except the user check** (see the top of this file).
-10. **1.0**: clean-copy check, push, tag. Only on the user's say-so.
+10. **1.0**: clean-copy check, push, tag. Only on the user's say-so. **DONE 2026-11-16** (`v1.0.0`).
 
 ## Known issues
 

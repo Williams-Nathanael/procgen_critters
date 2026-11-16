@@ -1,6 +1,6 @@
 {
   "name": "procgen-critters",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Procedurally generated silhouette marginalia critters, placed along borders on PDFs",
