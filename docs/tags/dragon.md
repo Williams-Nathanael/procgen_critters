@@ -159,3 +159,21 @@ Use the species `hybrid: { never, keep, noLend }` hints to fix these in phase 2.
 - Amphisbaena tail head at least 0.62 x the main head socket size.
 - Sleeping drake tucked forepaw kept on the chest (was a detached speck on pitched chimeras, 1044).
 - Still weak: lent legs on serpent chassis are short stubs; saint margaret + wings still heavy.
+
+### M8 chimera fix (2026-11-16, judged at --cell 60 --hybrid 1, seed families 1, 3, 7)
+- Still 27 species listed in the file; no new species. Faults: thin front legs, diagonal bodies
+  with a mid-body "middle leg" and aborted back half (rejects 1202 1205 1207 1303 1304 1307 1406).
+- Cause: `pitch`/`legAt` blend across leg plans (`legs` is not a VARIANT key), so cockatrice /
+  wyvern pitch landed on quads (raised shoulders, long thin forelegs) and cockatrice `legAt`
+  0.3 on long pitched bodies put the legs mid-body. Fixed inside `dragonBeast`: quad/six pitch
+  clamped to [-0.1, 0.28]; rampant >= 0.9, sejant >= 0.75; a pitched biped (p > 0.4) caps its
+  length to 2.5r of rise, keeps its legs at the hips (legAt*rise <= 0.4r), stands at least
+  0.75r high, gets 1.15x sturdier leg sockets and a thicker tail root.
+- Reared serpents on hind legs (basilisk): length <= 16, no humps behind the legs, 1.15x legs.
+- Legless lenders: ouroboros now `noLend: ['limbs']`; the coiled basilisk now carries cock
+  legs (its coil has no sockets, so pure output looks the same) so it never lends "no legs"
+  to a four-legged body.
+- Favourites 1000 1001 1005 1104 1106 1403 1501-1503 1507 unchanged in character. Pure sheets
+  unchanged except upright bipeds (wyvern, cockatrice) stand a little higher on sturdier legs.
+- Still weak: serra-chassis chimeras (legless fish body, can read as a lump), tall reared
+  basilisk chimeras with long lent necks. Sheet: `out/roads/03-dragon-chimeras-fix.png`.

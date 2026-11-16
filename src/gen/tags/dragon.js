@@ -75,8 +75,19 @@ function miniHead(ink, p, ang, s, o = {}) {
 // Legged side-view beast: passant quadruped, two-legged wyvern, rampant, sejant, lying.
 // The long neck is NOT here: it lives in the head gene, so it travels when lent.
 chassis.dragonBeast = (C, g) => {
-  const { ink, rng } = C, r = g.r * C.plump, L = g.len, p = g.pitch ?? 0, legs = g.legs ?? 'quad';
-  const lift = g.lie ? 0 : Math.max(C.lift, 0.12) * r * (g.liftK ?? 1);
+  const { ink, rng } = C, r = g.r * C.plump, legs = g.legs ?? 'quad';
+  // Chimera sanity (pitch and legAt blend across leg plans): a four-legger stays level, an
+  // upright one stays upright, and a pitched two-legger stands on its hips, not mid-body.
+  let p = g.pitch ?? 0, L = g.len, legAt = g.legAt ?? 0.12;
+  if (legs === 'quad' || legs === 'six') p = clamp(p, -0.1, 0.28);
+  else if (legs === 'rampant') p = Math.max(p, 0.9);
+  else if (legs === 'sejant') p = Math.max(p, 0.75);
+  else if (legs === 'biped' && p > 0.4) {
+    L = Math.min(L, r * 2.5 / Math.sin(p));
+    legAt = Math.min(legAt, r * 0.4 / (L * Math.sin(p)));
+  }
+  let lift = g.lie ? 0 : Math.max(C.lift, 0.12) * r * (g.liftK ?? 1);
+  if (legs === 'biped' && p > 0.4) lift = Math.max(lift, r * 0.75); // an upright two-legger shows its legs
   const H = [-L * Math.cos(p) / 2, -(lift + r * 0.9)];
   const S = add(H, [L * Math.cos(p), -L * Math.sin(p)]);
   const M = polar(lerp(H, S, 0.5), -p - PI / 2, (g.arch ?? 0.3) * r);
@@ -84,13 +95,13 @@ chassis.dragonBeast = (C, g) => {
   if (T[1] > -r * 0.62) T = [T[0], -r * 0.62];
   const na = g.neckA ?? clamp(-(p + 0.75), -1.5, 0.3), nl = g.neckL ?? 0.9;
   const N = polar(S, na, nl * r);
-  const ctrl = [T, H, M, S, N], rs = [0.52, 0.9, g.belly ?? 1, g.chest ?? 0.9, g.neckW ?? 0.55];
+  const ctrl = [T, H, M, S, N], rs = [legs === 'biped' && p > 0.4 ? 0.62 : 0.52, 0.9, g.belly ?? 1, g.chest ?? 0.9, g.neckW ?? 0.55];
   const cum = [0]; for (let i = 1; i < ctrl.length; i++) cum.push(cum[i - 1] + dist(ctrl[i - 1], ctrl[i]));
   const tk = cum.map(c => c / cum[cum.length - 1]);
   const path = resample(spline(ctrl, 10), 48), rad = profile(tk.map((t, i) => [t, rs[i] * r]));
   ink.poly(tube(path, rad));
   if (g.haunch ?? !g.lie) ov(ink, add(H, [r * 0.1, r * 0.22]), r * 0.82, r * 0.74, -p);
-  const limbs = [], ls = r * (g.legS ?? 1);
+  const limbs = [], ls = r * (g.legS ?? 1) * (legs === 'biped' && p > 0.4 ? 1.15 : 1); // upright: sturdier legs, whoever lends them
   const mk = (base, dx, role, far, dy = 0.3) => limbs.push({ p: add(base, [dx * r, r * dy]), dir: PI / 2, s: ls, role, far, ground: 0, fwd: 0, side: 1 });
   const arm = (dir, far) => limbs.push({ p: add(S, [r * (far ? 0.55 : 0.3), r * (far ? -0.1 : 0.3)]), dir, s: ls * (far ? 0.9 : 1), role: 'arm', fwd: -PI / 2, side: 1 });
   if (legs === 'quad') {
@@ -100,7 +111,7 @@ chassis.dragonBeast = (C, g) => {
     mk(S, 0.3, 'fore', true); mk(H, -0.25, 'hind', true); mk(M, 0.25, 'fore', true, 0.9);
     mk(S, -0.2, 'fore', false); mk(H, 0.3, 'hind', false); mk(M, -0.3, 'hind', false, 0.9);
   } else if (legs === 'biped') {
-    const B = lerp(H, S, g.legAt ?? 0.12);
+    const B = lerp(H, S, legAt);
     mk(B, 0.45, 'hind', true); mk(B, -0.15, 'hind', false);
   } else if (legs === 'rampant') {
     mk(H, 0.35, 'hind', true); mk(H, -0.25, 'hind', false);
@@ -143,6 +154,7 @@ chassis.dragonSerpent = (C, g) => {
   const run = (len, f) => { const n = Math.max(4, Math.round(len / 1.5)); for (let i = 1; i <= n; i++) raw.push([x + len * i / n, f ? f(i / n) : 0]); x += len; hb = f ? f(1) : 0; };
   const hump = (A, n) => u => A * (1 - Math.cos(TAU * n * u)) / 2;
   const mode = g.mode ?? 'wave';
+  if (g.legsAt?.some(l => l.role === 'hind') && mode === 'wave') g = { ...g, len: Math.min(g.len, 16), amp: Math.min(g.amp ?? 0, 0.4) }; // reared on hind legs: no long humped trail behind them
   if (g.stern) { // the tail end rises in a curve like a ship's stern post (path runs tail -> head)
     const Hs = g.stern * r, n = 12; raw.length = 0;
     for (let i = 0; i <= n; i++) { const u = i / n, a = PI / 2 * u; raw.push([x + Hs * 0.8 * Math.sin(a), Hs * Math.cos(a)]); }
@@ -186,7 +198,7 @@ chassis.dragonSerpent = (C, g) => {
     if (best > 0) legsAt = [{ t: best / (N - 1), role: 'fore' }];
   }
   for (const lg of legsAt ?? []) {
-    const q = pathAt(path, lg.t).p, ls = r * (g.legS ?? 1.2);
+    const q = pathAt(path, lg.t).p, ls = r * (g.legS ?? 1.2) * (lg.role === 'hind' ? 1.15 : 1);
     limbs.push({ p: add(q, [r * 0.3, rad(lg.t) * 0.3]), dir: PI / 2, s: ls, role: lg.role, far: true, ground: 0, fwd: 0, side: 1 });
     limbs.push({ p: add(q, [-r * 0.3, rad(lg.t) * 0.3]), dir: PI / 2, s: ls, role: lg.role, far: false, ground: 0, fwd: 0, side: 1 });
   }
@@ -213,7 +225,7 @@ chassis.dragonNewt = (C, g) => {
   const tk = cum.map(c => c / cum[cum.length - 1]);
   const path = resample(spline(ctrl, 10), 56), rad = profile(tk.map((t, i) => [t, rs[i] * r]));
   ink.poly(tube(path, rad));
-  const limbs = [], ls = r * (g.legS ?? 1);
+  const limbs = [], ls = r * (g.legS ?? 1) * (legs === 'biped' && p > 0.4 ? 1.15 : 1); // upright: sturdier legs, whoever lends them
   const mk = (base, dx, role, far) => limbs.push({ p: add(base, [dx * r, r * 0.35]), dir: PI / 2, s: ls, role, far, ground: 0, fwd: 0, side: 1 });
   mk(S, 0.2, 'fore', true); mk(H, -0.3, 'hind', true); mk(S, -0.3, 'fore', false); mk(H, 0.25, 'hind', false);
   return {
@@ -613,7 +625,7 @@ const species = [
   { name: 'basilisk', w: 1.6, genes: r => r.chance(0.5) ? ({ // the crowned king of serpents: coiled and reared, crowned
     chassis: serpent(r, { mode: 'spiral', turns: r.range(1.05, 2), gapW: r.range(1.3, 2.6), r: r.range(3.2, 4.2), rise: r.range(2.8, 5.2), riseA: r.range(0.95, 1.5), headS: r.range(1.15, 1.3), backT: [0.82, 0.97], radKeys: [[0, 0.4], [0.25, 0.9], [0.7, 1], [1, 0.75]] }),
     head: dog(r, { mz: r.range(1.1, 1.4), tongue: 'fork', gape: r.range(0.3, 0.5), neck: sneck(r, 0.6, 1), brow: 0.3 }),
-    limbs: none(), tail: none(),
+    limbs: legs(r, { len: r.range(2.4, 2.8), w: 0.52, hindW: 1, lift: 1, stance: 0.15 }), tail: none(), // the coil has no leg sockets; this is what it lends
     dorsal: r.wpick([[1, none()], [1, stub(r, { at: 0.5, far: false, size: r.range(3, 3.6) })]]), crown: { type: 'dragonCrown', len: r.range(1.6, 2) }, surface: eye(),
   }) : ({ // or reared on a cock's legs
     chassis: serpent(r, { mode: 'wave', len: r.range(12, 15), r: r.range(5.8, 6.6), amp: 0, humps: 1, rise: r.range(4.5, 5.5), riseA: r.range(1.35, 1.55), clear: r.range(2.4, 2.8), clearT: [0.1, 0.4], legsAt: [{ t: 0.45, role: 'hind' }], legS: 1.1, headS: r.range(0.95, 1.05), backT: [0.3, 0.7], radKeys: [[0, 0.5], [0.3, 1], [0.55, 1.05], [0.8, 0.75], [1, 0.62]] }),
@@ -663,7 +675,7 @@ const species = [
     limbs: none(), tail: tl(r, { tailLen: r.range(4, 6), up: true, curl: r.range(0.8, 1.6), wave: 0, w1: 0.34, tip: 'dragonFluke', tipS: 1.2 }),
     dorsal: r.wpick([[3, batw(r, { size: r.range(3.6, 4.4), at: r.range(0.6, 0.75), far: false })], [1.5, feather(r, { size: r.range(3.6, 4.4), at: r.range(0.6, 0.75), far: false })]]), crown: r.wpick([[1, ears(r, { len: r.range(0.9, 1.3) })], [1, none()]]), surface: eye(),
   }) },
-  { name: 'ouroboros', w: 2, genes: r => r.chance(0.6) ? ({ // the tail-biter: the jaws close on the thin tail tip
+  { name: 'ouroboros', w: 2, hybrid: { noLend: ['limbs'] }, genes: r => r.chance(0.6) ? ({ // the tail-biter: the jaws close on the thin tail tip
     chassis: serpent(r, { mode: 'ring', R: r.range(4.4, 5), r: r.range(3.0, 3.4), gap: r.range(0.5, 0.6), headS: r.range(1.5, 1.65), faceOff: r.range(0.3, 0.45), radKeys: [[0, 0.3], [0.25, 0.75], [0.55, 1], [0.9, 0.85], [1, 0.72]], backT: [0.5, 0.9] }),
     head: dog(r, { gape: r.range(0.45, 0.6), tongue: null, mz: r.range(1.5, 1.8), tipR: 0.38, up: 0, beard: 0, nose: 0, brow: 0.28 }),
     limbs: none(), tail: none(),
