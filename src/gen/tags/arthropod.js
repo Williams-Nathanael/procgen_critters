@@ -1224,7 +1224,8 @@ export default {
     // thin plant stems with bug parts read as a collage: bug bodies lead, plants get plating
     // jointed legs and loose feelers on a salamander scatter; lend plating, a tail or a head
     salamander: { sig: { dorsal: 2, tail: 2, head: 1.5 }, want: [[3, 1], [1, 2]] },
-    plant: { lead: 2.5, sig: { dorsal: 2, crown: 1 }, want: [[1, 1]] },
+    // M9: plant leads; a bug lends legs or feelers, never a segmented body
+    plant: { lead: 0.25, sig: { limbs: 3, crown: 2 }, want: [[2, 1], [1, 2]] },
   },
   species,
 };
