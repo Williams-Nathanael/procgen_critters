@@ -387,7 +387,8 @@ chassis.arthropodBody = (C, g) => {
   return {
     view: pl.view, r: pl.r, path, rad, back, ...(pl.rooted ? { rooted: true } : {}), ...(chim ? { arthroChim: true } : {}),
     head: { p: tp(h.p), dir: h.dir + rot, face: (h.face ?? h.dir) + rot, s: h.s, sym: !sideV, arthroBare: !!h.bare, arthroW: h.W },
-    tail: { p: tp(t.p), dir: t.dir + rot, s: t.s },
+    // a borrowed scorpion sting scales to the receiving body in width as well as length
+    tail: { p: tp(t.p), dir: t.dir + rot, s: fo('tail') && root.tail.kind === 'sting' ? Math.min(t.s, Math.max(pl.r * 0.6, 2.4)) : t.s },
     limbs: socks.map(s => ({ p: tp(s.p), dir: s.dir + rot, s: s.s, role: s.role, side: s.side ?? 1, far: s.far, fwd: sideV ? 0 : rot, ...(sideV && s.role !== 'arm' ? { ground: 0 } : {}) })),
   };
 };
@@ -416,12 +417,18 @@ FORMS.crab = (K, g) => {
     sym(k, [[D * 0.85, 0], [D * 0.8, W * 0.5], [D * 0.45, W * 0.9], [-D * 0.2, W], [-D * 0.75, W * 0.85], [-D, W * 0.4], [-D, 0]]);
   } else symP(k, [[D * 0.8, 0], [D * 0.84, W * 0.14], [D * 0.74, W * 0.2], [D * 0.82, W * 0.3], [D * 0.58, W * 0.46], [D * 0.72, W * 0.62], [D * 0.38, W * 0.72], [D * 0.5, W * 0.88], [D * 0.14, W * 0.92], [D * 0.2, W * 1.06], [-D * 0.2, W * 0.98], [-D * 0.62, W * 0.76], [-D * 0.92, W * 0.46], [-D, W * 0.2], [-D, 0]]);
   if (g.abd) sym(k, [[-D * 0.7, 0], [-D * 0.85, W * g.abd * 0.85], [-D - W * g.abd * 0.9, W * g.abd], [-D - W * g.abd * 1.6, W * g.abd * 0.6], [-D - W * g.abd * 1.8, 0]]);
+  // chimeras: vary the claws so a crab body does not always read as a generic crab
+  // (long slender squat-lobster arms, spiked king-crab arms, or feelers sweeping over the claws)
+  const cst = K.chim && K.nat ? K.rng.wpick([[1, 'plain'], [1.3, 'long'], [1.1, 'spiny'], [1.2, 'feeler']]) : 'plain';
+  if (cst === 'long') g = Object.assign(Object.create(g), { arm: g.arm * K.rng.range(1.6, 2), armW: g.armW * 0.75, claw: g.claw * 0.8, fat: 0.32, finger: Math.max(g.finger, 1.25), armA: Math.min(g.armA, 0.6), giant: 0 });
+  if (cst === 'feeler') for (const sd of [-1, 1]) whip(k, [D * 0.8, sd * W * 0.12], sd * K.rng.range(0.3, 0.55), W * K.rng.range(1.6, 2.1), sd * K.rng.range(0.3, 0.7), Math.max(W * 0.11, 2.2), 1.1);
   for (const sd of [-1, 1]) {
     const big = g.giant ? (sd === g.giant ? 1.75 : 0.42) : 1, cs = g.claw * big;
     const sp = [D * 0.45, sd * W * 0.82];
     K.limb(sp, sd * 0.9, W * 0.42, 'fore', sd, () => {
       const a = arm(k, [D * 0.4, sd * W * 0.7], [[sd * (g.armA + (big > 1 ? 0.25 : 0)), g.arm * mix(1, big, 0.6)], [sd * 0.25, g.arm * 0.5 * mix(1, big, 0.5)]], g.armW * mix(1, big, 0.4));
       chela(k, a.p, -sd * g.clawIn * (big > 1 ? 1.5 : 1), cs, { flip: sd, fat: g.fat, finger: g.finger });
+      if (cst === 'spiny') { const q0 = [D * 0.4, sd * W * 0.7]; for (const u of [0.3, 0.55, 0.8]) { const q = lerp(q0, a.p, u), aa = angOf(q0, a.p); lf(k, q, aa + sd * 1.1, g.armW * 1.3, Math.max(g.armW * 0.5, MA * 1.3), 0, 0.3); } }
     });
     for (let i = 0; i < 4; i++) {
       const u = i / 3, base = [mix(D * 0.1, -D * 0.8, u), sd * W * mix(0.92, 0.5, u)], a0 = sd * (PI / 2 + mix(-0.28, 0.85, u));
@@ -516,7 +523,7 @@ FORMS.chain = (K, g) => {
   // chimera: parts from other body forms get sockets big enough to read (else it is just a centipede)
   const fo = foreignOf(g), fH = fo('head'), fT = fo('tail'), rr = g.r * K.pl;
   chimPincers(K, g, e.p, e.ang, rad(1), rr);
-  return { view: 'top', r: Math.max(g.r, 4), path, rad, head: { p: polar(e.p, e.ang, -L / n * 0.3), dir: e.ang, s: rad(1) * g.headS * (fH ? 1.45 : 1) }, tail: { p: polar(b.p, b.ang, L / n * 0.4), dir: b.ang + PI, s: fT ? Math.max(rr * 1.5, 5) : rad(0.02) * (g.tailS ?? 0.9) } };
+  return { view: 'top', r: Math.max(g.r, 4), path, rad, head: { p: polar(e.p, e.ang, -L / n * 0.3), dir: e.ang, s: rad(1) * g.headS * (fH ? 1.45 : 1) }, tail: { p: polar(b.p, b.ang, L / n * 0.4), dir: b.ang + PI, s: fT ? (g.root.tail.kind === 'sting' ? Math.max(rr * 0.62, 2.6) : Math.max(rr * 1.1, 4)) : rad(0.02) * (g.tailS ?? 0.9) } };
 };
 
 // Plated ovals: woodlice, giant isopods and trilobites. Head shield, pleural points, tail shield.
@@ -1090,9 +1097,9 @@ const UP = -PI / 2;
 // SPECIES
 // ---------------------------------------------------------------------------
 const species = [
-  { name: 'shore crab', w: 3, genes: r => { const W = r.range(17, 21); return G({ form: 'crab', rot: UP, shape: 'shore', W, D: W * r.range(0.6, 0.7), claw: W * r.range(0.5, 0.62), fat: r.range(0.42, 0.5), finger: r.range(0.75, 0.95), arm: W * r.range(0.42, 0.52), armA: r.range(0.75, 1.1), armW: W * 0.25, clawIn: r.range(0.25, 0.7), legL: W * r.range(1.05, 1.3), legW: W * 0.17, legTurn: r.range(0.55, 0.8), eyeGap: 0.75 },
+  { name: 'shore crab', w: 2.2, genes: r => { const W = r.range(17, 21); return G({ form: 'crab', rot: UP, shape: 'shore', W, D: W * r.range(0.6, 0.7), claw: W * r.range(0.5, 0.62), fat: r.range(0.42, 0.5), finger: r.range(0.75, 0.95), arm: W * r.range(0.42, 0.52), armA: r.range(0.75, 1.1), armW: W * 0.25, clawIn: r.range(0.25, 0.7), legL: W * r.range(1.05, 1.3), legW: W * 0.17, legTurn: r.range(0.55, 0.8), eyeGap: 0.75 },
     { head: HEAD({ stalk: r.range(0.3, 0.45) }), limbs: CLAWED(r), crown: none() }); } },
-  { name: 'fiddler crab', w: 2, genes: r => { const W = r.range(14, 17); return G({ form: 'crab', rot: UP, shape: 'fiddler', W, D: W * r.range(0.62, 0.72), giant: r.sign(), claw: W * r.range(0.62, 0.72), fat: r.range(0.4, 0.46), finger: r.range(1.1, 1.4), arm: W * 0.42, armA: r.range(0.9, 1.1), armW: W * 0.24, clawIn: r.range(0.3, 0.6), legL: W * r.range(1.1, 1.3), legW: W * 0.16, legTurn: r.range(0.55, 0.8), eyeGap: 0.35 },
+  { name: 'fiddler crab', w: 1.5, genes: r => { const W = r.range(14, 17); return G({ form: 'crab', rot: UP, shape: 'fiddler', W, D: W * r.range(0.62, 0.72), giant: r.sign(), claw: W * r.range(0.62, 0.72), fat: r.range(0.4, 0.46), finger: r.range(1.1, 1.4), arm: W * 0.42, armA: r.range(0.9, 1.1), armW: W * 0.24, clawIn: r.range(0.3, 0.6), legL: W * r.range(1.1, 1.3), legW: W * 0.16, legTurn: r.range(0.55, 0.8), eyeGap: 0.35 },
     { head: HEAD({ stalk: r.range(1.1, 1.5), stalkR: 0.22 }), limbs: CLAWED(r, { clawS: 1.5 }), crown: { type: 'arthropodStalk', len: r.range(1.2, 1.6), pair: true } }); } },
   { name: 'spider crab', w: 2, genes: r => { const W = r.range(10, 12.5); return G({ form: 'crab', rot: UP, shape: 'spider', W, D: W * r.range(1.15, 1.35), claw: W * r.range(0.5, 0.62), fat: 0.3, finger: 1.0, arm: W * r.range(1.1, 1.4), armA: r.range(0.7, 0.95), armW: W * 0.24, clawIn: r.range(0.2, 0.5), legL: W * r.range(2.9, 3.5), legW: W * 0.24, legTurn: r.range(0.45, 0.65), legFr: [0.4, 0.34, 0.3], eyeGap: 0.5 },
     { head: HEAD({ stalk: 0.3 }), limbs: CLAWED(r, { len: r.range(3.2, 4), w: 0.22 }), dorsal: { type: 'spines', n: r.int(4, 6), len: r.range(0.5, 0.8), wid: 0.4, lean: 0.2 } }); } },

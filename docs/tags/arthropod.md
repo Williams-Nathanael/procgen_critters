@@ -32,6 +32,17 @@ outline are welcome).
 
 ## State
 
+**2026-11-16 M8 phase 3 fixes** (BRIEF chimera taste check): 51 species, no new ones.
+Sheet `out/roads/08-arthropod-chimeras.png` (seeds 1000-1507, hybrid 1, cell 60).
+- Fewer generic crabs: shore crab w 3 -> 2.2, fiddler crab w 2 -> 1.5 (pure frequency only).
+- Crab-form chimeras with arthropod legs pick a claw style (rng, chimera only): plain 1,
+  long slender squat-lobster arms 1.3, spiked king-crab arms 1.1, or long feelers sweeping
+  over the claws 1.2 (the seed-1406 effect the user liked). Pure crabs unchanged.
+- Borrowed scorpion stings scale to the receiving body: chain form sting socket 0.62 x body r
+  (was 1.5 x, the chunky tail of seed 1503), other foreign chain tails 1.1 x; every chassis
+  caps a foreign sting at 0.6 x plan r. Fans/whips/cerci on other bodies checked, look sane.
+- Weight change reshuffles which seed is which chimera (hybrid picks use species weights).
+
 **2026-11-14 M8 chimera fix round** (after shared f620c27, seeds 1000-1047, hybrid 1): 51 species.
 Sheet `out/roads/07-arthropod-chimeras.png` (seeds 1000-1711, cell 60).
 - Every slot gene carries a non-enumerable `arthroForm` (the body form of its species); the
