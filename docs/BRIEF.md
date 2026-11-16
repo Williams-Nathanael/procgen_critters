@@ -207,3 +207,45 @@ So:
   parents. Coherence (parts attached, scaled to the body, reading as one animal) is still
   required at 100%.
 - The slider is the user's way to ask for less; do not hold back at the top of its range.
+
+## Decisions (2026-11-16, chimera taste check, M8 phase 3)
+
+Page: https://claude.ai/artifact/XMBa68NUA2LpyiZJKggFLz (raw answers in its database,
+collection `answers`). 48 chimeras per tag at hybrid 1; cell #n is seed
+`1000 + floor((n-1)/8)*100 + (n-1)%8`, sprite `out/review-chimeras/sprites/chim-<tag>.png`
+(8 columns, 60 px cells at 2x).
+
+- **Overall direction: keep.** Chimeras are the right approach.
+- **Ready**: salamander ("All look good to me."), mammal ("I love these very much; and the
+  level of 'stupid looking circular mouse ears' no longer feels oppressive"; 21 favourites,
+  no rejects), fungus ("Good enough. Not amazing, but fungi were always going to be
+  extremely hard."; 9 favourites), plant ("surprisingly solid! I don't like them as a whole
+  and wouldn't use them alone, but I think they'll be good in hybrids"; reject #25),
+  amphibian and arthropod (ready, with the fixes below).
+- **Amphibian** (ready, with fixes): "Let's cut our loopy little friends, they barely read
+  as part of the team. And some of those sharp legs read as too shattery and jagged. And, of
+  course, the floating-dots thing is unintentional, right?" Rejects #2 #7 #32 #43 all have
+  the caecilian / looped caecilian chassis (overseer's reading: these are the "loopy
+  friends"); #16 #40 #48 presumably show the jagged legs and floating dots.
+- **Arthropod** (ready, with fixes): "Solidly arthropodly now. Though the scorpion-tailed
+  little one has a tail far chunkier than its body; bad scaling? Also, I'd tone down the
+  level of crab claws (marked 'reject') and tone up the level of varied claws (marked
+  'favorite') a bit; the ones that read as generic crab feel too plentiful. #39 somehow
+  works well without feeling generically crabby even with crab claws because of the
+  antennae(?) overlapping the claws." Rejects #3 #18 #19 (shore / fiddler crab chassis), #44
+  (silverfish-earwig-centipede body with a scorpion tail: the chunky tail). Favourites #23
+  #27 #31 #39 #43 #46 #47 #48 (squat / spiny lobster, scorpion, pseudoscorpion, whip
+  scorpion, king / spider crab bodies).
+- **Dragon: needs more work.** "The very thin front leg makes some of these ridiculous, and
+  the way these feel dominantly diagonal with a kind of ridiculous 'middle leg' or aborted
+  back half is bad. (ones marked reject are to illustrate the problem, not to explicitly
+  downweight those exact designs)". Rejects #19 #22 #24 #28 #29 #32 #39 (5 of 7 have
+  cockatrice in the chassis blend; also serra, saint margaret, basilisk, amphisbaena).
+  Favourites #1 #2 #6 #13 #15 #36 #42 #43 #44 #48.
+- **Little folk: needs more work**, one instruction: "Remove Bracket Crawler and Query
+  Hook". No species is called bracket crawler; rejects #9 #12 have the bracket peeper
+  chassis and #4 the query hook chassis, so the overseer reads it as bracket peeper + query
+  hook. 13 favourites.
+- Reworked pure species: amphisbaena keep ("Solid little fellow now, yeah. Feet read
+  okay."); ampersand knot keep ("Still a bit too large of a lump, but it's good."); jelly
+  ear keep, but "Older version looked fine with its milder markings."
