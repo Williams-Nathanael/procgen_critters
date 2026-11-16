@@ -3,7 +3,44 @@
 Single source of truth for "where are we, what is next". The overseer updates it at the end
 of every milestone. Per-tag detail lives in the State section of `docs/tags/<tag>.md`.
 
-## Where things stand (2026-11-14)
+## Where things stand (2026-11-16)
+
+**M8 is done: chimera taste check answered (2026-11-16) and its fixes are in.** Answers are
+in `docs/BRIEF.md` ("Decisions (2026-11-16, chimera taste check, M8 phase 3)"). Overall
+direction: keep. Ready as shown: salamander, mammal, fungus, plant. Fixed in this
+conversation (one `species-builder` run each; dragon got a `critic` count and a second run):
+- amphibian (cf0b04d): caecilian and looped caecilian cut (25 species); top-view legs
+  rounder and sturdier; lent midwife-toad egg clutch anchored (no detached pieces in 1,100
+  seeds at hybrid 1).
+- arthropod (cc8ac33): shore / fiddler crab weights down, crab-bodied chimeras pick a claw
+  style (plain, slender arms, spiked arms, feelers over the claws); borrowed scorpion tails
+  capped to the body in width and length. Not checked: mixes with other tags, other tail
+  types beyond a glance.
+- dragon (ce510b2, 4dd52f5): `pitch` and `legAt` blended across leg plans (cause of the
+  diagonal "middle leg" bodies and thin front legs); four-leggers now stay level, tilted
+  two-leggers get hip-set sturdier legs, half-reared pitch snaps to level or upright,
+  reared serpents take the basilisk shape on two feet, seated plans keep the haunch down.
+  Critic after the first run: about 3 of 144 thin forelegs, about 5 of 144 diagonal
+  one-leggers; the second run fixed the named seeds except 4203 (slender arms) and a
+  hairline arc on 4004. The second run was not re-counted by the critic, and seed families
+  1 and 9 were not re-rendered after it. The critic also dislikes ring chimeras (ouroboros,
+  lindworm) as repetitive; left alone because the user starred two of them.
+- jansson (faffb36): bracket peeper and query hook cut (28 species; the user wrote "Bracket
+  Crawler", read as bracket peeper from the rejected cells); ampersand knot head ball 16%
+  smaller.
+- fungus (b12b9cd): jelly ear's pale fold half as wide, extra vein gone, shape kept. Judged
+  against the old code, not an old render; jelly-ear heads in chimeras not confirmed.
+- Clean copy of HEAD (4dd52f5): build, `test:export`, 8-tag hybrid-1 sheet, `--pairs` sheet
+  pass. `test:ui`, `test:pdfs` not run. Bench: mean 5.79 ms, p95 10.05, max 18.8.
+- Kept sheet: `out/roads/08-chimeras-taste-fixes.png` (no git tag). The weight changes
+  reshuffle seeds, so the taste page's cell numbers no longer show the same critters.
+- Suggested for shared code (not done): make `legs` a VARIANT key in `critter.js`, or stop
+  `pitch` / `legAt` blending across leg plans (dragon works around it in its tag file).
+- **The user has not seen the fixed dragons, amphibians, arthropods or folk.**
+**Next: M9 (mix verdicts; re-render `--pairs` first), or straight to 1.0 on the user's
+say-so.**
+
+## Earlier state (2026-11-14)
 
 **1.0 taste check answered (2026-11-14); 1.0 is NOT ready.** Answers are in
 `docs/BRIEF.md` ("Decisions (2026-11-14, 1.0 taste check)"). The user's major objection:
@@ -439,8 +476,8 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
      mammal; salamander, plant.
      [critic at `--cell 60` per tag; overseer looks at one sheet per batch]
      **DONE 2026-11-14** (see "M8 phase 2 result" above).
-   - Phase 3: taste check with the user (one page, hybrid sheets per tag). **PUBLISHED
-     2026-11-14, waiting on the user's answers.**
+   - Phase 3: taste check with the user (one page, hybrid sheets per tag). **DONE
+     2026-11-16** (answered; fixes in, see the top of this file).
 9. **M9 Mix verdicts from the 1.0 taste check** (engineer, model opus, `mix` tables in tag
    files; no tag workers running). Never: salamander+fungus. The user (2026-11-14): "either redesign it to be coherently
    salamander blended with fungus rather than 'salamander with a mushroom for a head,' or
