@@ -25,6 +25,21 @@ eyes, toe pads, inflated throat, tadpole tail. Default eyes: a small dot only wh
 helps; most should read without.
 
 ## State
+2026-11-16 chimera taste-check fixes (BRIEF "Decisions (2026-11-16)"): **25 species** (was 27).
+- Cut caecilian and looped caecilian (rejects 1001 1006 1307 1502 all had their chassis; the
+  "loopy little friends"). `amphibianCaecilian` chassis code stays registered, unused.
+- Floating dots were `amphibianEggs` lent as dorsal onto bodies without a side-view hind leg
+  (tadpole, top-view chassis): the clutch was a loose spiral of separate dots. Now a tight
+  overlapping heap anchored by a bead on the rump. Detached-outer-ring scan: 0 hits over
+  seeds 1000-1699 at hybrid 1, 1-699 at hybrid 1, 1-399 at hybrid 0, 2000-2399 at 0.5 (was
+  15 per 600 at hybrid 1, all midwife eggs).
+- Jagged legs were top-view limbs (`topLeg`, climbing/flying/Surinam chassis, rejects
+  1107 1407 1507 #16 #48): hairpin folds and thin forearms/toes. Folds now capped (~2 rad),
+  thickness floors (hind 0.3 s, fore 0.21 s, toe tr 0.14), round knuckles at knee, ankle,
+  elbow, minimum webbing. Pure top-view species look sturdier, otherwise unchanged.
+- Weakest now: Surinam toad chimeras (still starry), midwife toad, crested newt crest on
+  chimeras, hairy frog fringe at 60 px.
+
 2026-11-14 M8 chimera fix round (hybrid 1, judged at --cell 60): still **27 species**. Sheet
 `out/roads/07-amphibian-chimeras.png` (seed rows 1000/1100/1200). Chassis spread: the seven
 species whose identity is a head or dorsal on a generic sitting frog (hairy, calling,

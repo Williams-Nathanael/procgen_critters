@@ -228,20 +228,25 @@ function topLeg(C, sock, g) {
   if (sock.role === 'hind') {
     let [t1, t2, t3] = P.h.map((v, i) => v + pj[i] + rng.range(-jit, jit));
     if (g.oneOut && sd === g.oneOut) { t1 += 0.9; t2 -= 0.45; t3 += 0.5; } // one leg trailing
-    const a = g.hl * s, hw = g.hw * s * 0.82;
-    const kn = polar(p, A(t1), a), an = polar(kn, A(t2), a * 0.95), tb = polar(an, A(t3), g.hf * s);
-    seg(C, [p, lerp(p, kn, 0.5), kn], hw, hw * 0.66, hw * 0.98);
-    seg(C, [kn, lerp(kn, an, 0.5), an], hw * 0.66, hw * 0.4, hw * 0.66);
-    C.ink.poly(tube(polyline([an, tb], 3), profile([[0, hw * 0.4], [1, Math.max(hw * 0.32, MINW * 0.75)]])));
-    toes(C, tb, A(t3), s, { n: g.toes ?? 4, len: g.toeLen, spread: g.spread ?? 1.15, pad: g.pad, web: g.web, tr: g.tr ?? 0.12, long: sd > 0 ? 0.62 : 0.38 });
+    // sturdy, rounded limbs (2026-11-16: thin hairpin folds read as shattery at print size):
+    // no fold sharper than ~95 degrees, a floor on thickness, round knuckles at every joint
+    t2 = t1 + clamp(t2 - t1, -2.05, 2.05); t3 = t2 + clamp(t3 - t2, -1.85, 1.85);
+    const a = g.hl * s, hw = Math.max(g.hw * s * 0.82, 0.3 * s);
+    const kn = polar(p, A(t1), a), an = polar(kn, A(t2), a * 0.95), tb = polar(an, A(t3), g.hf * s * 0.9);
+    seg(C, [p, lerp(p, kn, 0.5), kn], hw, hw * 0.7, hw * 0.98);
+    seg(C, [kn, lerp(kn, an, 0.5), an], hw * 0.7, hw * 0.48, hw * 0.7);
+    C.ink.dot(kn, hw * 0.7); C.ink.dot(an, hw * 0.48);
+    C.ink.poly(tube(polyline([an, tb], 3), profile([[0, hw * 0.46], [1, Math.max(hw * 0.38, MINW * 0.85)]])));
+    toes(C, tb, A(t3), s, { n: g.toes ?? 4, len: g.toeLen * 0.9, spread: g.spread ?? 1.15, pad: g.pad, web: Math.max(g.web, 0.3), tr: Math.max(g.tr ?? 0.12, 0.14), long: sd > 0 ? 0.62 : 0.38 });
   } else {
     let u = P.f[0], w = P.f[1];
     if (sock.role === 'mid') { u = Math.abs(angDiff(sock.dir, f)); w = u - 0.6; }
     u += pj[0] * 0.5 + rng.range(-jit, jit); w += rng.range(-jit, jit);
-    const L = g.fl * s * (sock.role === 'arm' ? 0.8 : 1), r0 = Math.max(g.fw * s, MINW * 0.8);
+    const L = g.fl * s * (sock.role === 'arm' ? 0.8 : 1) * 0.92, r0 = Math.max(g.fw * s, 0.21 * s, MINW * 0.9);
     const el = polar(p, A(u), L * 0.48), hand = polar(el, A(w), L * 0.52);
-    seg(C, [p, el, hand], r0, r0 * 0.72);
-    toes(C, hand, A(w), s, { n: g.fingers ?? 3, len: g.toeLen * (g.fingerK ?? 0.72), spread: g.foreSpread ?? 1.7, pad: g.forePad ?? g.pad, web: g.foreWeb ?? g.web * 0.35, tr: g.tr ?? 0.12, long: 0.5 });
+    seg(C, [p, el, hand], r0, r0 * 0.8);
+    C.ink.dot(el, r0 * 0.85);
+    toes(C, hand, A(w), s, { n: g.fingers ?? 3, len: g.toeLen * (g.fingerK ?? 0.72) * 0.9, spread: g.foreSpread ?? 1.7, pad: g.forePad ?? g.pad, web: Math.max(g.foreWeb ?? g.web * 0.35, 0.2), tr: Math.max(g.tr ?? 0.12, 0.14), long: 0.5 });
   }
 }
 
@@ -717,8 +722,10 @@ dorsals.amphibianEggs = (C, plan, st, sd, si, g) => {
   if (si > 0 || !plan.path) return;
   const { ink, rng } = C, r = plan.r, er = Math.max(r * g.size * 0.5, MINW * 1.6), q = pathAt(plan.path, 0.08);
   const ux = Math.cos(q.ang), uy = Math.sin(q.ang), c = q.p, cnt = Math.min(g.n + g.rows, 8);
+  // a tight heap: each bead overlaps its neighbours and the first sits on the body, so nothing floats
+  ink.dot(c, er * 1.1);
   for (let i = 0; i < cnt; i++) {
-    const a = i * 2.4 + rng.range(-0.15, 0.15), d = er * 2.5 * Math.sqrt(i + 0.3);
+    const a = i * 2.4 + rng.range(-0.15, 0.15), d = er * 1.45 * Math.sqrt(i + 0.3);
     const lx = -Math.abs(Math.cos(a)) * d * 0.9, ly = Math.sin(a) * d;
     const p = [c[0] + ux * lx - uy * ly, c[1] + uy * lx + ux * ly];
     if (plan.view === 'side') p[1] = Math.min(p[1], -er);
@@ -862,15 +869,7 @@ const species = [
     tail: { tailLen: r.range(3, 6), w0: 0.8, mid: 0.6, w1: 0.1, curl: r.range(0.2, 1), wave: r.range(0.3, 1.2), up: false, tip: 'point' },
     dorsal: none(), crown: popEyes(r), surface: look(r, 0.4, 0),
   }) },
-  // ---- caecilians ----
-  { name: 'caecilian', hybrid: { keep: ['limbs', 'dorsal'] }, w: 1.2, genes: r => ({
-    chassis: { type: 'amphibianCaecilian', style: 'wave', r: r.range(3.6, 4.4), len: r.range(58, 72), amp: r.range(6, 10), k: r.range(1.1, 1.7), ring: r.range(0.75, 0.95) },
-    head: { type: 'amphibianBlunt', len: r.range(1.2, 1.6), tipR: r.range(0.5, 0.62) }, limbs: legs(r, 'frog', { ownNone: true }), tail: none(), dorsal: none(), crown: none(), surface: { eyes: 'none' },
-  }) },
-  { name: 'looped caecilian', hybrid: { keep: ['limbs', 'dorsal'] }, w: 0.7, genes: r => ({
-    chassis: { type: 'amphibianCaecilian', style: 'loop', r: r.range(3.2, 3.7), c: r.range(5.2, 6.2), R: r.range(12.5, 14.5), lead: r.range(0.9, 1.3), tailLead: r.range(0.7, 1.2), drift: r.range(-0.6, 0.6), ring: r.range(0.75, 0.95) },
-    head: { type: 'amphibianBlunt', len: r.range(1.2, 1.6), tipR: r.range(0.5, 0.62) }, limbs: legs(r, 'frog', { ownNone: true }), tail: none(), dorsal: none(), crown: none(), surface: { eyes: 'none' },
-  }) },
+  // caecilians cut 2026-11-16 (user: the 'loopy little friends' barely read as part of the team); their chassis code stays registered but unused
   { name: 'newt larva', w: 1.2, genes: r => ({ // eft-to-be: feathery external gills, a long finned tail, spindly legs
     chassis: sit(r, { seat: null, r: r.range(6, 7), len: r.range(22, 26), pitch: r.range(0.0, 0.08), rump: 0.75, belly: 1, chest: 0.92, neck: 0.85, hump: 0, arch: r.range(0.05, 0.2), rearLift: 1.1, headS: 1.15, tailS: 0.7, face: r.range(-0.1, 0.1) }),
     head: frogHead(r, { snout: r.range(1.05, 1.25), point: 0, deep: 0.62, eye: r.range(0.24, 0.3), eyeUp: 0 }),
