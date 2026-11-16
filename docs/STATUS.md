@@ -3,7 +3,42 @@
 Single source of truth for "where are we, what is next". The overseer updates it at the end
 of every milestone. Per-tag detail lives in the State section of `docs/tags/<tag>.md`.
 
-## Where things stand (2026-11-16)
+## Where things stand (2026-11-16, after M9)
+
+**M9 is done (mix verdicts), waiting on a user look.** One conversation: a `critic` triage of
+the six "less of this" pairs, three engineer (Opus) runs, a `critic` look at the 28-pair
+sheet, and an overseer look at one salamander+fungus row at `--cell 110`. Only `mix` tables
+and fungus's mix-only parts changed; workers report pure tags and all other pairs
+pixel-identical on the `--pairs` sheet. Kept sheet: `out/roads/09-pairs.png`, tag
+`road-09-pairs`.
+- salamander+fungus (455f526, 0c3c851): always a salamander body (fungus `lead` 0), no cap
+  head, no stalked caps. Fungus lends a back crest of 2-3 big flat-topped shelf brackets
+  (one larger), 2 large spore spots, and gill stalks behind the head with one large frilled
+  fan. Critic after the first round: passes as one coherent creature, fungal side read as
+  "warty newt" at print size; the second round made the brackets bolder and was NOT
+  re-judged by the critic. Overseer look: salamanders with bracket shelves on the back, reads
+  as one creature. At 40 px only the shelves show; seeds 1003, 1006 still have a small bumpy
+  ridge. Mycelium toes not done (fungus would have to lend limbs).
+- arthropod+plant (0789775): plant usually supplies the body, arthropod lends legs or
+  feelers only (`arthropod.mix.plant` lead 0.25). Critic: better.
+- salamander+jansson (0eb5b8f): the folk figure usually leads (`jansson.mix.salamander`
+  lead 4), salamander lends tail and limbs. Critic: better, but the figures repeat (one
+  squat figure with a tail, seeds 1601-1609).
+- Tried and reverted: fungus+mammal (mammal lead, smaller cap; round blobs remained) and
+  amphibian+arthropod (top-view bodies appear even when the amphibian leads; needs a
+  geometry fix in the tag files, not a lead weight). Left as is per the triage:
+  fungus+dragon, plant+jansson (about 10% weak cells each).
+- Critic's "would bother" cells on the 28-pair sheet (rendered before 0c3c851, not fixed):
+  arthropod+jansson 2704 (hairline curly figure) and 2709 (tiny smear); round blobs 3102,
+  2806, 2809 (fungus+jansson, fungus+mammal); amphibian+fungus 1808 (bare column);
+  amphibian+dragon 2000 (closed ring reads as a letter O). Nothing detached or below the line.
+- Checks: workers report build and `test:export` passing after each commit. No clean-copy
+  check, `test:ui`, `test:pdfs` or bench this conversation.
+- **The user has not seen any M9 result**, nor the M8 fixes listed below.
+**Next: the user looks at the app (or `out/roads/09-pairs.png`); then 1.0 (clean-copy
+check, push, tag) on their say-so.**
+
+## Earlier state (2026-11-16, M8)
 
 **M8 is done: chimera taste check answered (2026-11-16) and its fixes are in.** Answers are
 in `docs/BRIEF.md` ("Decisions (2026-11-16, chimera taste check, M8 phase 3)"). Overall
@@ -491,6 +526,7 @@ Each milestone is one overseer conversation. Acceptance criteria in brackets.
    attempt per pair where an obvious better blend exists, otherwise leave as is; do not
    lower how often they blend. M8 changes these pairs, so re-render `--pairs` first. M9
    does not block 1.0 if the user is content. [critic on the 28-pair sheet; user check]
+   **DONE 2026-11-16 except the user check** (see the top of this file).
 10. **1.0**: clean-copy check, push, tag. Only on the user's say-so.
 
 ## Known issues
